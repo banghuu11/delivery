@@ -1,0 +1,190 @@
+﻿@model DeliveryManagement.Models.ViewModels.RegisterViewModel
+
+@{
+    ViewData["Title"] = "Đăng ký tài khoản";
+}
+
+<div class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-header">
+
+            <h1 class="auth-title">
+                Tạo tài khoản
+            </h1>
+
+            <p class="auth-subtitle">
+                Đăng ký để sử dụng dịch vụ giao hàng
+            </p>
+
+        </div>
+
+        <form asp-controller="Account"
+              asp-action="Register"
+              method="post"
+              class="auth-form">
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger validation-summary"></div>
+
+            <div class="form-group">
+
+                <label asp-for="FullName"
+                       class="form-label">
+                    Họ và tên
+                </label>
+
+                <input asp-for="FullName"
+                       class="form-control"
+                       autocomplete="name"
+                       placeholder="Nhập họ và tên" />
+
+                <span asp-validation-for="FullName"
+                      class="field-validation-error"></span>
+
+            </div>
+
+            <div class="form-group">
+
+                <label asp-for="Email"
+                       class="form-label">
+                    Email
+                </label>
+
+                <input asp-for="Email"
+                       class="form-control"
+                       autocomplete="email"
+                       placeholder="Nhập email" />
+
+                <span asp-validation-for="Email"
+                      class="field-validation-error"></span>
+
+            </div>
+
+            <div class="form-group">
+
+                <label asp-for="PhoneNumber"
+                       class="form-label">
+                    Số điện thoại
+                </label>
+
+                <input asp-for="PhoneNumber"
+                       class="form-control"
+                       autocomplete="tel"
+                       placeholder="Nhập số điện thoại" />
+
+                <span asp-validation-for="PhoneNumber"
+                      class="field-validation-error"></span>
+
+            </div>
+
+            <div class="form-group">
+
+                <label asp-for="Password"
+                       class="form-label">
+                    Mật khẩu
+                </label>
+
+                <div class="password-wrapper">
+
+                    <input asp-for="Password"
+                           type="password"
+                           class="form-control"
+                           id="registerPassword"
+                           autocomplete="new-password"
+                           placeholder="Nhập mật khẩu" />
+
+                    <button type="button"
+                            class="password-toggle"
+                            data-target="registerPassword">
+                        Hiện
+                    </button>
+
+                </div>
+
+                <span asp-validation-for="Password"
+                      class="field-validation-error"></span>
+
+            </div>
+
+            <div class="form-group">
+
+                <label asp-for="ConfirmPassword"
+                       class="form-label">
+                    Xác nhận mật khẩu
+                </label>
+
+                <div class="password-wrapper">
+
+                    <input asp-for="ConfirmPassword"
+                           type="password"
+                           class="form-control"
+                           id="confirmPassword"
+                           autocomplete="new-password"
+                           placeholder="Nhập lại mật khẩu" />
+
+                    <button type="button"
+                            class="password-toggle"
+                            data-target="confirmPassword">
+                        Hiện
+                    </button>
+
+                </div>
+
+                <span asp-validation-for="ConfirmPassword"
+                      class="field-validation-error"></span>
+
+            </div>
+
+            <button type="submit"
+                    class="auth-submit">
+                Đăng ký tài khoản
+            </button>
+
+        </form>
+
+        <div class="auth-switch">
+
+            Đã có tài khoản?
+
+            <a asp-controller="Account"
+               asp-action="Login">
+                Đăng nhập
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.querySelectorAll(".password-toggle")
+            .forEach(button => {
+
+                button.addEventListener("click", function () {
+
+                    const input =
+                        document.getElementById(this.dataset.target);
+
+                    if (input.type === "password") {
+                        input.type = "text";
+                        this.textContent = "Ẩn";
+                    }
+                    else {
+                        input.type = "password";
+                        this.textContent = "Hiện";
+                    }
+
+                });
+
+            });
+    </script>
+}

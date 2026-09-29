@@ -1,0 +1,96 @@
+﻿@model DeliveryManagement.Models.DeliveryOrder
+
+@{
+    ViewData["Title"] = "Chi tiết đơn hàng";
+    var orderItem = ViewBag.OrderItem as DeliveryManagement.Models.OrderItem;
+}
+
+<div class="container mt-4">
+    <h2 class="mb-1">Chi tiết đơn hàng</h2>
+    <p class="text-muted mb-4">Mã đơn: <strong>@Model.OrderCode</strong></p>
+
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body d-flex justify-content-between align-items-center bg-light rounded">
+            <span>Trạng thái đơn hàng: <strong class="text-primary fs-5">@Model.CurrentStatus</strong></span>
+
+            @if (Model.CurrentStatus == "Chưa nhận")
+            {
+                <form asp-action="Cancel" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');">
+                    <input type="hidden" name="id" value="@Model.OrderCode" />
+                    <button type="submit" class="btn btn-danger text-white fw-bold">Hủy yêu cầu giao hàng</button>
+                </form>
+            }
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    <div class="row">
+        <!-- CỘT TRÁI: THÔNG TIN VẬN CHUYỂN -->
+        <div class="col-md-6 mb-3">
+            <div class="card h-100 shadow-sm border-0">
+                <div class="card-header bg-white fw-bold border-bottom-0 pt-3">1. Thông tin vận chuyển</div>
+                <div class="card-body border rounded m-3 mt-0">
+                    <h6 class="fw-bold text-secondary">Người gửi</h6>
+                    <p class="mb-1">Họ tên: @Model.SenderName</p>
+                    <p class="mb-1">SĐT: @Model.SenderPhone</p>
+                    <p class="mb-3">Địa chỉ: @Model.SenderAddress</p>
+                    <hr />
+                    <h6 class="fw-bold text-secondary">Người nhận</h6>
+                    <p class="mb-1">Họ tên: @Model.ReceiverName</p>
+                    <p class="mb-1">SĐT: @Model.ReceiverPhone</p>
+                    <p class="mb-0">Địa chỉ: @Model.ReceiverAddress</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI: NHIỆM VỤ CỦA BẠN (HÀNG HÓA & TRẠNG THÁI) -->
+        <div class="col-md-6 mb-3">
+
+            <!-- CHỨC NĂNG 1 & 2: CHI TIẾT & PHÂN LOẠI HÀNG HÓA -->
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-header bg-white fw-bold border-bottom-0 pt-3">2. Thông tin hàng hóa</div>
+                <div class="card-body bg-light rounded m-3 mt-0">
+                    @if (orderItem != null)
+                    {
+                        <p class="mb-1"><strong>Loại đóng gói:</strong> @(orderItem.PackageType?.TypeName ?? "Chưa phân loại")</p>
+                        <p class="mb-1"><strong>Kích thước:</strong> @orderItem.Size</p>
+                        <p class="mb-1"><strong>Khối lượng:</strong> @orderItem.Weight kg</p>
+                        <p class="mb-1"><strong>Số lượng:</strong> @orderItem.Quantity</p>
+                        <p class="mb-2"><strong>Mô tả:</strong> @orderItem.Description</p>
+
+                        <div class="mt-2">
+                            <span class="badge @(orderItem.IsFragile ? "bg-danger" : "bg-secondary")">@(orderItem.IsFragile ? "Hàng dễ vỡ" : "Không dễ vỡ")</span>
+                            <span class="badge @(orderItem.IsValuable ? "bg-warning text-dark" : "bg-secondary") ms-1">@(orderItem.IsValuable ? "Hàng giá trị cao" : "Hàng thường")</span>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-danger mb-0">Chưa có thông tin chi tiết hàng hóa cho đơn này.</p>
+                    }
+                </div>
+            </div>
+
+            <!-- CHỨC NĂNG 3: CẬP NHẬT TRẠNG THÁI -->
+            <div class="card shadow-sm border-info">
+                <div class="card-header bg-info text-white fw-bold">3. Cập nhật trạng thái</div>
+                <div class="card-body">
+                    <form asp-action="UpdateStatus" method="post" class="d-flex">
+                        <input type="hidden" name="id" value="@Model.OrderCode" />
+                        <select name="newStatus" class="form-select me-2">
+                            <option value="Chưa nhận" selected="@(Model.CurrentStatus == "Chưa nhận")">Chưa nhận</option>
+                            <option value="Đã nhận - Chưa giao" selected="@(Model.CurrentStatus == "Đã nhận - Chưa giao")">Đã nhận - Chưa giao</option>
+                            <option value="Đã nhận – Đang giao" selected="@(Model.CurrentStatus == "Đã nhận – Đang giao")">Đã nhận – Đang giao</option>
+                            <option value="Đã Giao" selected="@(Model.CurrentStatus == "Đã Giao")">Đã Giao</option>
+                        </select>
+                        <button type="submit" class="btn btn-primary text-nowrap">Lưu thay đổi</button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

@@ -1,0 +1,147 @@
+﻿@model DeliveryManagement.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<div class="auth-page">
+
+    <div class="auth-card">
+
+        <div class="auth-header">
+
+            @* <div class="auth-logo">
+                D
+            </div> *@
+
+            <h1 class="auth-title">
+                Đăng nhập
+            </h1>
+
+            <p class="auth-subtitle">
+                Đăng nhập để quản lý đơn hàng của bạn
+            </p>
+
+        </div>
+
+        <form asp-controller="Account"
+              asp-action="Login"
+              method="post"
+              class="auth-form">
+
+            <input type="hidden"
+                   name="returnUrl"
+                   value="@ViewData["ReturnUrl"]" />
+
+            <div asp-validation-summary="ModelOnly"
+                 class="text-danger validation-summary"></div>
+
+            <div class="form-group">
+
+                <label asp-for="Email"
+                       class="form-label">
+                    Email
+                </label>
+
+                <input asp-for="Email"
+                       class="form-control"
+                       autocomplete="email"
+                       placeholder="Nhập email của bạn" />
+
+                <span asp-validation-for="Email"
+                      class="field-validation-error"></span>
+
+            </div>
+
+            <div class="form-group">
+
+                <label asp-for="Password"
+                       class="form-label">
+                    Mật khẩu
+                </label>
+
+                <div class="password-wrapper">
+
+                    <input asp-for="Password"
+                           type="password"
+                           class="form-control"
+                           id="loginPassword"
+                           autocomplete="current-password"
+                           placeholder="Nhập mật khẩu" />
+
+                    <button type="button"
+                            class="password-toggle"
+                            data-target="loginPassword">
+                        Hiện
+                    </button>
+
+                </div>
+
+                <span asp-validation-for="Password"
+                      class="field-validation-error"></span>
+
+            </div>
+
+            <div class="remember-row">
+
+                <input asp-for="RememberMe"
+                       class="form-check-input"
+                       id="rememberMe" />
+
+                <label asp-for="RememberMe">
+                    Ghi nhớ đăng nhập
+                </label>
+
+            </div>
+
+            <button type="submit"
+                    class="auth-submit">
+                Đăng nhập
+            </button>
+
+        </form>
+
+        <div class="auth-switch">
+
+            Chưa có tài khoản?
+
+            <a asp-controller="Account"
+               asp-action="Register">
+                Đăng ký ngay
+            </a>
+
+        </div>
+
+    </div>
+
+</div>
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        document.querySelectorAll(".password-toggle")
+            .forEach(button => {
+
+                button.addEventListener("click", function () {
+
+                    const input =
+                        document.getElementById(this.dataset.target);
+
+                    if (input.type === "password") {
+                        input.type = "text";
+                        this.textContent = "Ẩn";
+                    }
+                    else {
+                        input.type = "password";
+                        this.textContent = "Hiện";
+                    }
+
+                });
+
+            });
+    </script>
+}
