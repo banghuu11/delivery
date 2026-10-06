@@ -43,30 +43,15 @@
             <div class="container-fluid px-lg-4">
 
                 <!-- BRAND LOGO -->
-                @if (isAdminArea)
-                {
-                    <a class="navbar-brand d-flex align-items-center me-2 me-xl-3" asp-controller="Admin" asp-action="Index">
-                        <div class="brand-logo-container">
-                            <span class="logo-speed-lines"><i class="bi bi-shield-lock-fill text-orange"></i></span>
-                            <div class="d-inline-block">
-                                <span class="logo-text-bold">TỐC ĐỘ</span>
-                                <span class="logo-text-sub text-danger">ADMIN</span>
-                            </div>
+                <a class="navbar-brand d-flex align-items-center me-3 me-xl-4" asp-controller="@(isAdminArea ? "Admin" : "Home")" asp-action="Index">
+                    <div class="brand-logo-container">
+                        <span class="logo-speed-lines"><i class="bi bi-wind"></i></span>
+                        <div class="d-inline-block">
+                            <span class="logo-text-bold">TỐC ĐỘ</span>
+                            <span class="logo-text-sub">DELIVERY</span>
                         </div>
-                    </a>
-                }
-                else
-                {
-                    <a class="navbar-brand d-flex align-items-center me-3 me-xl-4" asp-controller="Home" asp-action="Index">
-                        <div class="brand-logo-container">
-                            <span class="logo-speed-lines"><i class="bi bi-wind"></i></span>
-                            <div class="d-inline-block">
-                                <span class="logo-text-bold">TỐC ĐỘ</span>
-                                <span class="logo-text-sub">DELIVERY</span>
-                            </div>
-                        </div>
-                    </a>
-                }
+                    </div>
+                </a>
 
                 <button class="navbar-toggler border-0"
                         type="button"
