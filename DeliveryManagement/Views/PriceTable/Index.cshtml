@@ -1,10 +1,14 @@
-﻿@model List<DeliveryManagement.Models.PriceTable>
+@model List<DeliveryManagement.Models.PriceTable>
 
 @{
     ViewData["Title"] = "Quản lý bảng giá";
 }
 
 <div class="order-create-page">
+    @if (User.IsInRole("Admin"))
+    {
+        @await Html.PartialAsync("_AdminNavBar")
+    }
 
     <div class="order-create-header d-flex justify-content-between align-items-center">
         <div>

@@ -1,0 +1,66 @@
+@{
+    string currentController = ViewContext.RouteData.Values["Controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["Action"]?.ToString() ?? "";
+}
+
+<div class="admin-nav-wrapper mb-4">
+    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+        <div class="card-body p-2 p-md-3 bg-white">
+            <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <!-- NAV TABS -->
+                <div class="admin-nav-tabs d-flex align-items-center gap-2 overflow-x-auto py-1 flex-grow-1">
+                    
+                    <a asp-controller="Admin" asp-action="Index" 
+                       class="admin-nav-link @(currentController == "Admin" && currentAction == "Index" ? "active" : "")">
+                        <i class="bi bi-speedometer2"></i>
+                        <span>Dashboard</span>
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="Users" 
+                       class="admin-nav-link @(currentController == "Admin" && (currentAction == "Users" || currentAction == "CreateUser" || currentAction == "EditUser") ? "active" : "")">
+                        <i class="bi bi-people-fill"></i>
+                        <span>Người dùng & Quyền</span>
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="Orders" 
+                       class="admin-nav-link @(currentController == "Admin" && (currentAction == "Orders" || currentAction == "OrderDetails") ? "active" : "")">
+                        <i class="bi bi-box-seam-fill"></i>
+                        <span>Quản lý đơn hàng</span>
+                    </a>
+
+                    <a asp-controller="Admin" asp-action="PackageTypes" 
+                       class="admin-nav-link @(currentController == "Admin" && currentAction == "PackageTypes" ? "active" : "")">
+                        <i class="bi bi-tags-fill"></i>
+                        <span>Loại hàng hóa</span>
+                    </a>
+
+                    <a asp-controller="PriceTable" asp-action="Index" 
+                       class="admin-nav-link @(currentController == "PriceTable" ? "active" : "")">
+                        <i class="bi bi-table"></i>
+                        <span>Bảng giá cước</span>
+                    </a>
+
+                    <a asp-controller="Reception" asp-action="Index" 
+                       class="admin-nav-link @(currentController == "Reception" ? "active" : "")">
+                        <i class="bi bi-inboxes-fill"></i>
+                        <span>Khu tiếp nhận</span>
+                    </a>
+
+                    <a asp-controller="Warehouse" asp-action="Index" 
+                       class="admin-nav-link @(currentController == "Warehouse" ? "active" : "")">
+                        <i class="bi bi-building-fill"></i>
+                        <span>Khu vực kho</span>
+                    </a>
+
+                </div>
+
+                <!-- RIGHT QUICK SHORTCUT -->
+                <div class="d-none d-lg-flex align-items-center gap-2 ps-3 border-start">
+                    <a asp-controller="Home" asp-action="Index" class="btn btn-sm btn-outline-secondary rounded-pill px-3" target="_blank" title="Xem giao diện người dùng">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> Xem Website
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

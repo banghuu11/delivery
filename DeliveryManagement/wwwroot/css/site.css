@@ -1557,4 +1557,63 @@ body {
     transform: translateY(-6px);
     box-shadow: 0 16px 30px rgba(255, 84, 0, 0.08) !important;
 }
+
+/* ========================================================
+   ADMIN NAVIGATION BAR & PILLS
+   ======================================================== */
+.admin-nav-wrapper {
+    position: relative;
+    z-index: 10;
+}
+
+.admin-nav-tabs {
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* IE/Edge */
+}
+
+.admin-nav-tabs::-webkit-scrollbar {
+    display: none; /* Chrome/Safari */
+}
+
+.admin-nav-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: 12px;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: #475569;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    background: transparent;
+}
+
+.admin-nav-link i {
+    font-size: 1.1rem;
+    color: #94a3b8;
+    transition: color 0.2s ease;
+}
+
+.admin-nav-link:hover {
+    color: var(--orange-main);
+    background: #fff6f2;
+    text-decoration: none;
+}
+
+.admin-nav-link:hover i {
+    color: var(--orange-main);
+}
+
+.admin-nav-link.active {
+    background: linear-gradient(135deg, var(--orange-main) 0%, #ea580c 100%);
+    color: #ffffff !important;
+    box-shadow: 0 4px 12px rgba(255, 84, 0, 0.25);
+}
+
+.admin-nav-link.active i {
+    color: #ffffff !important;
+}
+
 
