@@ -1,4 +1,4 @@
-﻿using DeliveryManagement.Data;
+using DeliveryManagement.Data;
 using DeliveryManagement.Models;
 using DeliveryManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -32,6 +32,36 @@ namespace DeliveryManagement.Controllers
                 .Where(p => p.IsActive)
                 .OrderBy(p => p.TypeName)
                 .ToListAsync();
+        }
+
+        // ==========================================
+        // DANH SÁCH ĐƠN HÀNG CỦA TÔI
+        // ==========================================
+
+        [HttpGet]
+        public async Task<IActionResult> Index(string? status)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            var query = _context.DeliveryOrders
+                .Include(o => o.OrderItems)
+                .Where(o => o.CustomerId == user.Id);
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(o => o.CurrentStatus == status);
+            }
+
+            var orders = await query
+                .OrderByDescending(o => o.CreatedAt)
+                .ToListAsync();
+
+            ViewBag.SelectedStatus = status;
+            return View(orders);
         }
 
         // ==========================================

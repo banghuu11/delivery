@@ -1,90 +1,317 @@
-﻿@{
-    ViewData["Title"] = "Trang chủ";
+@{
+    ViewData["Title"] = "Trang chủ - Hệ Thống Quản Lý Giao Hàng Chuyên Nghiệp";
+    var packageTypes = ViewBag.PackageTypes as List<DeliveryManagement.Models.PackageType> ?? new List<DeliveryManagement.Models.PackageType>();
+    int totalCompleted = ViewBag.TotalCompletedOrders ?? 0;
+    int totalOrders = ViewBag.TotalOrders ?? 0;
 }
 
-<div class="home-page">
+<div class="home-container">
 
-    <section class="home-hero">
+    <!-- HERO SECTION -->
+    <section class="hero-section">
+        <div class="hero-overlay"></div>
+        <div class="container hero-content">
+            <div class="row align-items-center">
+                <div class="col-lg-7 text-start">
+                    <span class="hero-badge animate-fade">
+                        <i class="bi bi-shield-check me-1"></i> DỊCH VỤ VẬN CHUYỂN TOÀN DIỆN
+                    </span>
+                    <h1 class="hero-title">
+                        Giao Hàng <span class="text-gradient">Nhanh Chóng</span> & Quản Lý Đơn Giản
+                    </h1>
+                    <p class="hero-subtitle">
+                        Nền tảng vận chuyển thông minh hỗ trợ kết nối khách hàng, nhân viên tiếp nhận, quản lý kho và tài xế trên cùng một hệ sinh thái đồng bộ 24/7.
+                    </p>
 
-        <div class="home-hero-content">
+                    <div class="hero-actions">
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="Admin" asp-action="Index" class="btn btn-primary-custom btn-lg shadow-sm">
+                                    <i class="bi bi-speedometer2 me-2"></i> Bảng điều khiển Admin
+                                </a>
+                            }
+                            else if (User.IsInRole("ReceptionStaff"))
+                            {
+                                <a asp-controller="Reception" asp-action="Index" class="btn btn-primary-custom btn-lg shadow-sm">
+                                    <i class="bi bi-box-seam me-2"></i> Tiếp nhận đơn hàng
+                                </a>
+                            }
+                            else if (User.IsInRole("WarehouseStaff"))
+                            {
+                                <a asp-controller="Warehouse" asp-action="Index" class="btn btn-primary-custom btn-lg shadow-sm">
+                                    <i class="bi bi-building me-2"></i> Quản lý kho hàng
+                                </a>
+                            }
+                            else
+                            {
+                                <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-primary-custom btn-lg shadow-sm">
+                                    <i class="bi bi-plus-circle me-2"></i> Tạo đơn giao hàng mới
+                                </a>
+                                <a asp-controller="DeliveryOrder" asp-action="Index" class="btn btn-outline-custom btn-lg ms-2">
+                                    <i class="bi bi-list-check me-2"></i> Đơn của tôi
+                                </a>
+                            }
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-primary-custom btn-lg shadow-sm">
+                                <i class="bi bi-box-arrow-in-right me-2"></i> Bắt đầu gửi hàng
+                            </a>
+                            <a asp-controller="Account" asp-action="Register" class="btn btn-outline-custom btn-lg ms-2">
+                                <i class="bi bi-person-plus me-2"></i> Đăng ký tài khoản
+                            </a>
+                        }
+                    </div>
 
-            <span class="home-badge">
-                DELIVERY MANAGEMENT
-            </span>
+                    <!-- THỐNG KÊ NHANH TRÊN HERO -->
+                    <div class="hero-stats row mt-4 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="col-4">
+                            <h4 class="stat-number">@(totalOrders > 0 ? totalOrders : 120)+</h4>
+                            <p class="stat-label">Tổng đơn xử lý</p>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="stat-number">99.8%</h4>
+                            <p class="stat-label">Đúng tiến độ</p>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="stat-number">24/7</h4>
+                            <p class="stat-label">Hỗ trợ realtime</p>
+                        </div>
+                    </div>
+                </div>
 
-            <h1>
-                Quản lý giao hàng
-                <br />
-                đơn giản và thuận tiện
-            </h1>
+                <!-- WIDGET TRA CỨU & TÍNH CƯỚC -->
+                <div class="col-lg-5 mt-4 mt-lg-0">
+                    <div class="card hero-widget-card shadow-lg">
+                        <div class="card-header border-0 bg-transparent pb-0">
+                            <ul class="nav nav-pills nav-fill custom-nav-pills" id="pills-tab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="pills-track-tab" data-bs-toggle="pill" data-bs-target="#pills-track" type="button" role="tab">
+                                        <i class="bi bi-search me-1"></i> Tra cứu đơn
+                                    </button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="pills-calc-tab" data-bs-toggle="pill" data-bs-target="#pills-calc" type="button" role="tab">
+                                        <i class="bi bi-calculator me-1"></i> Ước tính cước
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
 
-            <p>
-                Tạo yêu cầu giao hàng, theo dõi đơn hàng
-                và quản lý thông tin vận chuyển trên một hệ thống.
-            </p>
+                        <div class="card-body pt-3">
+                            <div class="tab-content" id="pills-tabContent">
+                                
+                                <!-- TAB 1: TRA CỨU ĐƠN -->
+                                <div class="tab-pane fade show active" id="pills-track" role="tabpanel">
+                                    <h6 class="fw-bold mb-2 text-dark">Tra cứu hành trình vận chuyển</h6>
+                                    <p class="text-muted small mb-3">Nhập mã vận đơn (VD: DH001, DH002...) để theo dõi chi tiết.</p>
+                                    
+                                    <form asp-controller="Home" asp-action="Track" method="get">
+                                        <div class="input-group mb-3 tracking-input-group">
+                                            <span class="input-group-text bg-light"><i class="bi bi-upc-scan"></i></span>
+                                            <input type="text" name="orderCode" class="form-control" placeholder="Nhập mã đơn hàng..." required />
+                                            <button class="btn btn-primary-custom" type="submit">Tra cứu</button>
+                                        </div>
+                                    </form>
 
-            @if (User.Identity?.IsAuthenticated == true)
-            {
-                @if (User.IsInRole("Customer"))
-                {
-                    <a asp-controller="DeliveryOrder"
-                       asp-action="Create"
-                       class="home-create-btn">
-                        + Tạo yêu cầu giao hàng
-                    </a>
-                }
-            }
-            else
-            {
-                <a asp-controller="Account"
-                   asp-action="Login"
-                   class="home-create-btn">
-                    + Tạo yêu cầu giao hàng
-                </a>
-            }
+                                    <div class="quick-sample-codes">
+                                        <span class="text-muted small">Mẫu tra cứu: </span>
+                                        <a href="/Home/Track?orderCode=DH001" class="badge bg-light text-primary border text-decoration-none me-1">DH001</a>
+                                        <a href="/Home/Track?orderCode=DH002" class="badge bg-light text-primary border text-decoration-none">DH002</a>
+                                    </div>
+                                </div>
 
+                                <!-- TAB 2: ƯỚC TÍNH CƯỚC -->
+                                <div class="tab-pane fade" id="pills-calc" role="tabpanel">
+                                    <h6 class="fw-bold mb-2 text-dark">Bảng tính cước phí dự kiến</h6>
+                                    
+                                    <div class="mb-2">
+                                        <label class="form-label small fw-semibold">Hình thức giao:</label>
+                                        <select id="calcMethod" class="form-select form-select-sm">
+                                            <option value="Thường">Giao tiêu chuẩn (Thường)</option>
+                                            <option value="Nhanh">Giao hỏa tốc (Nhanh)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Khối lượng (kg):</label>
+                                            <input type="number" id="calcWeight" class="form-control form-control-sm" placeholder="VD: 2.5" min="0.1" step="0.1" value="2" />
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small fw-semibold">Khoảng cách (km):</label>
+                                            <input type="number" id="calcDistance" class="form-control form-control-sm" placeholder="VD: 8" min="0.1" step="0.1" value="5" />
+                                        </div>
+                                    </div>
+
+                                    <button type="button" id="btnCalculatePrice" class="btn btn-primary-custom btn-sm w-100 mb-2">
+                                        <i class="bi bi-cash-stack me-1"></i> Tính cước ngay
+                                    </button>
+
+                                    <div id="calcResult" class="alert alert-info py-2 px-3 small d-none mb-0"></div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
         </div>
-
     </section>
 
+    <!-- DỊCH VỤ VẬN CHUYỂN NỔI BẬT -->
+    <section class="py-5 bg-white">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill mb-2">DỊCH VỤ CỦA CHÚNG TÔI</span>
+                <h2 class="fw-bold section-title">Giải Pháp Vận Chuyển Toàn Diện</h2>
+                <p class="text-muted">Đáp ứng mọi nhu cầu gửi hàng từ cá nhân đến doanh nghiệp thương mại điện tử.</p>
+            </div>
 
-    <section class="home-features">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card service-card h-100 border-0 shadow-sm p-4 text-center">
+                        <div class="service-icon mb-3">
+                            <i class="bi bi-lightning-charge-fill"></i>
+                        </div>
+                        <h4 class="fw-bold">Giao Hàng Hỏa Tốc</h4>
+                        <p class="text-muted">
+                            Giao hàng nhanh chóng trong nội thành từ 1 - 3 giờ. Đảm bảo đúng hẹn, ưu tiên phân loại và xuất kho hàng đầu.
+                        </p>
+                    </div>
+                </div>
 
-        <div class="home-feature-card">
+                <div class="col-md-4">
+                    <div class="card service-card h-100 border-0 shadow-sm p-4 text-center">
+                        <div class="service-icon mb-3">
+                            <i class="bi bi-box-seam-fill"></i>
+                        </div>
+                        <h4 class="fw-bold">Giao Hàng Tiêu Chuẩn</h4>
+                        <p class="text-muted">
+                            Giải pháp vận chuyển tiết kiệm chi phí tối đa cho các kiện hàng lớn, thùng hàng, giao hàng liên tỉnh an toàn.
+                        </p>
+                    </div>
+                </div>
 
-            <h3>Tạo đơn nhanh</h3>
-
-            <p>
-                Nhập thông tin người gửi, người nhận
-                và hàng hóa để tạo yêu cầu giao hàng.
-            </p>
-
+                <div class="col-md-4">
+                    <div class="card service-card h-100 border-0 shadow-sm p-4 text-center">
+                        <div class="service-icon mb-3">
+                            <i class="bi bi-geo-alt-fill"></i>
+                        </div>
+                        <h4 class="fw-bold">Theo Dõi & Check-in Trực Tiếp</h4>
+                        <p class="text-muted">
+                            Hệ thống tự động ghi nhận hành trình, check-in qua từng trạm kho và thông báo realtime đến người nhận.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
+    </section>
 
+    <!-- QUY TRÌNH HOẠT ĐỘNG 4 BƯỚC -->
+    <section class="py-5 bg-light">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <span class="badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill mb-2">QUY TRÌNH VẬN HÀNH</span>
+                <h2 class="fw-bold section-title">4 Bước Giao Nhận Dễ Dàng</h2>
+                <p class="text-muted">Mọi quy trình được quản lý minh bạch từ khi tạo đơn đến khi hoàn tất.</p>
+            </div>
 
-        <div class="home-feature-card">
+            <div class="row g-4 text-center">
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box p-4 bg-white rounded-3 shadow-sm h-100">
+                        <div class="step-number">01</div>
+                        <h5 class="fw-bold mt-3">1. Tạo Yêu Cầu</h5>
+                        <p class="text-muted small">Khách hàng nhập thông tin người gửi, người nhận và danh sách kiện hàng.</p>
+                    </div>
+                </div>
 
-            <h3>Theo dõi đơn hàng</h3>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box p-4 bg-white rounded-3 shadow-sm h-100">
+                        <div class="step-number">02</div>
+                        <h5 class="fw-bold mt-3">2. Tiếp Nhận Đơn</h5>
+                        <p class="text-muted small">Nhân viên tiếp nhận kiểm tra hàng, đối chiếu thông tin và in phiếu thu.</p>
+                    </div>
+                </div>
 
-            <p>
-                Theo dõi trạng thái và hành trình
-                vận chuyển của đơn hàng.
-            </p>
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box p-4 bg-white rounded-3 shadow-sm h-100">
+                        <div class="step-number">03</div>
+                        <h5 class="fw-bold mt-3">3. Phân Loại & Điều Phối</h5>
+                        <p class="text-muted small">Kho hàng phân loại theo khu vực, tuyến giao và phân bổ cho tài xế.</p>
+                    </div>
+                </div>
 
+                <div class="col-lg-3 col-md-6">
+                    <div class="step-box p-4 bg-white rounded-3 shadow-sm h-100">
+                        <div class="step-number">04</div>
+                        <h5 class="fw-bold mt-3">4. Giao Hàng & Check-in</h5>
+                        <p class="text-muted small">Tài xế giao tận tay người nhận, chụp ảnh bằng chứng và hoàn tất đơn.</p>
+                    </div>
+                </div>
+            </div>
         </div>
+    </section>
 
-
-        <div class="home-feature-card">
-
-            <h3>Quản lý dễ dàng</h3>
-
-            <p>
-                Các chức năng được phân quyền
-                theo từng vai trò người dùng.
+    <!-- BANNER CTA CUỐI TRANG -->
+    <section class="cta-section text-center text-white py-5">
+        <div class="container py-4">
+            <h2 class="fw-bold mb-3">Sẵn Sàng Trải Nghiệm Dịch Vụ Giao Hàng Tốt Nhất?</h2>
+            <p class="text-white-50 mb-4 mx-auto" style="max-width: 600px;">
+                Đăng ký tài khoản ngay hôm nay để quản lý toàn bộ các đơn hàng một cách nhanh chóng, minh bạch và chính xác.
             </p>
-
+            <div class="d-flex justify-content-center gap-3">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-light btn-lg px-4 fw-bold text-primary">
+                        Tạo Đơn Hàng Ngay
+                    </a>
+                }
+                else
+                {
+                    <a asp-controller="Account" asp-action="Register" class="btn btn-light btn-lg px-4 fw-bold text-primary">
+                        Đăng Ký Miễn Phí
+                    </a>
+                    <a asp-controller="Account" asp-action="Login" class="btn btn-outline-light btn-lg px-4">
+                        Đăng Nhập
+                    </a>
+                }
+            </div>
         </div>
-
     </section>
 
 </div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#btnCalculatePrice').click(function () {
+                var method = $('#calcMethod').val();
+                var weight = parseFloat($('#calcWeight').val());
+                var distance = parseFloat($('#calcDistance').val());
+
+                if (!weight || weight <= 0 || !distance || distance <= 0) {
+                    $('#calcResult').removeClass('d-none alert-success').addClass('alert-danger')
+                        .html('⚠️ Vui lòng nhập khối lượng và khoảng cách lớn hơn 0.');
+                    return;
+                }
+
+                $.get('/Home/EstimatePrice', { deliveryMethod: method, weight: weight, distance: distance }, function (res) {
+                    var $box = $('#calcResult').removeClass('d-none alert-danger alert-success');
+                    if (res.success) {
+                        var formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(res.price);
+                        $box.addClass('alert-success').html(
+                            '<strong>Cước phí ước tính: ' + formattedPrice + '</strong><br/>' +
+                            '<small class="text-muted">Mốc: ' + res.weightRange + ' | ' + res.distanceRange + ' (' + method + ')</small>'
+                        );
+                    } else {
+                        $box.addClass('alert-danger').html('⚠️ ' + (res.message || 'Không tìm thấy mức giá.'));
+                    }
+                });
+            });
+        });
+    </script>
+}

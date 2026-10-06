@@ -1,0 +1,198 @@
+@model DeliveryManagement.Models.DeliveryOrder
+@{
+    ViewData["Title"] = $"Chi tiết đơn hàng {Model.OrderCode} - Admin";
+    var allStatuses = ViewBag.AllStatuses as List<string> ?? new List<string>();
+}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <a asp-action="Orders" class="btn btn-outline-secondary btn-sm mb-2"><i class="bi bi-arrow-left"></i> Quay lại danh sách</a>
+            <h3 class="fw-bold mb-0">Đơn Hàng: <span class="text-primary">@Model.OrderCode</span></h3>
+        </div>
+        <div>
+            @{
+                string badgeClass = Model.CurrentStatus switch
+                {
+                    "Chưa nhận" => "bg-secondary",
+                    "Đã nhận" or "Đã tiếp nhận" => "bg-info text-dark",
+                    "Trong kho" => "bg-primary",
+                    "Đang giao" => "bg-warning text-dark",
+                    "Đã giao" or "Giao thành công" => "bg-success",
+                    "Đã hủy" or "Giao thất bại" => "bg-danger",
+                    _ => "bg-secondary"
+                };
+            }
+            <span class="badge @badgeClass fs-5 px-3 py-2">@Model.CurrentStatus</span>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- CỘT TRÁI: THÔNG TIN CHI TIẾT -->
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-info-circle me-2"></i>Thông Tin Giao Nhận</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <h6 class="fw-bold text-primary"><i class="bi bi-person-up me-1"></i>Người gửi</h6>
+                                <p class="mb-1"><strong>Họ tên:</strong> @Model.SenderName</p>
+                                <p class="mb-1"><strong>Điện thoại:</strong> @Model.SenderPhone</p>
+                                <p class="mb-0"><strong>Địa chỉ gửi:</strong> @Model.SenderAddress</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-3 bg-light rounded-3 h-100">
+                                <h6 class="fw-bold text-success"><i class="bi bi-person-down me-1"></i>Người nhận</h6>
+                                <p class="mb-1"><strong>Họ tên:</strong> @Model.ReceiverName</p>
+                                <p class="mb-1"><strong>Điện thoại:</strong> @Model.ReceiverPhone</p>
+                                <p class="mb-0"><strong>Địa chỉ nhận:</strong> @Model.ReceiverAddress</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4" />
+
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <span class="text-muted small">Hình thức giao:</span>
+                            <div class="fw-bold">@Model.DeliveryMethod</div>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted small">Khoảng cách:</span>
+                            <div class="fw-bold">@Model.DistanceKm km</div>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted small">Tổng tiền cước:</span>
+                            <div class="fw-bold text-success fs-5">@Model.TotalAmount.ToString("N0") đ</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KIỆN HÀNG -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-boxes me-2"></i>Danh Sách Kiện Hàng</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Loại hàng</th>
+                                    <th>Số lượng</th>
+                                    <th>Khối lượng (kg)</th>
+                                    <th>Kích thước</th>
+                                    <th>Đặc tính</th>
+                                    <th>Mô tả</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ int itemIdx = 1; }
+                                @foreach (var item in Model.OrderItems)
+                                {
+                                    <tr>
+                                        <td>@(itemIdx++)</td>
+                                        <td><span class="badge bg-secondary">@(item.PackageType?.TypeName ?? "-")</span></td>
+                                        <td>@item.Quantity</td>
+                                        <td>@item.Weight kg</td>
+                                        <td>@(string.IsNullOrWhiteSpace(item.Size) ? "-" : item.Size)</td>
+                                        <td>
+                                            @if (item.IsFragile) { <span class="badge bg-warning text-dark me-1">Dễ vỡ</span> }
+                                            @if (item.IsValuable) { <span class="badge bg-danger">Giá trị cao</span> }
+                                        </td>
+                                        <td>@(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NHẬT KÝ VẬN CHUYỂN -->
+            @if (Model.OrderStatusHistories != null && Model.OrderStatusHistories.Any())
+            {
+                <div class="card shadow-sm border-0">
+                    <div class="card-header bg-white border-0 py-3">
+                        <h5 class="fw-bold mb-0"><i class="bi bi-clock-history me-2"></i>Lịch Sử Trạng Thái</h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <ul class="list-group list-group-flush">
+                            @foreach (var h in Model.OrderStatusHistories.OrderByDescending(x => x.ChangedAt))
+                            {
+                                <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div>
+                                        <span class="badge bg-primary-subtle text-primary me-2">@h.Status</span>
+                                        <span class="small text-muted">@h.ChangedAt.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                    </div>
+                                    <small class="text-secondary">Bởi: @h.ChangedBy</small>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- CỘT PHẢI: CAN THIỆP ADMIN -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0 border-top border-primary border-4 mb-4">
+                <div class="card-header bg-white border-0 py-3">
+                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-gear-fill me-2"></i>Admin Điều Phối Trạng Thái</h5>
+                </div>
+                <div class="card-body">
+                    <form asp-action="UpdateOrderStatus" method="post">
+                        <input type="hidden" name="id" value="@Model.OrderCode" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Chọn trạng thái mới:</label>
+                            <select name="newStatus" class="form-select">
+                                @foreach (var s in allStatuses)
+                                {
+                                    <option value="@s" selected="@(Model.CurrentStatus == s)">@s</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Ghi chú điều chỉnh:</label>
+                            <textarea name="note" class="form-control" rows="3" placeholder="Lý do cập nhật hoặc ghi chú bổ sung..."></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100" onclick="return confirm('Bạn có chắc muốn cập nhật trạng thái đơn hàng này?');">
+                            <i class="bi bi-check-circle me-1"></i> Cập nhật trạng thái
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="card shadow-sm border-0 p-3 bg-light">
+                <h6 class="fw-bold mb-2">Thông tin hệ thống</h6>
+                <small class="text-muted d-block mb-1">Mã khách hàng: @Model.CustomerId</small>
+                <small class="text-muted d-block mb-1">Thời gian tạo: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</small>
+                @if (Model.ReceivedAt.HasValue)
+                {
+                    <small class="text-muted d-block mb-1">Tiếp nhận lúc: @Model.ReceivedAt.Value.ToString("dd/MM/yyyy HH:mm:ss")</small>
+                }
+            </div>
+        </div>
+
+    </div>
+
+</div>

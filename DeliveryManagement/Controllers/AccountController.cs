@@ -1,4 +1,4 @@
-﻿using DeliveryManagement.Models;
+using DeliveryManagement.Models;
 using DeliveryManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -160,9 +160,22 @@ namespace DeliveryManagement.Controllers
                     return Redirect(returnUrl);
                 }
 
-                return RedirectToAction(
-                    "Index",
-                    "Home");
+                var roles = await _userManager.GetRolesAsync(user);
+
+                if (roles.Contains("Admin"))
+                {
+                    return RedirectToAction("Index", "Admin");
+                }
+                if (roles.Contains("ReceptionStaff"))
+                {
+                    return RedirectToAction("Index", "Reception");
+                }
+                if (roles.Contains("WarehouseStaff"))
+                {
+                    return RedirectToAction("Index", "Warehouse");
+                }
+
+                return RedirectToAction("Index", "Home");
             }
 
             ModelState.AddModelError(

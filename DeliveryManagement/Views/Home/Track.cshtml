@@ -1,0 +1,198 @@
+@model DeliveryManagement.Models.DeliveryOrder?
+@{
+    ViewData["Title"] = "Tra cứu hành trình đơn hàng";
+    string searchCode = ViewBag.SearchCode as string ?? "";
+}
+
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+
+            <!-- THANH TÌM KIẾM MÃ ĐƠN -->
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3"><i class="bi bi-geo-alt-fill text-primary me-2"></i>Tra Cứu Hành Trình Vận Chuyển</h4>
+                    <form asp-controller="Home" asp-action="Track" method="get" class="row g-2">
+                        <div class="col-md-9">
+                            <input type="text" name="orderCode" class="form-control form-control-lg" placeholder="Nhập mã vận đơn (VD: DH001, DH002...)" value="@searchCode" required />
+                        </div>
+                        <div class="col-md-3">
+                            <button type="submit" class="btn btn-primary-custom btn-lg w-100">
+                                <i class="bi bi-search me-1"></i> Tra cứu
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            @if (Model == null)
+            {
+                @if (!string.IsNullOrWhiteSpace(searchCode))
+                {
+                    <div class="alert alert-warning p-4 text-center rounded-3 shadow-sm">
+                        <i class="bi bi-exclamation-triangle-fill fs-2 text-warning d-block mb-2"></i>
+                        <h5>Không tìm thấy đơn hàng nào với mã <strong>@searchCode</strong></h5>
+                        <p class="text-muted mb-0">Vui lòng kiểm tra lại mã vận đơn và thử lại.</p>
+                    </div>
+                }
+            }
+            else
+            {
+                <!-- KẾT QUẢ TRA CỨU -->
+                <div class="card shadow-sm border-0 mb-4">
+                    <div class="card-header bg-white border-0 p-4 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <span class="badge bg-primary fs-6 px-3 py-2">Mã đơn: @Model.OrderCode</span>
+                            <span class="text-muted ms-2 small">Ngày tạo: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                        </div>
+                        <div>
+                            @{
+                                string badgeClass = Model.CurrentStatus switch
+                                {
+                                    "Chưa nhận" => "bg-secondary",
+                                    "Đã nhận" or "Đã tiếp nhận" => "bg-info text-dark",
+                                    "Trong kho" => "bg-primary",
+                                    "Đang giao" => "bg-warning text-dark",
+                                    "Đã giao" or "Giao thành công" => "bg-success",
+                                    "Đã hủy" or "Giao thất bại" => "bg-danger",
+                                    _ => "bg-secondary"
+                                };
+                            }
+                            <span class="badge @badgeClass fs-6 px-3 py-2">@Model.CurrentStatus</span>
+                        </div>
+                    </div>
+
+                    <div class="card-body p-4">
+
+                        <!-- PROGRESS TIMELINE -->
+                        <div class="tracking-progress-wrapper my-4">
+                            @{
+                                var steps = new[] { "Chưa nhận", "Đã tiếp nhận", "Trong kho", "Đang giao", "Đã giao" };
+                                int currentIdx = Model.CurrentStatus switch
+                                {
+                                    "Chưa nhận" or "Chờ tiếp nhận" => 0,
+                                    "Đã nhận" or "Đã tiếp nhận" => 1,
+                                    "Trong kho" or "Đang xử lý" => 2,
+                                    "Đang giao" => 3,
+                                    "Đã giao" or "Giao thành công" => 4,
+                                    "Đã hủy" or "Giao thất bại" => -1,
+                                    _ => 0
+                                };
+                            }
+
+                            @if (currentIdx == -1)
+                            {
+                                <div class="alert alert-danger text-center">
+                                    <i class="bi bi-x-circle-fill me-2"></i> Đơn hàng này đã ở trạng thái <strong>@Model.CurrentStatus</strong>.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="tracking-steps-bar">
+                                    @for (int i = 0; i < steps.Length; i++)
+                                    {
+                                        bool isPassed = i <= currentIdx;
+                                        bool isCurrent = i == currentIdx;
+                                        <div class="tracking-step @(isPassed ? "completed" : "") @(isCurrent ? "active" : "")">
+                                            <div class="step-icon">
+                                                @if (isPassed)
+                                                {
+                                                    <i class="bi bi-check-lg"></i>
+                                                }
+                                                else
+                                                {
+                                                    <span>@(i + 1)</span>
+                                                }
+                                            </div>
+                                            <div class="step-label">@steps[i]</div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                        </div>
+
+                        <!-- THÔNG TIN NGƯỜI GỬI / NHẬN -->
+                        <div class="row g-3 mt-3">
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3 h-100">
+                                    <h6 class="fw-bold text-primary"><i class="bi bi-person-up me-2"></i>Người gửi</h6>
+                                    <p class="mb-1"><strong>Họ tên:</strong> @Model.SenderName</p>
+                                    <p class="mb-1"><strong>Điện thoại:</strong> @Model.SenderPhone</p>
+                                    <p class="mb-0"><strong>Địa chỉ gửi:</strong> @Model.SenderAddress</p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="p-3 bg-light rounded-3 h-100">
+                                    <h6 class="fw-bold text-success"><i class="bi bi-person-down me-2"></i>Người nhận</h6>
+                                    <p class="mb-1"><strong>Họ tên:</strong> @Model.ReceiverName</p>
+                                    <p class="mb-1"><strong>Điện thoại:</strong> @Model.ReceiverPhone</p>
+                                    <p class="mb-0"><strong>Địa chỉ nhận:</strong> @Model.ReceiverAddress</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- DANH SÁCH HÀNG HÓA -->
+                        <div class="mt-4">
+                            <h6 class="fw-bold mb-3"><i class="bi bi-boxes me-2"></i>Chi tiết kiện hàng</h6>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm align-middle">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Loại hàng</th>
+                                            <th>Số lượng</th>
+                                            <th>Khối lượng</th>
+                                            <th>Kích thước</th>
+                                            <th>Đặc tính</th>
+                                            <th>Mô tả</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @{ int itemIdx = 1; }
+                                        @foreach (var item in Model.OrderItems)
+                                        {
+                                            <tr>
+                                                <td>@(itemIdx++)</td>
+                                                <td><span class="badge bg-secondary">@(item.PackageType?.TypeName ?? "Mặc định")</span></td>
+                                                <td>@item.Quantity</td>
+                                                <td>@item.Weight kg</td>
+                                                <td>@(string.IsNullOrWhiteSpace(item.Size) ? "-" : item.Size)</td>
+                                                <td>
+                                                    @if (item.IsFragile) { <span class="badge bg-warning text-dark me-1">Dễ vỡ</span> }
+                                                    @if (item.IsValuable) { <span class="badge bg-danger">Giá trị cao</span> }
+                                                </td>
+                                                <td>@(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)</td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- LỊCH SỬ THAY ĐỔI TRẠNG THÁI -->
+                        @if (Model.OrderStatusHistories != null && Model.OrderStatusHistories.Any())
+                        {
+                            <div class="mt-4">
+                                <h6 class="fw-bold mb-3"><i class="bi bi-clock-history me-2"></i>Nhật ký vận chuyển</h6>
+                                <ul class="list-group list-group-flush border rounded-3">
+                                    @foreach (var history in Model.OrderStatusHistories.OrderByDescending(h => h.ChangedAt))
+                                    {
+                                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <span class="badge bg-primary-subtle text-primary me-2">@history.Status</span>
+                                                <span class="small text-muted">@history.ChangedAt.ToString("dd/MM/yyyy HH:mm:ss")</span>
+                                            </div>
+                                            <span class="small text-secondary">Cập nhật bởi: @(history.ChangedBy ?? "Hệ thống")</span>
+                                        </li>
+                                    }
+                                </ul>
+                            </div>
+                        }
+
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>
