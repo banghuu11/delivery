@@ -448,5 +448,276 @@ namespace DeliveryManagement.Controllers
             TempData["SuccessMessage"] = $"Đã cập nhật trạng thái đơn hàng {order.OrderCode} thành '{newStatus}'.";
             return RedirectToAction(nameof(OrderDetails), new { id = order.OrderCode });
         }
+
+        // ==========================================
+        // 5. THÊM, SỬA, XÓA ĐƠN HÀNG (CRUD ORDERS)
+        // ==========================================
+
+        private async Task LoadOrderDropdownsAsync()
+        {
+            var customers = await _userManager.GetUsersInRoleAsync("Customer");
+            if (!customers.Any())
+            {
+                customers = await _userManager.Users.ToListAsync();
+            }
+            ViewBag.Customers = customers;
+
+            var deliveryStaffs = await _userManager.GetUsersInRoleAsync("DeliveryStaff");
+            ViewBag.DeliveryStaffs = deliveryStaffs;
+
+            ViewBag.PackageTypes = await _context.PackageTypes.Where(p => p.IsActive).ToListAsync();
+
+            ViewBag.AllStatuses = new List<string>
+            {
+                "Chờ tiếp nhận", "Đã tiếp nhận", "Trong kho", "Đang xử lý", "Đang giao", "Giao thành công", "Đã hủy", "Giao thất bại"
+            };
+
+            ViewBag.DeliveryMethods = new List<string>
+            {
+                "Giao tiêu chuẩn", "Giao hỏa tốc", "Giao tiết kiệm", "Giao siêu tốc 2h"
+            };
+
+            ViewBag.PaymentMethods = new List<string>
+            {
+                "Tiền mặt khi nhận hàng (COD)", "Chuyển khoản / VNPAY", "Đã thanh toán trước"
+            };
+
+            ViewBag.PaymentStatuses = new List<string>
+            {
+                "Chưa thanh toán", "Đã thanh toán", "Hoàn tiền"
+            };
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> CreateOrder()
+        {
+            await LoadOrderDropdownsAsync();
+
+            var currentAdmin = await _userManager.GetUserAsync(User);
+            var model = new AdminCreateOrderViewModel
+            {
+                CustomerId = currentAdmin?.Id ?? string.Empty,
+                SenderName = currentAdmin?.FullName ?? "Quản trị viên",
+                SenderPhone = currentAdmin?.PhoneNumber ?? "19008888",
+                SenderAddress = "TP. Hồ Chí Minh",
+                DistanceKm = 5,
+                TotalAmount = 30000,
+                Weight = 1.0m,
+                Quantity = 1,
+                CurrentStatus = "Chờ tiếp nhận"
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateOrder(AdminCreateOrderViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                await LoadOrderDropdownsAsync();
+                return View(model);
+            }
+
+            // Sinh mã đơn hàng
+            string orderCode = "TD" + DateTime.Now.ToString("yyMMdd") + new Random().Next(1000, 9999);
+            while (await _context.DeliveryOrders.AnyAsync(o => o.OrderCode == orderCode))
+            {
+                orderCode = "TD" + DateTime.Now.ToString("yyMMdd") + new Random().Next(1000, 9999);
+            }
+
+            var order = new DeliveryOrder
+            {
+                OrderCode = orderCode,
+                CustomerId = model.CustomerId,
+                SenderName = model.SenderName,
+                SenderPhone = model.SenderPhone,
+                SenderAddress = model.SenderAddress,
+                ReceiverName = model.ReceiverName,
+                ReceiverPhone = model.ReceiverPhone,
+                ReceiverAddress = model.ReceiverAddress,
+                DeliveryMethod = model.DeliveryMethod,
+                DistanceKm = model.DistanceKm,
+                PaymentMethod = model.PaymentMethod,
+                PaymentStatus = model.PaymentStatus,
+                PaymentAmount = model.TotalAmount,
+                PaymentTime = model.PaymentStatus == "Đã thanh toán" ? DateTime.Now : null,
+                TotalAmount = model.TotalAmount,
+                CurrentStatus = model.CurrentStatus,
+                DeliveryStaffId = model.DeliveryStaffId,
+                DeliveryNote = model.DeliveryNote,
+                CreatedAt = DateTime.Now
+            };
+
+            var item = new OrderItem
+            {
+                OrderCode = orderCode,
+                PackageTypeId = model.PackageTypeId,
+                Weight = model.Weight,
+                Quantity = model.Quantity,
+                Description = model.Description ?? "Hàng hóa vận chuyển",
+                IsFragile = model.IsFragile,
+                IsValuable = model.IsValuable
+            };
+
+            order.OrderItems.Add(item);
+
+            var history = new OrderStatusHistory
+            {
+                OrderCode = orderCode,
+                Status = model.CurrentStatus,
+                ChangedBy = User.Identity?.Name ?? "Admin",
+                ChangedAt = DateTime.Now
+            };
+
+            order.OrderStatusHistories.Add(history);
+
+            _context.DeliveryOrders.Add(order);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Đã tạo mới đơn hàng #{orderCode} thành công.";
+            return RedirectToAction(nameof(Orders));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> EditOrder(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return NotFound();
+            }
+
+            var order = await _context.DeliveryOrders
+                .Include(o => o.OrderItems)
+                .FirstOrDefaultAsync(o => o.OrderCode == id);
+
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            await LoadOrderDropdownsAsync();
+
+            var model = new AdminEditOrderViewModel
+            {
+                OrderCode = order.OrderCode,
+                CustomerId = order.CustomerId,
+                SenderName = order.SenderName,
+                SenderPhone = order.SenderPhone,
+                SenderAddress = order.SenderAddress,
+                ReceiverName = order.ReceiverName,
+                ReceiverPhone = order.ReceiverPhone,
+                ReceiverAddress = order.ReceiverAddress,
+                DeliveryMethod = order.DeliveryMethod,
+                DistanceKm = order.DistanceKm,
+                PaymentMethod = order.PaymentMethod,
+                PaymentStatus = order.PaymentStatus,
+                TotalAmount = order.TotalAmount,
+                CurrentStatus = order.CurrentStatus,
+                DeliveryStaffId = order.DeliveryStaffId,
+                DeliveryNote = order.DeliveryNote
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditOrder(AdminEditOrderViewModel model)
+        {
+            if (!ModelState.IsValid)
+            {
+                await LoadOrderDropdownsAsync();
+                return View(model);
+            }
+
+            var order = await _context.DeliveryOrders.FirstOrDefaultAsync(o => o.OrderCode == model.OrderCode);
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            bool statusChanged = order.CurrentStatus != model.CurrentStatus;
+
+            order.CustomerId = model.CustomerId;
+            order.SenderName = model.SenderName;
+            order.SenderPhone = model.SenderPhone;
+            order.SenderAddress = model.SenderAddress;
+            order.ReceiverName = model.ReceiverName;
+            order.ReceiverPhone = model.ReceiverPhone;
+            order.ReceiverAddress = model.ReceiverAddress;
+            order.DeliveryMethod = model.DeliveryMethod;
+            order.DistanceKm = model.DistanceKm;
+            order.PaymentMethod = model.PaymentMethod;
+            order.PaymentStatus = model.PaymentStatus;
+            order.TotalAmount = model.TotalAmount;
+            order.CurrentStatus = model.CurrentStatus;
+            order.DeliveryStaffId = model.DeliveryStaffId;
+            order.DeliveryNote = model.DeliveryNote;
+
+            if (model.PaymentStatus == "Đã thanh toán" && order.PaymentTime == null)
+            {
+                order.PaymentTime = DateTime.Now;
+                order.PaymentAmount = model.TotalAmount;
+            }
+
+            if (statusChanged)
+            {
+                var history = new OrderStatusHistory
+                {
+                    OrderCode = order.OrderCode,
+                    Status = model.CurrentStatus,
+                    ChangedBy = User.Identity?.Name ?? "Admin",
+                    ChangedAt = DateTime.Now
+                };
+                _context.OrderStatusHistories.Add(history);
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Đã cập nhật thông tin đơn hàng #{order.OrderCode} thành công.";
+            return RedirectToAction(nameof(Orders));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteOrder(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return NotFound();
+            }
+
+            var order = await _context.DeliveryOrders
+                .Include(o => o.OrderItems)
+                .Include(o => o.OrderStatusHistories)
+                .FirstOrDefaultAsync(o => o.OrderCode == id);
+
+            if (order == null)
+            {
+                return NotFound();
+            }
+
+            // Xóa các bản ghi liên quan (CheckIns, Reviews nếu có)
+            var checkIns = await _context.CheckIns.Where(c => c.OrderCode == id).ToListAsync();
+            if (checkIns.Any())
+            {
+                _context.CheckIns.RemoveRange(checkIns);
+            }
+
+            var reviews = await _context.Reviews.Where(r => r.OrderCode == id).ToListAsync();
+            if (reviews.Any())
+            {
+                _context.Reviews.RemoveRange(reviews);
+            }
+
+            _context.DeliveryOrders.Remove(order);
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn đơn hàng #{id} khỏi hệ thống.";
+            return RedirectToAction(nameof(Orders));
+        }
     }
 }
+

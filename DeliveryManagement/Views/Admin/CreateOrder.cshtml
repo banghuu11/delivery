@@ -1,0 +1,262 @@
+@model DeliveryManagement.Models.ViewModels.AdminCreateOrderViewModel
+@{
+    ViewData["Title"] = "Thêm đơn hàng mới - Admin";
+    var customers = ViewBag.Customers as List<DeliveryManagement.Models.ApplicationUser> ?? new();
+    var deliveryStaffs = ViewBag.DeliveryStaffs as List<DeliveryManagement.Models.ApplicationUser> ?? new();
+    var packageTypes = ViewBag.PackageTypes as List<DeliveryManagement.Models.PackageType> ?? new();
+    var allStatuses = ViewBag.AllStatuses as List<string> ?? new();
+    var deliveryMethods = ViewBag.DeliveryMethods as List<string> ?? new();
+    var paymentMethods = ViewBag.PaymentMethods as List<string> ?? new();
+    var paymentStatuses = ViewBag.PaymentStatuses as List<string> ?? new();
+}
+
+<div class="container py-4">
+
+    <!-- BREADCRUMB & HEADER -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <a asp-action="Orders" class="btn btn-outline-secondary btn-sm mb-2">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách đơn
+            </a>
+            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-plus-circle-fill text-orange me-2"></i>Tạo Đơn Hàng Mới (Admin)</h2>
+            <p class="text-muted mb-0 small">Nhập thông tin tạo đơn hàng trực tiếp cho khách hàng và phân công nhân viên.</p>
+        </div>
+    </div>
+
+    <form asp-action="CreateOrder" method="post" class="needs-validation">
+        @Html.AntiForgeryToken()
+
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4" role="alert"></div>
+
+        <div class="row g-4">
+
+            <!-- CỘT TRÁI: NGƯỜI GỬI & NGƯỜI NHẬN -->
+            <div class="col-lg-6">
+
+                <!-- CHỌN KHÁCH HÀNG SỞ HỮU ĐƠN -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-badge text-primary me-2"></i>Khách Hàng Đặt Đơn</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label asp-for="CustomerId" class="form-label fw-semibold">Chọn tài khoản khách hàng <span class="text-danger">*</span></label>
+                            <select asp-for="CustomerId" class="form-select rounded-3 py-2">
+                                <option value="">-- Chọn khách hàng --</option>
+                                @foreach (var c in customers)
+                                {
+                                    <option value="@c.Id">@c.FullName (@c.Email) - @c.PhoneNumber</option>
+                                }
+                            </select>
+                            <span asp-validation-for="CustomerId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- THÔNG TIN NGƯỜI GỬI -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-geo-alt-fill text-orange me-2"></i>Thông Tin Người Gửi</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="SenderName" class="form-label fw-semibold">Họ tên người gửi <span class="text-danger">*</span></label>
+                                <input asp-for="SenderName" class="form-control rounded-3 py-2" placeholder="VD: Nguyễn Văn A" />
+                                <span asp-validation-for="SenderName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="SenderPhone" class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                                <input asp-for="SenderPhone" class="form-control rounded-3 py-2" placeholder="0901234567" />
+                                <span asp-validation-for="SenderPhone" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="SenderAddress" class="form-label fw-semibold">Địa chỉ lấy hàng <span class="text-danger">*</span></label>
+                                <textarea asp-for="SenderAddress" class="form-control rounded-3" rows="2" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"></textarea>
+                                <span asp-validation-for="SenderAddress" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- THÔNG TIN NGƯỜI NHẬN -->
+                <div class="card border-0 shadow-sm rounded-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-pin-map-fill text-danger me-2"></i>Thông Tin Người Nhận</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="ReceiverName" class="form-label fw-semibold">Họ tên người nhận <span class="text-danger">*</span></label>
+                                <input asp-for="ReceiverName" class="form-control rounded-3 py-2" placeholder="VD: Trần Thị B" />
+                                <span asp-validation-for="ReceiverName" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="ReceiverPhone" class="form-label fw-semibold">Số điện thoại <span class="text-danger">*</span></label>
+                                <input asp-for="ReceiverPhone" class="form-control rounded-3 py-2" placeholder="0987654321" />
+                                <span asp-validation-for="ReceiverPhone" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="ReceiverAddress" class="form-label fw-semibold">Địa chỉ giao hàng <span class="text-danger">*</span></label>
+                                <textarea asp-for="ReceiverAddress" class="form-control rounded-3" rows="2" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh/thành"></textarea>
+                                <span asp-validation-for="ReceiverAddress" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- CỘT PHẢI: HÀNG HÓA & THANH TOÁN -->
+            <div class="col-lg-6">
+
+                <!-- THÔNG TIN KIỆN HÀNG -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam-fill text-primary me-2"></i>Thông Tin Hàng Hóa</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="PackageTypeId" class="form-label fw-semibold">Loại hàng hóa <span class="text-danger">*</span></label>
+                                <select asp-for="PackageTypeId" class="form-select rounded-3 py-2">
+                                    <option value="">-- Chọn loại hàng --</option>
+                                    @foreach (var pt in packageTypes)
+                                    {
+                                        <option value="@pt.PackageTypeId">@pt.TypeName</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="PackageTypeId" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Weight" class="form-label fw-semibold">Khối lượng (kg)</label>
+                                <input asp-for="Weight" type="number" step="0.1" class="form-control rounded-3 py-2" />
+                                <span asp-validation-for="Weight" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-3">
+                                <label asp-for="Quantity" class="form-label fw-semibold">Số lượng</label>
+                                <input asp-for="Quantity" type="number" min="1" class="form-control rounded-3 py-2" />
+                                <span asp-validation-for="Quantity" class="text-danger small"></span>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="Description" class="form-label fw-semibold">Mô tả hàng hóa</label>
+                                <input asp-for="Description" class="form-control rounded-3 py-2" placeholder="Quần áo, tài liệu, linh kiện điện tử..." />
+                            </div>
+                            <div class="col-12 d-flex gap-4">
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsFragile" class="form-check-input" type="checkbox" id="fragileCheck">
+                                    <label class="form-check-label fw-semibold" for="fragileCheck">Hàng dễ vỡ</label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input asp-for="IsValuable" class="form-check-input" type="checkbox" id="valuableCheck">
+                                    <label class="form-check-label fw-semibold" for="valuableCheck">Hàng giá trị cao</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CẤU HÌNH GIAO HÀNG & PHÍ CƯỚC -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-cash-stack text-success me-2"></i>Dịch Vụ & Thanh Toán</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="DeliveryMethod" class="form-label fw-semibold">Hình thức giao hàng</label>
+                                <select asp-for="DeliveryMethod" class="form-select rounded-3 py-2">
+                                    @foreach (var dm in deliveryMethods)
+                                    {
+                                        <option value="@dm">@dm</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="DistanceKm" class="form-label fw-semibold">Khoảng cách ước tính (km)</label>
+                                <input asp-for="DistanceKm" type="number" step="0.1" class="form-control rounded-3 py-2" />
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="PaymentMethod" class="form-label fw-semibold">Phương thức thanh toán</label>
+                                <select asp-for="PaymentMethod" class="form-select rounded-3 py-2">
+                                    @foreach (var pm in paymentMethods)
+                                    {
+                                        <option value="@pm">@pm</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="PaymentStatus" class="form-label fw-semibold">Trạng thái thanh toán</label>
+                                <select asp-for="PaymentStatus" class="form-select rounded-3 py-2">
+                                    @foreach (var ps in paymentStatuses)
+                                    {
+                                        <option value="@ps">@ps</option>
+                                    }
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label asp-for="TotalAmount" class="form-label fw-semibold">Tổng cước phí thu (VNĐ) <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <input asp-for="TotalAmount" type="number" step="1000" class="form-control form-control-lg rounded-start-3 text-primary fw-bold" />
+                                    <span class="input-group-text rounded-end-3 bg-light fw-bold">VNĐ</span>
+                                </div>
+                                <span asp-validation-for="TotalAmount" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PHÂN CÔNG & TRẠNG THÁI -->
+                <div class="card border-0 shadow-sm rounded-4 mb-4">
+                    <div class="card-header bg-white border-0 pt-4 px-4 pb-0">
+                        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-truck text-info me-2"></i>Trạng Thái & Phân Công</h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label asp-for="CurrentStatus" class="form-label fw-semibold">Trạng thái đơn hàng ban đầu</label>
+                                <select asp-for="CurrentStatus" class="form-select rounded-3 py-2">
+                                    @foreach (var st in allStatuses)
+                                    {
+                                        <option value="@st">@st</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="DeliveryStaffId" class="form-label fw-semibold">Phân công Shipper</label>
+                                <select asp-for="DeliveryStaffId" class="form-select rounded-3 py-2">
+                                    <option value="">-- Chưa chỉ định --</option>
+                                    @foreach (var ds in deliveryStaffs)
+                                    {
+                                        <option value="@ds.Id">@ds.FullName (@ds.PhoneNumber)</option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label asp-for="DeliveryNote" class="form-label fw-semibold">Ghi chú giao hàng</label>
+                                <input asp-for="DeliveryNote" class="form-control rounded-3 py-2" placeholder="Giao giờ hành chính, gọi trước 15p..." />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ACTION BUTTONS -->
+                <div class="d-flex gap-2 justify-content-end mb-5">
+                    <a asp-action="Orders" class="btn btn-outline-secondary rounded-pill px-4 py-2 fw-semibold">Hủy bỏ</a>
+                    <button type="submit" class="btn btn-tocdo-orange rounded-pill px-5 py-2 fw-bold shadow">
+                        <i class="bi bi-check-circle-fill me-2"></i> Lưu & Tạo Đơn Hàng
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </form>
+
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

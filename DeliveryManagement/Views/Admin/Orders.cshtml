@@ -11,7 +11,12 @@
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
         <div>
             <h2 class="fw-bold mb-1"><i class="bi bi-card-checklist text-primary me-2"></i>Quản Lý Toàn Bộ Đơn Hàng</h2>
-            <p class="text-muted mb-0">Theo dõi, lọc và can thiệp cập nhật trạng thái mọi đơn hàng trong hệ thống.</p>
+            <p class="text-muted mb-0">Theo dõi, tạo mới, chỉnh sửa và quản lý vòng đời mọi đơn hàng trong hệ thống.</p>
+        </div>
+        <div>
+            <a asp-action="CreateOrder" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                <i class="bi bi-plus-lg me-1"></i> Tạo Đơn Hàng Mới
+            </a>
         </div>
     </div>
 
@@ -24,17 +29,17 @@
     }
 
     <!-- BỘ LỌC TÌM KIẾM -->
-    <div class="card shadow-sm border-0 mb-4">
+    <div class="card shadow-sm border-0 mb-4 rounded-4">
         <div class="card-body p-3">
             <form method="get" class="row g-2 align-items-center">
                 <div class="col-md-5">
                     <div class="input-group">
-                        <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
-                        <input type="text" name="search" class="form-control" placeholder="Tìm theo mã đơn, người gửi, người nhận, SĐT..." value="@search" />
+                        <span class="input-group-text bg-light border-0"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" class="form-control border-0 bg-light" placeholder="Tìm theo mã đơn, người gửi, người nhận, SĐT..." value="@search" />
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <select name="status" class="form-select">
+                    <select name="status" class="form-select border-0 bg-light">
                         <option value="">-- Tất cả trạng thái --</option>
                         @foreach (var s in allStatuses)
                         {
@@ -43,15 +48,15 @@
                     </select>
                 </div>
                 <div class="col-md-3 d-flex gap-2">
-                    <button type="submit" class="btn btn-primary-custom flex-grow-1">Lọc</button>
-                    <a asp-action="Orders" class="btn btn-outline-secondary">Đặt lại</a>
+                    <button type="submit" class="btn btn-primary rounded-pill px-4 flex-grow-1">Lọc</button>
+                    <a asp-action="Orders" class="btn btn-outline-secondary rounded-pill px-3">Đặt lại</a>
                 </div>
             </form>
         </div>
     </div>
 
     <!-- BẢNG ĐƠN HÀNG -->
-    <div class="card shadow-sm border-0">
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
@@ -64,14 +69,17 @@
                             <th>Tổng cước</th>
                             <th>Ngày tạo</th>
                             <th>Trạng thái</th>
-                            <th class="text-end">Chi tiết</th>
+                            <th class="text-end">Thao tác</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if (Model == null || !Model.Any())
                         {
                             <tr>
-                                <td colspan="8" class="text-center py-4 text-muted">Không tìm thấy đơn hàng nào phù hợp.</td>
+                                <td colspan="8" class="text-center py-5 text-muted">
+                                    <i class="bi bi-inbox fs-1 d-block mb-2 text-secondary"></i>
+                                    Không tìm thấy đơn hàng nào phù hợp.
+                                </td>
                             </tr>
                         }
                         else
@@ -81,19 +89,21 @@
                                 <tr>
                                     <td>
                                         <a asp-action="OrderDetails" asp-route-id="@order.OrderCode" class="fw-bold text-primary text-decoration-none">
-                                            @order.OrderCode
+                                            #@order.OrderCode
                                         </a>
                                     </td>
                                     <td>
                                         <div class="fw-semibold">@order.SenderName</div>
-                                        <small class="text-muted">@order.SenderPhone</small>
+                                        <small class="text-muted"><i class="bi bi-telephone me-1"></i>@order.SenderPhone</small>
                                     </td>
                                     <td>
                                         <div>@order.ReceiverName</div>
-                                        <small class="text-muted">@order.ReceiverPhone</small>
+                                        <small class="text-muted"><i class="bi bi-telephone me-1"></i>@order.ReceiverPhone</small>
                                     </td>
                                     <td>
-                                        <span class="badge @(order.DeliveryMethod == "Nhanh" ? "bg-warning text-dark" : "bg-light text-dark border")">@order.DeliveryMethod</span>
+                                        <span class="badge @(order.DeliveryMethod.Contains("hỏa tốc", StringComparison.OrdinalIgnoreCase) ? "bg-warning text-dark" : "bg-light text-dark border")">
+                                            @order.DeliveryMethod
+                                        </span>
                                         <small class="text-muted d-block">@order.DistanceKm km</small>
                                     </td>
                                     <td class="fw-bold text-success">@order.TotalAmount.ToString("N0") đ</td>
@@ -103,20 +113,60 @@
                                             string badgeClass = order.CurrentStatus switch
                                             {
                                                 "Chưa nhận" => "bg-secondary",
+                                                "Chờ tiếp nhận" => "bg-warning text-dark",
                                                 "Đã nhận" or "Đã tiếp nhận" => "bg-info text-dark",
                                                 "Trong kho" => "bg-primary",
-                                                "Đang giao" => "bg-warning text-dark",
+                                                "Đang giao" => "bg-orange text-white",
                                                 "Đã giao" or "Giao thành công" => "bg-success",
                                                 "Đã hủy" or "Giao thất bại" => "bg-danger",
                                                 _ => "bg-secondary"
                                             };
                                         }
-                                        <span class="badge @badgeClass">@order.CurrentStatus</span>
+                                        <span class="badge @badgeClass rounded-pill px-3 py-1">@order.CurrentStatus</span>
                                     </td>
                                     <td class="text-end">
-                                        <a asp-action="OrderDetails" asp-route-id="@order.OrderCode" class="btn btn-sm btn-outline-primary" title="Xem chi tiết & Can thiệp">
-                                            <i class="bi bi-eye-fill"></i>
-                                        </a>
+                                        <div class="btn-group btn-group-sm">
+                                            <a asp-action="OrderDetails" asp-route-id="@order.OrderCode" class="btn btn-outline-primary" title="Xem chi tiết">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </a>
+                                            <a asp-action="EditOrder" asp-route-id="@order.OrderCode" class="btn btn-outline-secondary" title="Chỉnh sửa đơn hàng">
+                                                <i class="bi bi-pencil-square"></i>
+                                            </a>
+                                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteOrderModal-@order.OrderCode" title="Xóa đơn hàng">
+                                                <i class="bi bi-trash-fill"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- MODAL XÓA ĐƠN HÀNG -->
+                                        <div class="modal fade" id="deleteOrderModal-@order.OrderCode" tabindex="-1" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered text-start">
+                                                <div class="modal-content border-0 shadow rounded-4">
+                                                    <div class="modal-header border-0 pb-0">
+                                                        <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác nhận xóa đơn hàng</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body py-4">
+                                                        <p class="mb-2">Bạn có chắc chắn muốn xóa vĩnh viễn đơn hàng <strong class="text-dark">#@order.OrderCode</strong>?</p>
+                                                        <div class="bg-light p-3 rounded-3 small text-muted">
+                                                            <div><strong>Người gửi:</strong> @order.SenderName (@order.SenderPhone)</div>
+                                                            <div><strong>Người nhận:</strong> @order.ReceiverName (@order.ReceiverPhone)</div>
+                                                            <div><strong>Tổng tiền:</strong> @order.TotalAmount.ToString("N0") đ</div>
+                                                        </div>
+                                                        <small class="text-danger mt-2 d-block"><i class="bi bi-info-circle me-1"></i> Hành động này không thể khôi phục!</small>
+                                                    </div>
+                                                    <div class="modal-footer border-0 pt-0">
+                                                        <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                                                        <form asp-action="DeleteOrder" asp-route-id="@order.OrderCode" method="post" class="d-inline">
+                                                            @Html.AntiForgeryToken()
+                                                            <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">
+                                                                Xóa Vĩnh Viễn
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
                                     </td>
                                 </tr>
                             }
@@ -128,3 +178,4 @@
     </div>
 
 </div>
+
