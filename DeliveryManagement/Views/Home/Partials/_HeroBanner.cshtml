@@ -1,3 +1,4 @@
+@model DeliveryManagement.Models.WebsiteSetting
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
 }
@@ -6,14 +7,13 @@
     <div class="container position-relative">
         <div class="row align-items-center min-vh-hero">
             
-            <!-- CỘT TRÁI: TEXT & CTA -->
+            <!-- CỘT TRÁI: TIÊU ĐỀ & SLOGAN ĐỘNG TỪ DB -->
             <div class="col-lg-6 hero-text-col">
-                <h1 class="tocdo-hero-title">
-                    GIAO HÀNG HỎA TỐC,<br />
-                    NHẬN TRONG NGÀY
+                <h1 class="tocdo-hero-title text-uppercase">
+                    @(string.IsNullOrWhiteSpace(Model?.Slogan) ? "GIAO HÀNG HỎA TỐC, NHẬN TRONG NGÀY" : Model.Slogan)
                 </h1>
                 <p class="tocdo-hero-subtitle">
-                    An Toàn - Nhanh Chóng - Tin Cậy
+                    @(string.IsNullOrWhiteSpace(Model?.SubSlogan) ? "An Toàn - Nhanh Chóng - Tin Cậy" : Model.SubSlogan)
                 </p>
 
                 <div class="tocdo-hero-actions">
@@ -53,10 +53,10 @@
                 </div>
             </div>
 
-            <!-- CỘT PHẢI: HÌNH ẢNH SHIPPER TỐC ĐỘ -->
+            <!-- CỘT PHẢI: HÌNH ẢNH BANNER ĐỘNG TỪ DB -->
             <div class="col-lg-6 hero-img-col position-relative text-center">
                 <div class="hero-image-wrapper">
-                    <img src="~/images/hero_courier.jpg" alt="Shipper Giao Hàng Hỏa Tốc" class="img-fluid rounded-4 shadow-lg hero-banner-img" />
+                    <img src="@(string.IsNullOrWhiteSpace(Model?.HeroBannerImageUrl) ? "/images/hero_courier.jpg" : Model.HeroBannerImageUrl)" alt="Shipper Giao Hàng Hỏa Tốc" class="img-fluid rounded-4 shadow-lg hero-banner-img" />
                     <div class="speed-trail-overlay"></div>
                 </div>
             </div>

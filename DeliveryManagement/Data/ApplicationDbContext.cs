@@ -1,4 +1,4 @@
-﻿using DeliveryManagement.Models;
+using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
@@ -32,6 +32,8 @@ namespace DeliveryManagement.Data
         public DbSet<Message> Messages { get; set; }
 
         public DbSet<PriceTable> PriceTables { get; set; }
+        public DbSet<HomeFeature> HomeFeatures { get; set; }
+        public DbSet<WebsiteSetting> WebsiteSettings { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

@@ -1,3 +1,6 @@
+@model DeliveryManagement.Models.ViewModels.HomeViewModel
+
+<!-- DỊCH VỤ NỔI BẬT LẤY TỪ DB -->
 <section id="services" class="py-5 bg-white">
     <div class="container py-4">
         
@@ -8,44 +11,56 @@
         </div>
 
         <div class="row g-4">
-            
-            <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center service-hover-card">
-                    <div class="service-icon-circle bg-orange-soft text-orange mx-auto mb-3">
-                        <i class="bi bi-lightning-charge-fill fs-2"></i>
+            @if (Model.MainServices != null && Model.MainServices.Any())
+            {
+                @foreach (var svc in Model.MainServices)
+                {
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center service-hover-card">
+                            <div class="service-icon-circle bg-orange-soft text-orange mx-auto mb-3">
+                                <i class="bi @svc.IconClass fs-2"></i>
+                            </div>
+                            <h4 class="fw-bold mb-2">@svc.Title</h4>
+                            <p class="text-muted small mb-0">@svc.Description</p>
+                        </div>
                     </div>
-                    <h4 class="fw-bold mb-2">Giao Hỏa Tốc 2H</h4>
-                    <p class="text-muted small mb-0">
-                        Cam kết giao trong vòng 1-2 giờ tại nội thành. Lộ trình giao thẳng, không lưu kho trung gian.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center service-hover-card">
-                    <div class="service-icon-circle bg-orange-soft text-orange mx-auto mb-3">
-                        <i class="bi bi-shield-check fs-2"></i>
-                    </div>
-                    <h4 class="fw-bold mb-2">Đóng Gói & Bảo Hiểm 100%</h4>
-                    <p class="text-muted small mb-0">
-                        Bảo hiểm hàng hóa giá trị cao, quy trình phân loại hàng dễ vỡ nghiêm ngặt và đền bù minh bạch.
-                    </p>
-                </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card h-100 border-0 shadow-sm rounded-4 p-4 text-center service-hover-card">
-                    <div class="service-icon-circle bg-orange-soft text-orange mx-auto mb-3">
-                        <i class="bi bi-clock-history fs-2"></i>
-                    </div>
-                    <h4 class="fw-bold mb-2">Theo Dõi Realtime 24/7</h4>
-                    <p class="text-muted small mb-0">
-                        Check-in tự động tại từng trạm trung chuyển, hỗ trợ khách hàng và người nhận qua hotline & tin nhắn.
-                    </p>
-                </div>
-            </div>
-
+                }
+            }
         </div>
 
     </div>
 </section>
+
+<!-- DANH SÁCH BƯU CỤC & TRẠM TRUNG CHUYỂN TỪ DB (MAPSTATIONS) -->
+@if (Model.Stations != null && Model.Stations.Any())
+{
+    <section class="py-5 bg-light">
+        <div class="container py-4">
+            <div class="text-center mb-5">
+                <span class="badge bg-orange-soft text-orange fw-bold px-3 py-2 rounded-pill mb-2 text-uppercase">Mạng lưới bưu cục</span>
+                <h2 class="fw-bold section-heading">Hệ Thống Trạm & Bưu Cục Tiếp Nhận</h2>
+                <p class="text-muted">Mạng lưới phủ sóng rộng khắp, hỗ trợ lấy hàng và gửi hàng tận nơi.</p>
+            </div>
+
+            <div class="row g-3">
+                @foreach (var station in Model.Stations)
+                {
+                    <div class="col-lg-4 col-md-6">
+                        <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
+                            <div class="d-flex align-items-start">
+                                <div class="badge bg-orange text-white p-2 rounded-3 me-3 mt-1">
+                                    <i class="bi bi-geo-alt-fill fs-5"></i>
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-1 text-dark">@station.StationName</h6>
+                                    <p class="text-muted small mb-2">@station.Address</p>
+                                    <span class="badge bg-success-subtle text-success border border-success small">Đang hoạt động</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}

@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using DeliveryManagement.Data;
 using DeliveryManagement.Models;
+using DeliveryManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -21,17 +22,67 @@ namespace DeliveryManagement.Controllers
 
         public async Task<IActionResult> Index()
         {
-            ViewBag.PackageTypes = await _context.PackageTypes
+            // 1. Lấy cài đặt website từ DB
+            var setting = await _context.WebsiteSettings.FirstOrDefaultAsync() ?? new WebsiteSetting();
+
+            // 2. Lấy 3 mục Dock tính năng từ DB
+            var dockFeatures = await _context.HomeFeatures
+                .Where(f => f.IsActive && f.SectionType == "Dock")
+                .OrderBy(f => f.DisplayOrder)
+                .ToListAsync();
+
+            // 3. Lấy danh sách dịch vụ chính từ DB
+            var mainServices = await _context.HomeFeatures
+                .Where(f => f.IsActive && f.SectionType == "Service")
+                .OrderBy(f => f.DisplayOrder)
+                .ToListAsync();
+
+            // 4. Lấy danh mục loại hàng hóa từ DB
+            var packageTypes = await _context.PackageTypes
                 .Where(p => p.IsActive)
                 .OrderBy(p => p.TypeName)
                 .ToListAsync();
 
-            ViewBag.TotalCompletedOrders = await _context.DeliveryOrders
+            // 5. Lấy một số mốc giá nổi bật từ DB
+            var priceHighlights = await _context.PriceTables
+                .Take(6)
+                .ToListAsync();
+
+            // 6. Lấy danh sách bưu cục / trạm trung chuyển từ DB
+            var stations = await _context.MapStations
+                .Where(s => s.IsActive)
+                .Take(5)
+                .ToListAsync();
+
+            // 7. Lấy đánh giá khách hàng từ DB
+            var reviews = await _context.Reviews
+                .Include(r => r.Customer)
+                .Take(3)
+                .ToListAsync();
+
+            // 8. Thống kê động từ DB
+            var totalOrders = await _context.DeliveryOrders.CountAsync();
+            var totalDelivered = await _context.DeliveryOrders
                 .CountAsync(o => o.CurrentStatus == "Đã giao" || o.CurrentStatus == "Giao thành công");
+            var totalStations = await _context.MapStations.CountAsync();
+            var totalCustomers = await _context.Users.CountAsync();
 
-            ViewBag.TotalOrders = await _context.DeliveryOrders.CountAsync();
+            var vm = new HomeViewModel
+            {
+                Setting = setting,
+                DockFeatures = dockFeatures,
+                MainServices = mainServices,
+                PackageTypes = packageTypes,
+                PriceHighlights = priceHighlights,
+                Stations = stations,
+                Reviews = reviews,
+                TotalOrders = totalOrders,
+                TotalDeliveredOrders = totalDelivered,
+                TotalStations = totalStations,
+                TotalCustomers = totalCustomers
+            };
 
-            return View();
+            return View(vm);
         }
 
         [HttpGet]

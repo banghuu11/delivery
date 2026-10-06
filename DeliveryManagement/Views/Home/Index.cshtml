@@ -1,20 +1,21 @@
+@model DeliveryManagement.Models.ViewModels.HomeViewModel
 @{
-    ViewData["Title"] = "TỐC ĐỘ DELIVERY - Giao Hàng Hỏa Tốc, Nhận Trong Ngày";
+    ViewData["Title"] = $"{Model.Setting.BrandName} - {Model.Setting.Slogan}";
 }
 
 <div class="tocdo-home-wrapper">
 
-    <!-- 1. HERO SECTION (Chứa Banner Gradient Cam + Shipper Tốc Độ) -->
-    <partial name="Partials/_HeroBanner" />
+    <!-- 1. HERO SECTION (Dữ liệu động từ Model.Setting) -->
+    <partial name="Partials/_HeroBanner" model="Model.Setting" />
 
-    <!-- 2. FLOATING FEATURE DOCK (Thanh Card Trắng Nổi 3 Tính Năng) -->
-    <partial name="Partials/_FeatureDock" />
+    <!-- 2. FLOATING FEATURE DOCK (Dữ liệu động từ DB HomeFeatures) -->
+    <partial name="Partials/_FeatureDock" model="Model.DockFeatures" />
 
     <!-- 3. TRA CỨU & TÍNH CƯỚC -->
     <partial name="Partials/_TrackingAndPricing" />
 
-    <!-- 4. DỊCH VỤ CHI TIẾT -->
-    <partial name="Partials/_ServicesAndProcess" />
+    <!-- 4. DỊCH VỤ CHI TIẾT & TRẠM BƯU CỤC (Dữ liệu động từ DB) -->
+    <partial name="Partials/_ServicesAndProcess" model="Model" />
 
 </div>
 
