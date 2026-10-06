@@ -15,6 +15,10 @@
         }
     }
     string primaryRole = currentRoles.FirstOrDefault() ?? "Customer";
+
+    string currentController = ViewContext.RouteData.Values["Controller"]?.ToString() ?? "";
+    string currentAction = ViewContext.RouteData.Values["Action"]?.ToString() ?? "";
+    bool isAdminArea = (currentController == "Admin" || currentController == "PriceTable") && User.IsInRole("Admin");
 }
 
 <!DOCTYPE html>
@@ -35,19 +39,35 @@
 <body class="d-flex flex-column min-vh-100">
 
     <header class="sticky-top">
-        <nav class="navbar navbar-expand-lg app-navbar shadow-sm bg-white py-2">
+        <nav class="navbar navbar-expand-lg app-navbar shadow-sm bg-white py-2 @(isAdminArea ? "border-bottom border-warning border-3" : "")">
             <div class="container-fluid px-lg-4">
 
-                <!-- BRAND LOGO TỐC ĐỘ DELIVERY -->
-                <a class="navbar-brand d-flex align-items-center me-4" asp-controller="Home" asp-action="Index">
-                    <div class="brand-logo-container">
-                        <span class="logo-speed-lines"><i class="bi bi-wind"></i></span>
-                        <div class="d-inline-block">
-                            <span class="logo-text-bold">TỐC ĐỘ</span>
-                            <span class="logo-text-sub">DELIVERY</span>
+                <!-- BRAND LOGO -->
+                @if (isAdminArea)
+                {
+                    <a class="navbar-brand d-flex align-items-center me-3" asp-controller="Admin" asp-action="Index">
+                        <div class="brand-logo-container">
+                            <span class="logo-speed-lines"><i class="bi bi-shield-lock-fill text-orange"></i></span>
+                            <div class="d-inline-block">
+                                <span class="logo-text-bold">TỐC ĐỘ</span>
+                                <span class="logo-text-sub text-danger">ADMIN</span>
+                            </div>
                         </div>
-                    </div>
-                </a>
+                        <span class="badge bg-danger text-white ms-2 px-2 py-1 rounded-pill small fw-bold shadow-sm">PORTAL</span>
+                    </a>
+                }
+                else
+                {
+                    <a class="navbar-brand d-flex align-items-center me-4" asp-controller="Home" asp-action="Index">
+                        <div class="brand-logo-container">
+                            <span class="logo-speed-lines"><i class="bi bi-wind"></i></span>
+                            <div class="d-inline-block">
+                                <span class="logo-text-bold">TỐC ĐỘ</span>
+                                <span class="logo-text-sub">DELIVERY</span>
+                            </div>
+                        </div>
+                    </a>
+                }
 
                 <button class="navbar-toggler border-0"
                         type="button"
@@ -61,112 +81,172 @@
 
                 <div class="collapse navbar-collapse" id="mainNavbar">
 
-                    <!-- MENU CHÍNH BÊN TRÁI -->
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold">
+                    <!-- MENU ĐIỀU HƯỚNG LINH HOẠT (DYNAMIC NAVBAR) -->
+                    @if (isAdminArea)
+                    {
+                        <!-- ===== MENU DÀNH CHO KHU VỰC QUẢN TRỊ ADMIN ===== -->
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold align-items-lg-center">
+                            <li class="nav-item">
+                                <a class="nav-link px-3 @(currentController == "Admin" && currentAction == "Index" ? "active text-orange fw-bold" : "")" 
+                                   asp-controller="Admin" asp-action="Index">
+                                    <i class="bi bi-speedometer2 me-1"></i> Dashboard
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link px-3" href="/#services">
-                                Dịch vụ
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link px-3 @(currentController == "Admin" && (currentAction == "Users" || currentAction == "CreateUser" || currentAction == "EditUser") ? "active text-orange fw-bold" : "")" 
+                                   asp-controller="Admin" asp-action="Users">
+                                    <i class="bi bi-people-fill me-1"></i> Người dùng & Quyền
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link px-3" href="/#pricing">
-                                Giá cả
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link px-3 @(currentController == "Admin" && (currentAction == "Orders" || currentAction == "OrderDetails") ? "active text-orange fw-bold" : "")" 
+                                   asp-controller="Admin" asp-action="Orders">
+                                    <i class="bi bi-box-seam-fill me-1"></i> Quản lý Đơn hàng
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link px-3" asp-controller="Home" asp-action="Track">
-                                Theo dõi
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link px-3 @(currentController == "Admin" && currentAction == "PackageTypes" ? "active text-orange fw-bold" : "")" 
+                                   asp-controller="Admin" asp-action="PackageTypes">
+                                    <i class="bi bi-tags-fill me-1"></i> Loại hàng
+                                </a>
+                            </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link px-3" href="#contact">
-                                Liên hệ
-                            </a>
-                        </li>
+                            <li class="nav-item">
+                                <a class="nav-link px-3 @(currentController == "PriceTable" ? "active text-orange fw-bold" : "")" 
+                                   asp-controller="PriceTable" asp-action="Index">
+                                    <i class="bi bi-table me-1"></i> Bảng giá cước
+                                </a>
+                            </li>
 
-                        <!-- DÀNH CHO ADMIN -->
-                        @if (User.IsInRole("Admin"))
-                        {
-                            <li class="nav-item dropdown ms-lg-2">
-                                <a class="nav-link dropdown-toggle text-orange fw-bold" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-speedometer2 me-1"></i> Quản trị Admin
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-gear-wide-connected me-1"></i> Nghiệp vụ khác
                                 </a>
                                 <ul class="dropdown-menu shadow border-0">
-                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index"><i class="bi bi-graph-up me-2 text-primary"></i>Dashboard</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-2 text-info"></i>Quản lý tài khoản & Phân quyền</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="Orders"><i class="bi bi-card-checklist me-2 text-success"></i>Tất cả đơn hàng</a></li>
-                                    <li><hr class="dropdown-divider"></li>
-                                    <li><a class="dropdown-item" asp-controller="PriceTable" asp-action="Index"><i class="bi bi-table me-2 text-warning"></i>Bảng giá cước</a></li>
-                                    <li><a class="dropdown-item" asp-controller="Admin" asp-action="PackageTypes"><i class="bi bi-tags me-2 text-secondary"></i>Loại hàng hóa</a></li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Reception" asp-action="Index">
+                                            <i class="bi bi-inboxes-fill me-2 text-primary"></i> Khu vực Tiếp nhận
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="Warehouse" asp-action="Index">
+                                            <i class="bi bi-building-fill me-2 text-success"></i> Khu vực Kho bãi
+                                        </a>
+                                    </li>
                                 </ul>
                             </li>
-                        }
-
-                        <!-- DÀNH CHO TIẾP NHẬN -->
-                        @if (User.IsInRole("ReceptionStaff"))
-                        {
-                            <li class="nav-item ms-lg-2">
-                                <a class="nav-link text-primary fw-bold" asp-controller="Reception" asp-action="Index">
-                                    <i class="bi bi-inboxes me-1"></i> Tiếp nhận đơn
+                        </ul>
+                    }
+                    else
+                    {
+                        <!-- ===== MENU DÀNH CHO KHÁCH HÀNG & GIAO DIỆN CÔNG KHAI ===== -->
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold">
+                            <li class="nav-item">
+                                <a class="nav-link px-3" href="/#services">
+                                    Dịch vụ
                                 </a>
                             </li>
-                        }
 
-                        <!-- DÀNH CHO NHÂN VIÊN KHO -->
-                        @if (User.IsInRole("WarehouseStaff"))
-                        {
-                            <li class="nav-item ms-lg-2">
-                                <a class="nav-link text-primary fw-bold" asp-controller="Warehouse" asp-action="Index">
-                                    <i class="bi bi-building me-1"></i> Quản lý kho
+                            <li class="nav-item">
+                                <a class="nav-link px-3" href="/#pricing">
+                                    Giá cả
                                 </a>
                             </li>
-                        }
 
-                        <!-- DÀNH CHO KHÁCH HÀNG -->
-                        @if (User.IsInRole("Customer"))
-                        {
-                            <li class="nav-item ms-lg-2">
-                                <a class="nav-link text-primary fw-bold" asp-controller="DeliveryOrder" asp-action="Index">
-                                    <i class="bi bi-box-seam me-1"></i> Đơn của tôi
+                            <li class="nav-item">
+                                <a class="nav-link px-3" asp-controller="Home" asp-action="Track">
+                                    Theo dõi
                                 </a>
                             </li>
-                        }
 
-                    </ul>
+                            <li class="nav-item">
+                                <a class="nav-link px-3" href="#contact">
+                                    Liên hệ
+                                </a>
+                            </li>
 
-                    <!-- MENU BÊN PHẢI -->
-                    <div class="d-flex align-items-center gap-2">
+                            <!-- DÀNH CHO ADMIN KHI Ở TRANG USER -->
+                            @if (User.IsInRole("Admin"))
+                            {
+                                <li class="nav-item ms-lg-2">
+                                    <a class="nav-link text-orange fw-bold" asp-controller="Admin" asp-action="Index">
+                                        <i class="bi bi-speedometer2 me-1"></i> Vào Trang Quản Trị
+                                    </a>
+                                </li>
+                            }
 
-                        <!-- NÚT GỬI ĐƠN NGAY -->
-                        @if (User.Identity?.IsAuthenticated == true)
-                        {
+                            <!-- DÀNH CHO TIẾP NHẬN -->
+                            @if (User.IsInRole("ReceptionStaff"))
+                            {
+                                <li class="nav-item ms-lg-2">
+                                    <a class="nav-link text-primary fw-bold" asp-controller="Reception" asp-action="Index">
+                                        <i class="bi bi-inboxes me-1"></i> Tiếp nhận đơn
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- DÀNH CHO NHÂN VIÊN KHO -->
+                            @if (User.IsInRole("WarehouseStaff"))
+                            {
+                                <li class="nav-item ms-lg-2">
+                                    <a class="nav-link text-primary fw-bold" asp-controller="Warehouse" asp-action="Index">
+                                        <i class="bi bi-building me-1"></i> Quản lý kho
+                                    </a>
+                                </li>
+                            }
+
+                            <!-- DÀNH CHO KHÁCH HÀNG -->
                             @if (User.IsInRole("Customer"))
                             {
-                                <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
-                                    Gửi Đơn Ngay
+                                <li class="nav-item ms-lg-2">
+                                    <a class="nav-link text-primary fw-bold" asp-controller="DeliveryOrder" asp-action="Index">
+                                        <i class="bi bi-box-seam me-1"></i> Đơn của tôi
+                                    </a>
+                                </li>
+                            }
+                        </ul>
+                    }
+
+                    <!-- MENU BÊN PHẢI (USER & CTA) -->
+                    <div class="d-flex align-items-center gap-2">
+
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            @if (isAdminArea)
+                            {
+                                <a asp-controller="Home" asp-action="Index" class="btn btn-outline-secondary rounded-pill px-3 shadow-sm fw-semibold" target="_blank">
+                                    <i class="bi bi-box-arrow-up-right me-1"></i> Xem Website
                                 </a>
                             }
-                            else if (User.IsInRole("Admin"))
+                            else
                             {
-                                <a asp-controller="Admin" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
-                                    Trang Quản Trị
-                                </a>
-                            }
-                            else if (User.IsInRole("ReceptionStaff"))
-                            {
-                                <a asp-controller="Reception" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
-                                    Khu Vực Tiếp Nhận
-                                </a>
-                            }
-                            else if (User.IsInRole("WarehouseStaff"))
-                            {
-                                <a asp-controller="Warehouse" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
-                                    Khu Vực Kho
-                                </a>
+                                @if (User.IsInRole("Customer"))
+                                {
+                                    <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                        Gửi Đơn Ngay
+                                    </a>
+                                }
+                                else if (User.IsInRole("Admin"))
+                                {
+                                    <a asp-controller="Admin" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                        Trang Quản Trị
+                                    </a>
+                                }
+                                else if (User.IsInRole("ReceptionStaff"))
+                                {
+                                    <a asp-controller="Reception" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                        Khu Vực Tiếp Nhận
+                                    </a>
+                                }
+                                else if (User.IsInRole("WarehouseStaff"))
+                                {
+                                    <a asp-controller="Warehouse" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                        Khu Vực Kho
+                                    </a>
+                                }
                             }
 
                             <!-- DROPDOWN USER -->
@@ -194,6 +274,8 @@
                                     @if (User.IsInRole("Admin"))
                                     {
                                         <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i>Bảng điều khiển Admin</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-2"></i>Quản lý người dùng</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Orders"><i class="bi bi-box-seam me-2"></i>Quản lý đơn hàng</a></li>
                                     }
                                     @if (User.IsInRole("Customer"))
                                     {
