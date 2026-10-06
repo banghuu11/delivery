@@ -1,0 +1,66 @@
+@{
+    var isAuthenticated = User.Identity?.IsAuthenticated == true;
+}
+
+<section class="tocdo-hero">
+    <div class="container position-relative">
+        <div class="row align-items-center min-vh-hero">
+            
+            <!-- CỘT TRÁI: TEXT & CTA -->
+            <div class="col-lg-6 hero-text-col">
+                <h1 class="tocdo-hero-title">
+                    GIAO HÀNG HỎA TỐC,<br />
+                    NHẬN TRONG NGÀY
+                </h1>
+                <p class="tocdo-hero-subtitle">
+                    An Toàn - Nhanh Chóng - Tin Cậy
+                </p>
+
+                <div class="tocdo-hero-actions">
+                    @if (isAuthenticated)
+                    {
+                        @if (User.IsInRole("Customer"))
+                        {
+                            <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-tocdo-cta">
+                                Gửi Đơn Ngay <i class="bi bi-arrow-right ms-2"></i>
+                            </a>
+                        }
+                        else if (User.IsInRole("Admin"))
+                        {
+                            <a asp-controller="Admin" asp-action="Index" class="btn btn-tocdo-cta">
+                                Bảng Điều Khiển Admin <i class="bi bi-speedometer2 ms-2"></i>
+                            </a>
+                        }
+                        else if (User.IsInRole("ReceptionStaff"))
+                        {
+                            <a asp-controller="Reception" asp-action="Index" class="btn btn-tocdo-cta">
+                                Tiếp Nhận Đơn Hàng <i class="bi bi-inbox ms-2"></i>
+                            </a>
+                        }
+                        else if (User.IsInRole("WarehouseStaff"))
+                        {
+                            <a asp-controller="Warehouse" asp-action="Index" class="btn btn-tocdo-cta">
+                                Quản Lý Kho <i class="bi bi-building ms-2"></i>
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-tocdo-cta">
+                            Gửi Đơn Ngay <i class="bi bi-arrow-right ms-2"></i>
+                        </a>
+                    }
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: HÌNH ẢNH SHIPPER TỐC ĐỘ -->
+            <div class="col-lg-6 hero-img-col position-relative text-center">
+                <div class="hero-image-wrapper">
+                    <img src="~/images/hero_courier.jpg" alt="Shipper Giao Hàng Hỏa Tốc" class="img-fluid rounded-4 shadow-lg hero-banner-img" />
+                    <div class="speed-trail-overlay"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>

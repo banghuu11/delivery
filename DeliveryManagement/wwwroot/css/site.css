@@ -1313,4 +1313,248 @@ body {
 .footer-links a:hover {
     color: #fff;
     text-decoration: underline;
-}
+}
+
+/* ========================================================
+   TỐC ĐỘ DELIVERY - THEME & FLOATING DOCK STYLING
+   ======================================================== */
+
+:root {
+    --orange-main: #ff5400;
+    --orange-dark: #e04400;
+    --orange-light: #ff7324;
+    --orange-soft: #fff1eb;
+    --orange-gradient: linear-gradient(110deg, #ff5000 0%, #ff7300 50%, #ff8c00 100%);
+}
+
+/* BRAND LOGO TỐC ĐỘ */
+.brand-logo-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.logo-speed-lines {
+    color: var(--orange-main);
+    font-size: 1.6rem;
+    line-height: 1;
+    transform: rotate(-10deg);
+}
+
+.logo-text-bold {
+    font-size: 1.35rem;
+    font-weight: 900;
+    color: var(--orange-main);
+    letter-spacing: -0.5px;
+    display: block;
+    line-height: 1;
+}
+
+.logo-text-sub {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #1e293b;
+    letter-spacing: 2px;
+    display: block;
+    text-transform: uppercase;
+}
+
+/* BUTTONS TỐC ĐỘ CAM */
+.btn-tocdo-orange {
+    background: var(--orange-gradient);
+    color: #ffffff !important;
+    border: none;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: 50px;
+    box-shadow: 0 4px 15px rgba(255, 84, 0, 0.35);
+    transition: all 0.25s ease;
+}
+
+.btn-tocdo-orange:hover {
+    background: linear-gradient(110deg, #e04400 0%, #ff5000 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(255, 84, 0, 0.45);
+}
+
+.btn-tocdo-cta {
+    background: #ffffff;
+    color: var(--orange-main) !important;
+    border: none;
+    font-weight: 800;
+    font-size: 1.1rem;
+    padding: 14px 36px;
+    border-radius: 50px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+}
+
+.btn-tocdo-cta:hover {
+    background: #fff8f5;
+    color: var(--orange-dark) !important;
+    transform: translateY(-3px);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+}
+
+/* HERO BANNER GRADIENT CAM */
+.tocdo-hero {
+    background: var(--orange-gradient);
+    padding: 70px 0 100px 0;
+    position: relative;
+    overflow: hidden;
+}
+
+.tocdo-hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, transparent 70%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.min-vh-hero {
+    min-height: 420px;
+}
+
+.tocdo-hero-title {
+    font-size: 3.1rem;
+    font-weight: 900;
+    line-height: 1.15;
+    color: #ffffff;
+    letter-spacing: -1px;
+    margin-bottom: 16px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.tocdo-hero-subtitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.95);
+    margin-bottom: 30px;
+    letter-spacing: 0.5px;
+}
+
+.hero-banner-img {
+    max-height: 380px;
+    width: auto;
+    object-fit: cover;
+    border: 4px solid rgba(255, 255, 255, 0.3);
+    transition: transform 0.4s ease;
+}
+
+.hero-banner-img:hover {
+    transform: scale(1.02);
+}
+
+/* FLOATING FEATURE DOCK (Thanh 3 mục trắng nổi) */
+.tocdo-dock-container {
+    position: relative;
+    margin-top: -65px;
+    z-index: 20;
+    margin-bottom: 40px;
+}
+
+.tocdo-floating-card {
+    background: #ffffff;
+    border-radius: 24px;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.08) !important;
+}
+
+.dock-item {
+    transition: all 0.25s ease;
+}
+
+.dock-item:hover {
+    background-color: #fafafa;
+    border-radius: 20px;
+}
+
+.dock-3d-badge {
+    width: 72px;
+    height: 72px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease;
+}
+
+.dock-item:hover .dock-3d-badge {
+    transform: scale(1.1) rotate(5deg);
+}
+
+.bg-orange-soft {
+    background-color: #fff1eb !important;
+}
+
+.text-orange {
+    color: var(--orange-main) !important;
+}
+
+.bg-orange {
+    background-color: var(--orange-main) !important;
+}
+
+.dock-title {
+    color: #0f172a;
+    font-size: 1.15rem;
+}
+
+.border-start-md {
+    border-left: 1px solid #f1f5f9;
+}
+
+.border-end-md {
+    border-right: 1px solid #f1f5f9;
+}
+
+@media (max-width: 767px) {
+    .tocdo-hero-title {
+        font-size: 2.2rem;
+    }
+    .tocdo-dock-container {
+        margin-top: -30px;
+    }
+    .border-start-md,
+    .border-end-md {
+        border-left: none;
+        border-right: none;
+        border-bottom: 1px solid #f1f5f9;
+    }
+}
+
+/* WIDGET ICON BOX */
+.widget-icon-box {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.service-icon-circle {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.service-hover-card {
+    transition: all 0.3s ease;
+}
+
+.service-hover-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 30px rgba(255, 84, 0, 0.08) !important;
+}
+

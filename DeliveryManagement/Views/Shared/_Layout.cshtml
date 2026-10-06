@@ -22,28 +22,31 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - Delivery Management</title>
+    <title>@ViewData["Title"] - TỐC ĐỘ DELIVERY</title>
 
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 
 <body class="d-flex flex-column min-vh-100">
 
     <header class="sticky-top">
-        <nav class="navbar navbar-expand-lg app-navbar shadow-sm">
+        <nav class="navbar navbar-expand-lg app-navbar shadow-sm bg-white py-2">
             <div class="container-fluid px-lg-4">
 
-                <!-- BRAND LOGO -->
-                <a class="navbar-brand d-flex align-items-center" asp-controller="Home" asp-action="Index">
-                    <div class="brand-icon me-2">
-                        <i class="bi bi-truck-flatbed"></i>
+                <!-- BRAND LOGO TỐC ĐỘ DELIVERY -->
+                <a class="navbar-brand d-flex align-items-center me-4" asp-controller="Home" asp-action="Index">
+                    <div class="brand-logo-container">
+                        <span class="logo-speed-lines"><i class="bi bi-wind"></i></span>
+                        <div class="d-inline-block">
+                            <span class="logo-text-bold">TỐC ĐỘ</span>
+                            <span class="logo-text-sub">DELIVERY</span>
+                        </div>
                     </div>
-                    <span class="brand-text">FastShip <small class="brand-badge">Logistics</small></span>
                 </a>
 
                 <button class="navbar-toggler border-0"
@@ -59,25 +62,37 @@
                 <div class="collapse navbar-collapse" id="mainNavbar">
 
                     <!-- MENU CHÍNH BÊN TRÁI -->
-                    <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold">
 
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Index">
-                                <i class="bi bi-house-door me-1"></i> Trang chủ
+                            <a class="nav-link px-3" href="/#services">
+                                Dịch vụ
                             </a>
                         </li>
 
                         <li class="nav-item">
-                            <a class="nav-link" asp-controller="Home" asp-action="Track">
-                                <i class="bi bi-geo-alt me-1"></i> Tra cứu đơn
+                            <a class="nav-link px-3" href="/#pricing">
+                                Giá cả
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link px-3" asp-controller="Home" asp-action="Track">
+                                Theo dõi
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a class="nav-link px-3" href="#contact">
+                                Liên hệ
                             </a>
                         </li>
 
                         <!-- DÀNH CHO ADMIN -->
                         @if (User.IsInRole("Admin"))
                         {
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle text-primary fw-bold" href="#" role="button" data-bs-toggle="dropdown">
+                            <li class="nav-item dropdown ms-lg-2">
+                                <a class="nav-link dropdown-toggle text-orange fw-bold" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-speedometer2 me-1"></i> Quản trị Admin
                                 </a>
                                 <ul class="dropdown-menu shadow border-0">
@@ -92,20 +107,20 @@
                         }
 
                         <!-- DÀNH CHO TIẾP NHẬN -->
-                        @if (User.IsInRole("ReceptionStaff") || User.IsInRole("Admin"))
+                        @if (User.IsInRole("ReceptionStaff"))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Reception" asp-action="Index">
+                            <li class="nav-item ms-lg-2">
+                                <a class="nav-link text-primary fw-bold" asp-controller="Reception" asp-action="Index">
                                     <i class="bi bi-inboxes me-1"></i> Tiếp nhận đơn
                                 </a>
                             </li>
                         }
 
                         <!-- DÀNH CHO NHÂN VIÊN KHO -->
-                        @if (User.IsInRole("WarehouseStaff") || User.IsInRole("Admin"))
+                        @if (User.IsInRole("WarehouseStaff"))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Warehouse" asp-action="Index">
+                            <li class="nav-item ms-lg-2">
+                                <a class="nav-link text-primary fw-bold" asp-controller="Warehouse" asp-action="Index">
                                     <i class="bi bi-building me-1"></i> Quản lý kho
                                 </a>
                             </li>
@@ -114,13 +129,8 @@
                         <!-- DÀNH CHO KHÁCH HÀNG -->
                         @if (User.IsInRole("Customer"))
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="DeliveryOrder" asp-action="Create">
-                                    <i class="bi bi-plus-circle me-1"></i> Tạo đơn hàng
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="DeliveryOrder" asp-action="Index">
+                            <li class="nav-item ms-lg-2">
+                                <a class="nav-link text-primary fw-bold" asp-controller="DeliveryOrder" asp-action="Index">
                                     <i class="bi bi-box-seam me-1"></i> Đơn của tôi
                                 </a>
                             </li>
@@ -128,18 +138,45 @@
 
                     </ul>
 
-                    <!-- MENU USER BÊN PHẢI -->
-                    <ul class="navbar-nav align-items-lg-center">
+                    <!-- MENU BÊN PHẢI -->
+                    <div class="d-flex align-items-center gap-2">
 
+                        <!-- NÚT GỬI ĐƠN NGAY -->
                         @if (User.Identity?.IsAuthenticated == true)
                         {
-                            <li class="nav-item dropdown">
+                            @if (User.IsInRole("Customer"))
+                            {
+                                <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                    Gửi Đơn Ngay
+                                </a>
+                            }
+                            else if (User.IsInRole("Admin"))
+                            {
+                                <a asp-controller="Admin" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                    Trang Quản Trị
+                                </a>
+                            }
+                            else if (User.IsInRole("ReceptionStaff"))
+                            {
+                                <a asp-controller="Reception" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                    Khu Vực Tiếp Nhận
+                                </a>
+                            }
+                            else if (User.IsInRole("WarehouseStaff"))
+                            {
+                                <a asp-controller="Warehouse" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                    Khu Vực Kho
+                                </a>
+                            }
+
+                            <!-- DROPDOWN USER -->
+                            <div class="dropdown ms-2">
                                 <a class="nav-link dropdown-toggle user-pill d-flex align-items-center"
                                    href="#"
                                    role="button"
                                    data-bs-toggle="dropdown"
                                    aria-expanded="false">
-                                    <div class="user-avatar-sm me-2">
+                                    <div class="user-avatar-sm me-2 bg-orange text-white">
                                         @(currentUser?.FullName?.FirstOrDefault() ?? 'U')
                                     </div>
                                     <div class="text-start d-none d-sm-block">
@@ -161,7 +198,6 @@
                                     @if (User.IsInRole("Customer"))
                                     {
                                         <li><a class="dropdown-item py-2" asp-controller="DeliveryOrder" asp-action="Index"><i class="bi bi-box-seam me-2"></i>Đơn hàng của tôi</a></li>
-                                        <li><a class="dropdown-item py-2" asp-controller="DeliveryOrder" asp-action="Create"><i class="bi bi-plus-circle me-2"></i>Tạo đơn giao hàng</a></li>
                                     }
 
                                     <li><hr class="dropdown-divider"></li>
@@ -173,24 +209,19 @@
                                         </form>
                                     </li>
                                 </ul>
-                            </li>
+                            </div>
                         }
                         else
                         {
-                            <li class="nav-item">
-                                <a class="nav-link" asp-controller="Account" asp-action="Login">
-                                    <i class="bi bi-box-arrow-in-right me-1"></i> Đăng nhập
-                                </a>
-                            </li>
-
-                            <li class="nav-item ms-lg-2">
-                                <a class="btn btn-primary-custom btn-sm px-3" asp-controller="Account" asp-action="Register">
-                                    <i class="bi bi-person-plus me-1"></i> Đăng ký
-                                </a>
-                            </li>
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-secondary rounded-pill px-3 py-2 me-1 small fw-semibold">
+                                Đăng nhập
+                            </a>
+                            <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                Gửi Đơn Ngay
+                            </a>
                         }
 
-                    </ul>
+                    </div>
 
                 </div>
             </div>
@@ -202,36 +233,36 @@
     </main>
 
     <!-- FOOTER CHUYÊN NGHIỆP -->
-    <footer class="app-footer bg-dark text-white pt-5 pb-3 mt-auto">
+    <footer id="contact" class="app-footer bg-dark text-white pt-5 pb-3 mt-auto">
         <div class="container">
             <div class="row g-4">
                 <div class="col-lg-4 col-md-6">
                     <div class="d-flex align-items-center mb-3">
-                        <div class="brand-icon me-2 bg-primary text-white p-2 rounded">
-                            <i class="bi bi-truck-flatbed fs-4"></i>
+                        <div class="logo-speed-lines text-orange fs-2 me-2">
+                            <i class="bi bi-wind"></i>
                         </div>
-                        <h4 class="fw-bold mb-0">FastShip <span class="text-primary">Delivery</span></h4>
+                        <h4 class="fw-bold mb-0 text-white">TỐC ĐỘ <span class="text-orange">DELIVERY</span></h4>
                     </div>
                     <p class="text-secondary small">
-                        Hệ thống điều phối và quản lý giao nhận hàng hóa thông minh, minh bạch, hỗ trợ tối ưu chặng giao hàng từ tiếp nhận, lưu kho đến giao tận tay người nhận.
+                        Hệ thống vận chuyển hỏa tốc thông minh, tin cậy. Cam kết giao nhận an toàn, đúng giờ và hỗ trợ khách hàng 24/7 trên toàn quốc.
                     </p>
                 </div>
 
                 <div class="col-lg-2 col-md-6 col-6">
-                    <h6 class="text-white fw-bold mb-3">Khách Hàng</h6>
+                    <h6 class="text-white fw-bold mb-3">Liên Kết Nhanh</h6>
                     <ul class="list-unstyled footer-links small">
-                        <li><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
-                        <li><a asp-controller="Home" asp-action="Track">Tra cứu hành trình</a></li>
-                        <li><a asp-controller="DeliveryOrder" asp-action="Create">Tạo đơn hàng</a></li>
-                        <li><a asp-controller="Account" asp-action="Login">Đăng nhập</a></li>
+                        <li><a href="/#services">Dịch vụ</a></li>
+                        <li><a href="/#pricing">Bảng giá</a></li>
+                        <li><a asp-controller="Home" asp-action="Track">Theo dõi đơn</a></li>
+                        <li><a asp-controller="DeliveryOrder" asp-action="Create">Gửi đơn ngay</a></li>
                     </ul>
                 </div>
 
                 <div class="col-lg-2 col-md-6 col-6">
                     <h6 class="text-white fw-bold mb-3">Nghiệp Vụ</h6>
                     <ul class="list-unstyled footer-links small">
-                        <li><a asp-controller="Reception" asp-action="Index">Tiếp nhận đơn</a></li>
-                        <li><a asp-controller="Warehouse" asp-action="Index">Phân loại kho</a></li>
+                        <li><a asp-controller="Reception" asp-action="Index">Tiếp nhận</a></li>
+                        <li><a asp-controller="Warehouse" asp-action="Index">Kho bãi</a></li>
                         <li><a asp-controller="Admin" asp-action="Index">Khu vực Admin</a></li>
                         <li><a asp-controller="PriceTable" asp-action="Index">Bảng giá cước</a></li>
                     </ul>
@@ -240,9 +271,9 @@
                 <div class="col-lg-4 col-md-6">
                     <h6 class="text-white fw-bold mb-3">Thông Tin Liên Hệ</h6>
                     <ul class="list-unstyled text-secondary small">
-                        <li class="mb-2"><i class="bi bi-geo-alt text-primary me-2"></i>Trụ sở: TP. Hồ Chí Minh, Việt Nam</li>
-                        <li class="mb-2"><i class="bi bi-telephone text-primary me-2"></i>Hotline: 1900 6868 (24/7)</li>
-                        <li class="mb-2"><i class="bi bi-envelope text-primary me-2"></i>Email: support@delivery.com</li>
+                        <li class="mb-2"><i class="bi bi-geo-alt text-orange me-2"></i>Trụ sở: TP. Hồ Chí Minh, Việt Nam</li>
+                        <li class="mb-2"><i class="bi bi-telephone text-orange me-2"></i>Hotline: 1900 8888 (24/7)</li>
+                        <li class="mb-2"><i class="bi bi-envelope text-orange me-2"></i>Email: hotro@tocdondelivery.vn</li>
                     </ul>
                 </div>
             </div>
@@ -250,7 +281,7 @@
             <hr class="border-secondary my-4" />
 
             <div class="text-center text-secondary small">
-                &copy; 2026 FastShip Delivery Management System. All rights reserved.
+                &copy; 2026 TỐC ĐỘ DELIVERY - All rights reserved.
             </div>
         </div>
     </footer>

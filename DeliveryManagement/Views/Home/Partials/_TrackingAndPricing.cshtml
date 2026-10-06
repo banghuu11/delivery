@@ -1,0 +1,76 @@
+<section id="tracking" class="py-5 bg-light-subtle">
+    <div class="container py-4">
+        <div class="row g-4">
+            
+            <!-- KHUNG TRA CỨU VẬN ĐƠN -->
+            <div class="col-lg-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="widget-icon-box bg-orange-soft text-orange me-3">
+                            <i class="bi bi-geo-alt-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Tra Cứu Hành Trình</h4>
+                            <small class="text-muted">Nhập mã vận đơn để theo dõi đơn hàng theo thời gian thực</small>
+                        </div>
+                    </div>
+
+                    <form asp-controller="Home" asp-action="Track" method="get" class="mt-2">
+                        <div class="input-group input-group-lg mb-3">
+                            <input type="text" name="orderCode" class="form-control" placeholder="Nhập mã vận đơn (VD: DH001, DH002...)" required />
+                            <button type="submit" class="btn btn-tocdo-orange">
+                                <i class="bi bi-search me-1"></i> Tra cứu
+                            </button>
+                        </div>
+                    </form>
+
+                    <div class="sample-tags d-flex align-items-center gap-2 flex-wrap mt-auto pt-2">
+                        <span class="text-muted small">Mẫu tra cứu nhanh:</span>
+                        <a href="/Home/Track?orderCode=DH001" class="badge bg-orange-soft text-orange text-decoration-none px-3 py-2 rounded-pill">DH001</a>
+                        <a href="/Home/Track?orderCode=DH002" class="badge bg-orange-soft text-orange text-decoration-none px-3 py-2 rounded-pill">DH002</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KHUNG TÍNH CƯỚC DỰ KIẾN -->
+            <div id="pricing" class="col-lg-6">
+                <div class="card border-0 shadow-sm rounded-4 h-100 p-4">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="widget-icon-box bg-orange-soft text-orange me-3">
+                            <i class="bi bi-calculator-fill fs-3"></i>
+                        </div>
+                        <div>
+                            <h4 class="fw-bold mb-0">Ước Tính Cước Phí</h4>
+                            <small class="text-muted">Tính giá cước vận chuyển chuẩn xác theo bảng giá</small>
+                        </div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-12">
+                            <label class="form-label small fw-semibold">Hình thức giao hàng:</label>
+                            <select id="calcMethod" class="form-select">
+                                <option value="Thường">Giao tiêu chuẩn (Thường)</option>
+                                <option value="Nhanh">Giao hỏa tốc (Nhanh)</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Khối lượng (kg):</label>
+                            <input type="number" id="calcWeight" class="form-control" placeholder="VD: 3" min="0.1" step="0.1" value="2" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small fw-semibold">Khoảng cách (km):</label>
+                            <input type="number" id="calcDistance" class="form-control" placeholder="VD: 5" min="0.1" step="0.1" value="5" />
+                        </div>
+                    </div>
+
+                    <button type="button" id="btnCalcPrice" class="btn btn-tocdo-orange w-100">
+                        <i class="bi bi-cash-stack me-1"></i> Tính cước ngay
+                    </button>
+
+                    <div id="calcResultBox" class="alert alert-success py-2 px-3 small mt-3 d-none mb-0 rounded-3"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</section>
