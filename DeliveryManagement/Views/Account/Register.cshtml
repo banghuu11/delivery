@@ -2,12 +2,19 @@
 
 @{
     ViewData["Title"] = "Đăng ký tài khoản";
+    Layout = "_AuthLayout";
 }
 
-<div class="auth-page">
+<div class="auth-page" >
 
+    <a asp-controller="Home"
+       asp-action="Index"
+       class="btn-back">
+        <span class="btn-back-icon">←</span>
+        <span>Quay lại</span>
+    </a>
     <div class="auth-card">
-
+        
         <div class="auth-header">
 
             <h1 class="auth-title">

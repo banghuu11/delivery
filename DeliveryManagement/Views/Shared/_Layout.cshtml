@@ -1,60 +1,179 @@
 ﻿@using DeliveryManagement.Models
 @using Microsoft.AspNetCore.Identity
 @inject UserManager<ApplicationUser> UserManager
+
+@{
+    ApplicationUser? currentUser = null;
+
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        currentUser = await UserManager.GetUserAsync(User);
+    }
+}
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - DeliveryManagement</title>
+    <title>@ViewData["Title"] - Delivery Management</title>
+
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/DeliveryManagement.styles.css" asp-append-version="true" />
 </head>
+
 <body>
+
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">DeliveryManagement</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+        <nav class="navbar navbar-expand-lg app-navbar">
+            <div class="container">
+
+                <!-- LOGO -->
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                    Delivery Management
+                </a>
+
+                <button class="navbar-toggler"
+                        type="button"
+                        data-bs-toggle="collapse"
+                        data-bs-target="#mainNavbar"
+                        aria-controls="mainNavbar"
+                        aria-expanded="false"
+                        aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
+
+                <div class="collapse navbar-collapse" id="mainNavbar">
+
+                    <!-- MENU BÊN TRÁI -->
+                    <ul class="navbar-nav me-auto">
+
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="DeliveryOrder" asp-action="Create">Tạo đơn hàng</a>
+                            <a class="nav-link"
+                               asp-controller="Home"
+                               asp-action="Index">
+                                Trang chủ
+                            </a>
                         </li>
                         @if (User.Identity?.IsAuthenticated == true)
                         {
+                            @if (User.IsInRole("Customer"))
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link"
+                                       asp-controller="DeliveryOrder"
+                                       asp-action="Create">
+                                        Đơn hàng
+                                    </a>
+                                </li>
+                            }
+                        }
+                        @if (User.IsInRole("ReceptionStaff"))
+                        {
                             <li class="nav-item">
-                                <span class="nav-link">
-                                    @User.FindFirst("FullName")?.Value
-                                </span>
-                            </li>
-
-                            <li class="nav-item">
-                                <form asp-controller="Account"
-                                      asp-action="Logout"
-                                      method="post">
-
-                                    <button type="submit"
-                                            class="nav-link btn btn-link">
-                                        Đăng xuất
-                                    </button>
-
-                                </form>
+                                <a class="nav-link"
+                                   asp-controller="Reception"
+                                   asp-action="Index">
+                                    Tiếp nhận đơn
+                                </a>
                             </li>
                         }
+                        @if (User.IsInRole("WarehouseStaff"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Warehouse"
+                                   asp-action="Index">
+                                    Quản lý kho
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="PriceTable"
+                                   asp-action="Index">
+                                    Bảng giá
+                                </a>
+                            </li>
+                        }
+
+                    </ul>
+
+
+                    <!-- MENU USER -->
+                    <ul class="navbar-nav">
+
+                        @if (User.Identity?.IsAuthenticated == true)
+                        {
+                            <li class="nav-item dropdown">
+
+                                <a class="nav-link dropdown-toggle user-menu"
+                                   href="#"
+                                   role="button"
+                                   data-bs-toggle="dropdown"
+                                   aria-expanded="false">
+
+                                    <span class="user-avatar">
+                                        @(currentUser?.FullName?.FirstOrDefault() ?? 'U')
+                                    </span>
+
+                                    <span>
+                                        @(string.IsNullOrWhiteSpace(currentUser?.FullName)
+                                                                            ? User.Identity?.Name
+                                                                            : currentUser.FullName)
+                                </span>
+
+                                </a>
+
+                                <ul class="dropdown-menu dropdown-menu-end">
+
+                                    <li>
+                                        <a class="dropdown-item"
+                                           href="#">
+                                            Thông tin
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <a class="dropdown-item"
+                                           href="#">
+                                            Lịch sử đơn hàng
+                                        </a>
+                                    </li>
+
+                                    <li>
+                                        <hr class="dropdown-divider" />
+                                    </li>
+
+                                    <li>
+                                        <form asp-controller="Account"
+                                              asp-action="Logout"
+                                              method="post">
+
+                                            <button type="submit"
+                                                    class="dropdown-item logout-item">
+                                                Đăng xuất
+                                            </button>
+
+                                        </form>
+                                    </li>
+
+                                </ul>
+
+                            </li>
+                                                }
                         else
                         {
-
+                            <li class="nav-item">
+                                <a class="nav-link"
+                                   asp-controller="Account"
+                                   asp-action="Login">
+                                    Đăng nhập
+                                </a>
+                            </li>
 
                             <li class="nav-item">
                                 <a class="nav-link"
@@ -64,20 +183,24 @@
                                 </a>
                             </li>
                         }
+
                     </ul>
+
                 </div>
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
-        </main>
-    </div>
+
+
+    <main>
+        @RenderBody()
+    </main>
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+
     @await RenderSectionAsync("Scripts", required: false)
+
 </body>
 </html>

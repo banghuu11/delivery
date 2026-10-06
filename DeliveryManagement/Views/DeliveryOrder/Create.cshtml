@@ -17,17 +17,18 @@
         </div>
     </div>
 
+
     <form asp-controller="DeliveryOrder"
           asp-action="Create"
           method="post"
           class="order-form">
 
-        <div asp-validation-summary="ModelOnly"
+        <div asp-validation-summary="All"
              class="text-danger validation-summary"></div>
 
 
         <!-- =========================
-             THÔNG TIN NGƯỜI GỬI
+             1. THÔNG TIN NGƯỜI GỬI
              ========================= -->
 
         <div class="order-section">
@@ -54,6 +55,7 @@
 
                 </div>
 
+
                 <div class="form-group">
 
                     <label asp-for="SenderPhone"
@@ -71,6 +73,7 @@
                 </div>
 
             </div>
+
 
             <div class="form-group">
 
@@ -92,7 +95,7 @@
 
 
         <!-- =========================
-             THÔNG TIN NGƯỜI NHẬN
+             2. THÔNG TIN NGƯỜI NHẬN
              ========================= -->
 
         <div class="order-section">
@@ -120,6 +123,7 @@
 
                 </div>
 
+
                 <div class="form-group">
 
                     <label asp-for="ReceiverPhone"
@@ -137,6 +141,7 @@
                 </div>
 
             </div>
+
 
             <div class="form-group">
 
@@ -158,17 +163,20 @@
 
 
         <!-- =========================
-             HÌNH THỨC GIAO HÀNG
+             3. HÌNH THỨC GIAO HÀNG
              ========================= -->
 
         <div class="order-section">
 
             <div class="order-section-header">
                 <h2>3. Hình thức giao hàng</h2>
-                <p>Chọn hình thức giao hàng phù hợp.</p>
+                <p>Chọn hình thức giao hàng và nhập khoảng cách dự kiến.</p>
             </div>
 
+
             <div class="delivery-method-list">
+
+                <!-- GIAO THƯỜNG -->
 
                 <label class="delivery-method-option">
 
@@ -177,13 +185,19 @@
                            value="Thường" />
 
                     <span>
+
                         <strong>Giao thường</strong>
+
                         <small>
                             Giao theo tuyến, chi phí thấp hơn
                         </small>
+
                     </span>
 
                 </label>
+
+
+                <!-- GIAO NHANH -->
 
                 <label class="delivery-method-option">
 
@@ -192,34 +206,74 @@
                            value="Nhanh" />
 
                     <span>
+
                         <strong>Giao nhanh</strong>
+
                         <small>
                             Giao riêng, thời gian nhanh hơn
                         </small>
+
                     </span>
 
                 </label>
 
             </div>
 
+
             <span asp-validation-for="DeliveryMethod"
                   class="field-validation-error"></span>
+
+
+            <!-- KHOẢNG CÁCH -->
+
+            <div class="form-group mt-3">
+
+                <label asp-for="DistanceKm"
+                       class="form-label">
+                    Khoảng cách dự kiến (km)
+                </label>
+
+                <input asp-for="DistanceKm"
+                       id="distanceKm"
+                       type="number"
+                       class="form-control"
+                       min="0.01"
+                       max="100000"
+                       step="0.01"
+                       placeholder="Ví dụ: 7.5" />
+
+                <small class="text-muted">
+                    Khoảng cách tạm thời nhập thủ công để tính giá.
+                </small>
+
+                <span asp-validation-for="DistanceKm"
+                      class="field-validation-error"></span>
+
+            </div>
 
         </div>
 
 
         <!-- =========================
-             THANH TOÁN
+             4. THANH TOÁN
              ========================= -->
 
         <div class="order-section">
 
             <div class="order-section-header">
+
                 <h2>4. Thanh toán</h2>
-                <p>Chọn phương thức thanh toán cho đơn hàng.</p>
+
+                <p>
+                    Chọn phương thức thanh toán cho đơn hàng.
+                </p>
+
             </div>
 
+
             <div class="payment-method-list">
+
+                <!-- THANH TOÁN KHI GIAO -->
 
                 <label class="payment-method-option">
 
@@ -228,13 +282,21 @@
                            value="Thanh toán khi giao hàng" />
 
                     <span>
-                        <strong>Thanh toán khi giao hàng</strong>
+
+                        <strong>
+                            Thanh toán khi giao hàng
+                        </strong>
+
                         <small>
                             Thanh toán khi hàng được giao
                         </small>
+
                     </span>
 
                 </label>
+
+
+                <!-- THANH TOÁN TRỰC TUYẾN -->
 
                 <label class="payment-method-option">
 
@@ -243,15 +305,21 @@
                            value="Thanh toán trực tuyến" />
 
                     <span>
-                        <strong>Thanh toán trực tuyến</strong>
+
+                        <strong>
+                            Thanh toán trực tuyến
+                        </strong>
+
                         <small>
                             Thanh toán trước khi hàng được giao
                         </small>
+
                     </span>
 
                 </label>
 
             </div>
+
 
             <span asp-validation-for="PaymentMethod"
                   class="field-validation-error"></span>
@@ -260,150 +328,40 @@
 
 
         <!-- =========================
-             THÔNG TIN HÀNG HÓA
+             5. THÔNG TIN HÀNG HÓA
              ========================= -->
 
         <div class="order-section">
 
-            <div class="order-section-header">
-                <h2>5. Thông tin hàng hóa</h2>
-                <p>Nhập thông tin cơ bản về hàng cần giao</p>
-            </div>
-         
-            <div class="order-form-grid">
+            <div class="order-section-header d-flex justify-content-between align-items-start">
 
-                <div class="form-group">
+                <div>
 
-                    <label asp-for="PackageTypeId"
-                           class="form-label">
-                        Loại đóng gói
-                    </label>
+                    <h2>5. Thông tin hàng hóa</h2>
 
-                    <select asp-for="PackageTypeId"
-                            class="form-control">
-
-                        <option value="">
-                            Chọn loại đóng gói
-                        </option>
-
-                        @foreach (var packageType in packageTypes)
-                        {
-                            <option value="@packageType.PackageTypeId">
-                                @packageType.TypeName
-                            </option>
-                        }
-
-                    </select>
-
-                    <span asp-validation-for="PackageTypeId"
-                          class="field-validation-error"></span>
+                    <p>
+                        Có thể thêm nhiều loại hàng trong cùng một đơn
+                    </p>
 
                 </div>
 
-                <div class="form-group">
 
-                    <label asp-for="Size"
-                           class="form-label">
-                        Kích thước
-                    </label>
-
-                    <input asp-for="Size"
-                           class="form-control"
-                           placeholder="Ví dụ: 30x20x15 cm" />
-
-                    <span asp-validation-for="Size"
-                          class="field-validation-error"></span>
-
-                </div>
+                <button type="button"
+                        id="btnAddItem"
+                        class="btn btn-outline-primary btn-sm">
+                    Thêm hàng hóa
+                </button>
 
             </div>
 
-            <div class="form-group">
 
-                <label asp-for="Description"
-                       class="form-label">
-                    Mô tả hàng hóa
-                </label>
-
-                <textarea asp-for="Description"
-                          class="form-control"
-                          rows="3"
-                          placeholder="Mô tả hàng hóa cần giao"></textarea>
-
-                <span asp-validation-for="Description"
-                      class="field-validation-error"></span>
-
-            </div>
-
-            <div class="order-form-grid">
-
-                <div class="form-group">
-
-                    <label asp-for="Quantity"
-                           class="form-label">
-                        Số lượng
-                    </label>
-
-                    <input asp-for="Quantity"
-                           type="number"
-                           min="1"
-                           class="form-control" />
-
-                    <span asp-validation-for="Quantity"
-                          class="field-validation-error"></span>
-
-                </div>
-
-                <div class="form-group">
-
-                    <label asp-for="Weight"
-                           class="form-label">
-                        Khối lượng hàng hóa (kg)
-                    </label>
-
-                    <input asp-for="Weight"
-                           type="number"
-                           min="0.01"
-                           step="0.01"
-                           class="form-control"
-                           placeholder="Ví dụ: 2.5 kg" />
-
-                    <span asp-validation-for="Weight"
-                          class="field-validation-error"></span>
-
-                </div>
-
-            </div>
-
-            <div class="order-checkbox-list">
-
-                <label class="order-checkbox">
-
-                    <input asp-for="IsFragile" />
-
-                    <span>
-                        Hàng dễ vỡ
-                    </span>
-
-                </label>
-
-                <label class="order-checkbox">
-
-                    <input asp-for="IsValuable" />
-
-                    <span>
-                        Hàng có giá trị
-                    </span>
-
-                </label>
-
-            </div>
+            <div id="itemList"></div>
 
         </div>
 
 
         <!-- =========================
-             TỔNG TIỀN
+             6. TỔNG TIỀN
              ========================= -->
 
         <div class="order-section order-total-section">
@@ -411,12 +369,20 @@
             <div class="order-total-content">
 
                 <div>
+
                     <h2>Tổng tiền</h2>
-                    
+
+                    <p id="priceDescription">
+                        Chọn hình thức giao hàng, nhập khoảng cách
+                        và khối lượng để tính giá.
+                    </p>
+
                 </div>
 
-                <div class="order-total-value">
-                    Chờ xác định
+
+                <div class="order-total-value"
+                     id="totalPrice">
+                    0 VNĐ
                 </div>
 
             </div>
@@ -436,6 +402,7 @@
                 Hủy
             </a>
 
+
             <button type="submit"
                     class="btn-submit-order">
                 Tạo yêu cầu giao hàng
@@ -454,4 +421,690 @@
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
+
+    <script>
+
+        (function () {
+
+            /* ==========================================
+               DỮ LIỆU
+               ========================================== */
+
+            const packageTypes =
+                @Html.Raw(
+                    Json.Serialize(
+                            packageTypes.Select(p => new
+                            {
+                                    id = p.PackageTypeId,
+                                    name = p.TypeName
+                            })
+                    )
+                        );
+
+
+        const initialItems =
+            @Html.Raw(
+                                Json.Serialize(Model.Items)
+                        );
+
+
+        const list =
+            document.getElementById('itemList');
+
+
+        const distanceInput =
+            document.getElementById('distanceKm');
+
+
+        const totalPriceElement =
+            document.getElementById('totalPrice');
+
+
+        const priceDescriptionElement =
+            document.getElementById('priceDescription');
+
+
+        const btnAddItem =
+            document.getElementById('btnAddItem');
+
+
+        /* ==========================================
+           ESC HTML
+           ========================================== */
+
+        function esc(value) {
+
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;');
+
+        }
+
+
+        /* ==========================================
+           TÍNH TỔNG KHỐI LƯỢNG
+           ========================================== */
+
+        function calculateTotalWeight() {
+
+            const rows =
+                list.querySelectorAll('.item-row');
+
+
+            let totalWeight = 0;
+
+
+            rows.forEach(function (row) {
+
+                const quantityInput =
+                    row.querySelector('[name$=".Quantity"]');
+
+
+                const weightInput =
+                    row.querySelector('[name$=".Weight"]');
+
+
+                const quantity =
+                    parseFloat(
+                        quantityInput?.value || '0'
+                    );
+
+
+                const weight =
+                    parseFloat(
+                        weightInput?.value || '0'
+                    );
+
+
+                if (
+                    Number.isFinite(quantity) &&
+                    Number.isFinite(weight) &&
+                    quantity > 0 &&
+                    weight > 0
+                ) {
+
+                    totalWeight +=
+                        quantity * weight;
+
+                }
+
+            });
+
+
+            return totalWeight;
+
+        }
+
+
+        /* ==========================================
+           LẤY GIÁ TỪ DATABASE
+           ========================================== */
+
+        async function updatePrice() {
+
+            const deliveryMethodInput =
+                document.querySelector(
+                    'input[name="DeliveryMethod"]:checked'
+                );
+
+
+            const deliveryMethod =
+                deliveryMethodInput?.value || '';
+
+
+            const distanceKm =
+                parseFloat(
+                    distanceInput?.value || '0'
+                );
+
+
+            const totalWeight =
+                calculateTotalWeight();
+
+
+            /* Chưa chọn hình thức */
+
+            if (!deliveryMethod) {
+
+                totalPriceElement.textContent =
+                    '0 VNĐ';
+
+                priceDescriptionElement.textContent =
+                    'Vui lòng chọn hình thức giao hàng.';
+
+                return;
+
+            }
+
+
+            /* Chưa có khoảng cách */
+
+            if (
+                !Number.isFinite(distanceKm) ||
+                distanceKm <= 0
+            ) {
+
+                totalPriceElement.textContent =
+                    '0 VNĐ';
+
+                priceDescriptionElement.textContent =
+                    'Vui lòng nhập khoảng cách dự kiến.';
+
+                return;
+
+            }
+
+
+            /* Chưa có khối lượng */
+
+            if (
+                !Number.isFinite(totalWeight) ||
+                totalWeight <= 0
+            ) {
+
+                totalPriceElement.textContent =
+                    '0 VNĐ';
+
+                priceDescriptionElement.textContent =
+                    'Vui lòng nhập khối lượng hàng hóa.';
+
+                return;
+
+            }
+
+
+            /* Đang lấy giá */
+
+            totalPriceElement.textContent =
+                'Đang tính...';
+
+
+            priceDescriptionElement.textContent =
+                `Tổng khối lượng: ${totalWeight.toLocaleString('vi-VN')} kg | Khoảng cách: ${distanceKm.toLocaleString('vi-VN')} km`;
+
+
+            try {
+
+                const url =
+                    '@Url.Action("CalculatePrice", "DeliveryOrder")' +
+                    `?deliveryMethod=${encodeURIComponent(deliveryMethod)}` +
+                    `&totalWeight=${encodeURIComponent(totalWeight)}` +
+                    `&distanceKm=${encodeURIComponent(distanceKm)}`;
+
+
+                const response =
+                    await fetch(
+                        url,
+                        {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        }
+                    );
+
+
+                if (!response.ok) {
+
+                    throw new Error(
+                        'Không thể lấy dữ liệu bảng giá.'
+                    );
+
+                }
+
+
+                const data =
+                    await response.json();
+
+
+                if (data.success) {
+
+                    const price =
+                        Number(data.price);
+
+
+                    totalPriceElement.textContent =
+                        price.toLocaleString('vi-VN') +
+                        ' VNĐ';
+
+
+                    priceDescriptionElement.textContent =
+                        `Tổng khối lượng: ${totalWeight.toLocaleString('vi-VN')} kg | Khoảng cách: ${distanceKm.toLocaleString('vi-VN')} km`;
+
+                }
+                else {
+
+                    totalPriceElement.textContent =
+                        'Chưa xác định';
+
+
+                    priceDescriptionElement.textContent =
+                        `Không có mức giá phù hợp cho ${totalWeight.toLocaleString('vi-VN')} kg và ${distanceKm.toLocaleString('vi-VN')} km trong bảng giá.`;
+
+                }
+
+            }
+            catch (error) {
+
+                console.error(error);
+
+
+                totalPriceElement.textContent =
+                    'Không thể tính';
+
+
+                priceDescriptionElement.textContent =
+                    'Không thể lấy dữ liệu bảng giá.';
+
+            }
+
+        }
+
+
+        /* ==========================================
+           THÊM DÒNG HÀNG HÓA
+           ========================================== */
+
+        function addRow(item) {
+
+            item = item || {};
+
+
+            const options =
+                packageTypes
+                    .map(function (p) {
+
+                        const selected =
+                            Number(p.id) ===
+                            Number(item.packageTypeId)
+                                ? 'selected'
+                                : '';
+
+
+                        return `
+                            <option value="${p.id}" ${selected}>
+                                ${esc(p.name)}
+                            </option>
+                        `;
+
+                    })
+                    .join('');
+
+
+            const row =
+                document.createElement('div');
+
+
+            row.className =
+                'item-row border rounded p-3 mb-3';
+
+
+            row.innerHTML = `
+
+                <!-- HEADER -->
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+
+                    <strong class="item-title">
+                        Hàng hóa
+                    </strong>
+
+                    <button type="button"
+                            class="btn btn-link text-danger p-0 btn-remove">
+                        Xóa
+                    </button>
+
+                </div>
+
+
+                <!-- LOẠI ĐÓNG GÓI + KÍCH THƯỚC -->
+
+                <div class="order-form-grid">
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Loại đóng gói
+                        </label>
+
+                        <select name="Items[0].PackageTypeId"
+                                class="form-control"
+                                required>
+
+                            <option value="">
+                                Chọn loại đóng gói
+                            </option>
+
+                            ${options}
+
+                        </select>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Kích thước
+                        </label>
+
+                        <input type="text"
+                               name="Items[0].Size"
+                               class="form-control"
+                               placeholder="Ví dụ: 30x20x15 cm"
+                               value="${esc(item.size)}" />
+
+                    </div>
+
+                </div>
+
+
+                <!-- MÔ TẢ -->
+
+                <div class="form-group">
+
+                    <label class="form-label">
+                        Mô tả hàng hóa
+                    </label>
+
+                    <textarea name="Items[0].Description"
+                              class="form-control"
+                              rows="2"
+                              placeholder="Mô tả hàng hóa cần giao">${esc(item.description)}</textarea>
+
+                </div>
+
+
+                <!-- SỐ LƯỢNG + KHỐI LƯỢNG -->
+
+                <div class="order-form-grid">
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Số lượng
+                        </label>
+
+                        <input type="number"
+                               name="Items[0].Quantity"
+                               min="1"
+                               max="1000"
+                               class="form-control"
+                               required
+                               value="${item.quantity || 1}" />
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label class="form-label">
+                            Khối lượng mỗi món (kg)
+                        </label>
+
+                        <input type="number"
+                               name="Items[0].Weight"
+                               min="0.01"
+                               max="10000"
+                               step="0.01"
+                               class="form-control"
+                               required
+                               placeholder="Ví dụ: 2.5"
+                               value="${item.weight || ''}" />
+
+                    </div>
+
+                </div>
+
+
+                <!-- THUỘC TÍNH HÀNG -->
+
+                <div class="order-checkbox-list">
+
+                    <label class="order-checkbox">
+
+                        <input type="checkbox"
+                               name="Items[0].IsFragile"
+                               value="true"
+                               ${item.isFragile ? 'checked' : ''} />
+
+                        <input type="hidden"
+                               name="Items[0].IsFragile"
+                               value="false" />
+
+                        <span>
+                            Hàng dễ vỡ
+                        </span>
+
+                    </label>
+
+
+                    <label class="order-checkbox">
+
+                        <input type="checkbox"
+                               name="Items[0].IsValuable"
+                               value="true"
+                               ${item.isValuable ? 'checked' : ''} />
+
+                        <input type="hidden"
+                               name="Items[0].IsValuable"
+                               value="false" />
+
+                        <span>
+                            Hàng có giá trị
+                        </span>
+
+                    </label>
+
+                </div>
+
+            `;
+
+
+            /* ==========================================
+               NÚT XÓA
+               ========================================== */
+
+            row.querySelector('.btn-remove')
+                .addEventListener(
+                    'click',
+                    function () {
+
+                        row.remove();
+
+                        renumber();
+
+                        updatePrice();
+
+                    }
+                );
+
+
+            /* ==========================================
+               INPUT THAY ĐỔI
+               ========================================== */
+
+            row.querySelectorAll(
+                'input, select, textarea'
+            ).forEach(
+                function (input) {
+
+                    input.addEventListener(
+                        'input',
+                        updatePrice
+                    );
+
+
+                    input.addEventListener(
+                        'change',
+                        updatePrice
+                    );
+
+                }
+            );
+
+
+            list.appendChild(row);
+
+        }
+
+
+        /* ==========================================
+           ĐÁNH LẠI INDEX
+           ========================================== */
+
+        function renumber() {
+
+            const rows =
+                list.querySelectorAll('.item-row');
+
+
+            rows.forEach(
+                function (row, index) {
+
+                    row.querySelector(
+                        '.item-title'
+                    ).textContent =
+                        'Hàng hóa ' +
+                        (index + 1);
+
+
+                    row.querySelectorAll(
+                        '[name]'
+                    ).forEach(
+                        function (element) {
+
+                            element.name =
+                                element.name.replace(
+                                    /Items\[\d+\]/,
+                                    'Items[' +
+                                    index +
+                                    ']'
+                                );
+
+                        }
+                    );
+
+
+                    const removeButton =
+                        row.querySelector(
+                            '.btn-remove'
+                        );
+
+
+                    if (rows.length > 1) {
+
+                        removeButton.style.display =
+                            '';
+
+                    }
+                    else {
+
+                        removeButton.style.display =
+                            'none';
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        /* ==========================================
+           THÊM HÀNG
+           ========================================== */
+
+        btnAddItem.addEventListener(
+            'click',
+            function () {
+
+                if (
+                    list.children.length >= 20
+                ) {
+
+                    return;
+
+                }
+
+
+                addRow();
+
+                renumber();
+
+                updatePrice();
+
+            }
+        );
+
+
+        /* ==========================================
+           KHI ĐỔI HÌNH THỨC GIAO
+           ========================================== */
+
+        document.querySelectorAll(
+            'input[name="DeliveryMethod"]'
+        ).forEach(
+            function (input) {
+
+                input.addEventListener(
+                    'change',
+                    updatePrice
+                );
+
+            }
+        );
+
+
+        /* ==========================================
+           KHI ĐỔI KHOẢNG CÁCH
+           ========================================== */
+
+        distanceInput.addEventListener(
+            'input',
+            updatePrice
+        );
+
+
+        distanceInput.addEventListener(
+            'change',
+            updatePrice
+        );
+
+
+        /* ==========================================
+           KHỞI TẠO
+           ========================================== */
+
+        if (
+            initialItems &&
+            initialItems.length > 0
+        ) {
+
+            initialItems.forEach(
+                function (item) {
+
+                    addRow(item);
+
+                }
+            );
+
+        }
+        else {
+
+            addRow();
+
+        }
+
+
+        renumber();
+
+
+        updatePrice();
+
+    })();
+
+</script>
 }

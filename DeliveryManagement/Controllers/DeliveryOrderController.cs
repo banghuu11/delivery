@@ -22,9 +22,21 @@ namespace DeliveryManagement.Controllers
             _userManager = userManager;
         }
 
-        // =========================
-        // HIỂN THỊ FORM TẠO ĐƠN
-        // =========================
+        // ==========================================
+        // LOAD DANH SÁCH LOẠI HÀNG HÓA
+        // ==========================================
+
+        private async Task LoadPackageTypesAsync()
+        {
+            ViewBag.PackageTypes = await _context.PackageTypes
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.TypeName)
+                .ToListAsync();
+        }
+
+        // ==========================================
+        // TẠO ĐƠN - GET
+        // ==========================================
 
         [HttpGet]
         public async Task<IActionResult> Create()
@@ -40,21 +52,22 @@ namespace DeliveryManagement.Controllers
             {
                 SenderName = user.FullName,
                 SenderPhone = user.PhoneNumber ?? string.Empty,
-                SenderAddress = user.DefaultSenderAddress ?? string.Empty
+                SenderAddress = user.DefaultSenderAddress ?? string.Empty,
+
+                Items = new List<OrderItemInputModel>
+                {
+                    new OrderItemInputModel()
+                }
             };
 
-            ViewBag.PackageTypes = await _context.PackageTypes
-                .Where(p => p.IsActive)
-                .OrderBy(p => p.TypeName)
-                .ToListAsync();
+            await LoadPackageTypesAsync();
 
             return View(model);
         }
 
-
-        // =========================
-        // XỬ LÝ TẠO ĐƠN
-        // =========================
+        // ==========================================
+        // TẠO ĐƠN - POST
+        // ==========================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -68,38 +81,88 @@ namespace DeliveryManagement.Controllers
                 return Challenge();
             }
 
+            // ------------------------------------------
+            // KIỂM TRA MODEL
+            // ------------------------------------------
+
             if (!ModelState.IsValid)
             {
-                ViewBag.PackageTypes = await _context.PackageTypes
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.TypeName)
-                    .ToListAsync();
-
+                await LoadPackageTypesAsync();
                 return View(model);
             }
 
-            var packageTypeExists = await _context.PackageTypes
-                .AnyAsync(p =>
-                    p.PackageTypeId == model.PackageTypeId &&
-                    p.IsActive);
+            // ------------------------------------------
+            // KIỂM TRA DANH SÁCH HÀNG HÓA
+            // ------------------------------------------
 
-            if (!packageTypeExists)
+            if (model.Items == null || model.Items.Count == 0)
             {
                 ModelState.AddModelError(
-                    nameof(model.PackageTypeId),
-                    "Loại đóng gói không hợp lệ.");
+                    nameof(model.Items),
+                    "Đơn hàng phải có ít nhất một hàng hóa.");
 
-                ViewBag.PackageTypes = await _context.PackageTypes
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.TypeName)
-                    .ToListAsync();
-
+                await LoadPackageTypesAsync();
                 return View(model);
             }
 
-            // =========================
+            // ------------------------------------------
+            // KIỂM TRA PACKAGE TYPE
+            // ------------------------------------------
+
+            var typeIds = model.Items
+                .Select(i => i.PackageTypeId)
+                .Distinct()
+                .ToList();
+
+            var validCount = await _context.PackageTypes
+                .CountAsync(p =>
+                    typeIds.Contains(p.PackageTypeId) &&
+                    p.IsActive);
+
+            if (validCount != typeIds.Count)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Items),
+                    "Có loại hàng hóa không hợp lệ.");
+
+                await LoadPackageTypesAsync();
+                return View(model);
+            }
+
+            // ------------------------------------------
+            // TỔNG KHỐI LƯỢNG
+            // ------------------------------------------
+
+            var totalWeight = model.Items.Sum(
+                i => i.Weight * i.Quantity);
+
+            if (totalWeight <= 0)
+            {
+                ModelState.AddModelError(
+                    nameof(model.Items),
+                    "Tổng khối lượng phải lớn hơn 0.");
+
+                await LoadPackageTypesAsync();
+                return View(model);
+            }
+
+            // ------------------------------------------
+            // KIỂM TRA KHOẢNG CÁCH
+            // ------------------------------------------
+
+            if (model.DistanceKm <= 0)
+            {
+                ModelState.AddModelError(
+                    nameof(model.DistanceKm),
+                    "Khoảng cách phải lớn hơn 0 km.");
+
+                await LoadPackageTypesAsync();
+                return View(model);
+            }
+
+            // ------------------------------------------
             // TẠO MÃ ĐƠN
-            // =========================
+            // ------------------------------------------
 
             string orderCode;
 
@@ -111,15 +174,23 @@ namespace DeliveryManagement.Controllers
             while (await _context.DeliveryOrders
                 .AnyAsync(o => o.OrderCode == orderCode));
 
+            // ------------------------------------------
+            // TÌM GIÁ THEO:
+            // Hình thức + Khối lượng + Khoảng cách
+            // ------------------------------------------
 
-            // =========================
+            var price = await FindPriceAsync(
+                model.DeliveryMethod,
+                totalWeight,
+                model.DistanceKm);
+
+            // ------------------------------------------
             // TẠO DELIVERY ORDER
-            // =========================
+            // ------------------------------------------
 
             var order = new DeliveryOrder
             {
                 OrderCode = orderCode,
-
                 CustomerId = user.Id,
 
                 SenderName = model.SenderName,
@@ -131,72 +202,83 @@ namespace DeliveryManagement.Controllers
                 ReceiverAddress = model.ReceiverAddress,
 
                 DeliveryMethod = model.DeliveryMethod,
+                DistanceKm = model.DistanceKm,
 
                 PaymentMethod = model.PaymentMethod,
                 PaymentStatus = "Chưa thanh toán",
 
-                TotalAmount = 0,
+                PaymentAmount = null,
+                PaymentTime = null,
+
+                TotalAmount = price ?? 0,
 
                 CurrentStatus = "Chưa nhận",
+
+                DeliveryStaffId = null,
+                DeliveryResult = null,
+                ProofImage = null,
+                DeliveryNote = null,
+
+                ReceivedBy = null,
+                ReceivedAt = null,
+                ReceptionNote = null,
 
                 CreatedAt = DateTime.Now
             };
 
+            // ------------------------------------------
+            // TẠO ORDER ITEMS
+            // ------------------------------------------
 
-            // =========================
-            // TẠO ORDER ITEM
-            // =========================
+            var orderItems = model.Items
+                .Select(i => new OrderItem
+                {
+                    OrderCode = orderCode,
 
-            var orderItem = new OrderItem
-            {
-                OrderCode = orderCode,
+                    // Loại khách khai báo ban đầu
+                    OriginalPackageTypeId = i.PackageTypeId,
 
-                PackageTypeId = model.PackageTypeId,
+                    // Ban đầu loại thực tế = loại khách khai báo
+                    // Sau này WarehouseStaff có thể thay đổi
+                    PackageTypeId = i.PackageTypeId,
 
-                Description = model.Description,
-                Size = model.Size,
+                    Description = i.Description,
+                    Size = i.Size,
+                    Quantity = i.Quantity,
+                    Weight = i.Weight,
+                    IsFragile = i.IsFragile,
+                    IsValuable = i.IsValuable
+                })
+                .ToList();
 
-                Quantity = model.Quantity,
-
-                Weight = model.Weight,
-
-                IsFragile = model.IsFragile,
-                IsValuable = model.IsValuable
-            };
-
-
-            // =========================
-            // LƯU LỊCH SỬ TRẠNG THÁI
-            // =========================
+            // ------------------------------------------
+            // LƯU LỊCH SỬ TRẠNG THÁI BAN ĐẦU
+            // ------------------------------------------
 
             var statusHistory = new OrderStatusHistory
             {
                 OrderCode = orderCode,
-
                 Status = "Chưa nhận",
-
                 ChangedBy = user.Id,
-
                 ChangedAt = DateTime.Now
             };
 
-
-            // =========================
-            // LƯU DATABASE
-            // =========================
+            // ------------------------------------------
+            // ADD DB
+            // ------------------------------------------
 
             _context.DeliveryOrders.Add(order);
-            _context.OrderItems.Add(orderItem);
+            _context.OrderItems.AddRange(orderItems);
             _context.OrderStatusHistories.Add(statusHistory);
 
             await _context.SaveChangesAsync();
 
+            // ------------------------------------------
+            // CẬP NHẬT THÔNG TIN NGƯỜI GỬI MẶC ĐỊNH
+            // ------------------------------------------
 
-            // =========================
-            // CẬP NHẬT THÔNG TIN NGƯỜI GỬI
-            // =========================
-
-            user.DefaultSenderAddress = model.SenderAddress;
+            user.DefaultSenderAddress =
+                model.SenderAddress;
 
             if (string.IsNullOrWhiteSpace(user.FullName))
             {
@@ -210,43 +292,130 @@ namespace DeliveryManagement.Controllers
 
             await _userManager.UpdateAsync(user);
 
+            // ------------------------------------------
+            // THÔNG BÁO
+            // ------------------------------------------
 
-            TempData["SuccessMessage"] =
-                $"Tạo yêu cầu giao hàng thành công. Mã đơn: {orderCode}";
+            TempData["SuccessMessage"] = price == null
+                ? $"Tạo yêu cầu giao hàng thành công. " +
+                  $"Mã đơn: {orderCode}. " +
+                  $"Chưa có mức giá phù hợp trong bảng giá."
+                : $"Tạo yêu cầu giao hàng thành công. " +
+                  $"Mã đơn: {orderCode}";
 
-            return RedirectToAction(  "Details",  new { id = orderCode });
+            // ------------------------------------------
+            // CHUYỂN SANG DETAILS
+            // ------------------------------------------
+
+            return RedirectToAction(
+                nameof(Details),
+                new { id = orderCode });
         }
-        // =========================
+
+        // ==========================================
+        // API TÍNH GIÁ TRƯỚC KHI TẠO ĐƠN
+        // ==========================================
+
+        [HttpGet]
+        public async Task<IActionResult> CalculatePrice(
+            string deliveryMethod,
+            decimal totalWeight,
+            decimal distanceKm)
+        {
+            if (string.IsNullOrWhiteSpace(deliveryMethod) ||
+                totalWeight <= 0 ||
+                distanceKm <= 0)
+            {
+                return Json(new
+                {
+                    success = false,
+                    price = 0
+                });
+            }
+
+            var price = await FindPriceAsync(
+                deliveryMethod,
+                totalWeight,
+                distanceKm);
+
+            return Json(new
+            {
+                success = price.HasValue,
+                price = price ?? 0
+            });
+        }
+
+        // ==========================================
+        // TÌM GIÁ TRONG PRICE TABLE
+        // ==========================================
+
+        private async Task<decimal?> FindPriceAsync(
+            string deliveryMethod,
+            decimal totalWeight,
+            decimal distanceKm)
+        {
+            return await _context.PriceTables
+                .Where(p =>
+                    p.DeliveryMethod == deliveryMethod &&
+
+                    // Khối lượng:
+                    // Min < Weight <= Max
+                    p.MinWeight < totalWeight &&
+                    totalWeight <= p.MaxWeight &&
+
+                    // Khoảng cách:
+                    // Min < Distance <= Max
+                    p.MinDistance < distanceKm &&
+                    distanceKm <= p.MaxDistance)
+                .OrderBy(p => p.MinWeight)
+                .ThenBy(p => p.MinDistance)
+                .Select(p => (decimal?)p.Price)
+                .FirstOrDefaultAsync();
+        }
+
+        // ==========================================
         // XEM CHI TIẾT ĐƠN HÀNG
-        // =========================
+        // ==========================================
 
         [HttpGet]
         public async Task<IActionResult> Details(string id)
         {
             var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Challenge();
-            if (string.IsNullOrWhiteSpace(id)) return NotFound();
 
-            // 1. Lấy thông tin đơn hàng gốc
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return NotFound();
+            }
+
             var order = await _context.DeliveryOrders
-                .FirstOrDefaultAsync(o => o.OrderCode == id);
+                .Include(o => o.OrderItems)
+                    .ThenInclude(i => i.PackageType)
+                .FirstOrDefaultAsync(o =>
+                    o.OrderCode == id &&
+                    o.CustomerId == user.Id);
 
-            if (order == null) return NotFound();
+            if (order == null)
+            {
+                TempData["ErrorMessage"] =
+                    "Không tìm thấy đơn hàng " +
+                    "hoặc bạn không có quyền xem đơn này.";
 
-            // 2. Lấy chi tiết Hàng hóa & Phân loại hàng hóa (Phần của bạn)
-            var orderItem = await _context.OrderItems
-                .Include(oi => oi.PackageType) // Gọi bảng PackageType để lấy tên
-                .FirstOrDefaultAsync(oi => oi.OrderCode == id);
-
-            // Truyền qua ViewBag
-            ViewBag.OrderItem = orderItem;
+                return RedirectToAction(
+                    "Index",
+                    "Home");
+            }
 
             return View(order);
         }
 
-        // =========================
-        // HỦY YÊU CẦU GIAO HÀNG
-        // =========================
+        // ==========================================
+        // HỦY ĐƠN HÀNG
+        // ==========================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -264,7 +433,9 @@ namespace DeliveryManagement.Controllers
                 TempData["ErrorMessage"] =
                     "Không tìm thấy mã đơn hàng.";
 
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction(
+                    "Index",
+                    "Home");
             }
 
             var order = await _context.DeliveryOrders
@@ -275,24 +446,35 @@ namespace DeliveryManagement.Controllers
             if (order == null)
             {
                 TempData["ErrorMessage"] =
-                    "Không tìm thấy đơn hàng hoặc bạn không có quyền hủy đơn này.";
+                    "Không tìm thấy đơn hàng " +
+                    "hoặc bạn không có quyền hủy đơn này.";
 
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction(
+                    "Index",
+                    "Home");
             }
 
-            // Chỉ cho phép hủy khi đơn chưa được tiếp nhận
+            // ------------------------------------------
+            // CHỈ ĐƯỢC HỦY KHI CHƯA NHẬN
+            // ------------------------------------------
+
             if (order.CurrentStatus != "Chưa nhận")
             {
                 TempData["ErrorMessage"] =
-                    "Đơn hàng không còn ở trạng thái có thể hủy.";
+                    "Đơn hàng không còn ở trạng thái " +
+                    "có thể hủy.";
 
-                return RedirectToAction("Index", "Home");
+                return RedirectToAction(
+                    nameof(Details),
+                    new { id = order.OrderCode });
             }
 
-            // Cập nhật trạng thái đơn
+            // ------------------------------------------
+            // CẬP NHẬT TRẠNG THÁI
+            // ------------------------------------------
+
             order.CurrentStatus = "Đã hủy";
 
-            // Ghi lịch sử trạng thái
             var statusHistory = new OrderStatusHistory
             {
                 OrderCode = order.OrderCode,
@@ -301,54 +483,18 @@ namespace DeliveryManagement.Controllers
                 ChangedAt = DateTime.Now
             };
 
-            _context.OrderStatusHistories.Add(statusHistory);
+            _context.OrderStatusHistories.Add(
+                statusHistory);
 
             await _context.SaveChangesAsync();
 
             TempData["SuccessMessage"] =
-                $"Đã hủy yêu cầu giao hàng {order.OrderCode}.";
+                $"Đã hủy yêu cầu giao hàng " +
+                $"{order.OrderCode}.";
 
-            return RedirectToAction("Details",new { id = order.OrderCode });
-        }
-
-        // =========================
-        // CẬP NHẬT TRẠNG THÁI ĐƠN HÀNG
-        // =========================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateStatus(string id, string newStatus)
-        {
-            var user = await _userManager.GetUserAsync(User);
-            if (user == null) return Challenge();
-
-            // Tìm đơn hàng theo mã (OrderCode)
-            var order = await _context.DeliveryOrders.FirstOrDefaultAsync(o => o.OrderCode == id);
-
-            if (order == null)
-            {
-                TempData["ErrorMessage"] = "Không tìm thấy đơn hàng.";
-                return RedirectToAction("Index", "Home");
-            }
-            string[] validStatuses = { "Chưa nhận", "Đã nhận - Chưa giao", "Đã nhận – Đang giao", "Đã Giao" };
-
-            if (validStatuses.Contains(newStatus))
-            {
-                order.CurrentStatus = newStatus;
-                var statusHistory = new OrderStatusHistory
-                {
-                    OrderCode = order.OrderCode,
-                    Status = newStatus,
-                    ChangedBy = user.Id,
-                    ChangedAt = DateTime.Now
-                };
-
-                _context.DeliveryOrders.Update(order);
-                _context.OrderStatusHistories.Add(statusHistory);
-                await _context.SaveChangesAsync();
-
-                TempData["SuccessMessage"] = $"Đã cập nhật trạng thái đơn {order.OrderCode} thành: {newStatus}";
-            }
-            return RedirectToAction("Details", new { id = order.OrderCode });
+            return RedirectToAction(
+                nameof(Details),
+                new { id = order.OrderCode });
         }
     }
 }

@@ -14,7 +14,7 @@ namespace DeliveryManagement.Models
         public int PackageTypeId { get; set; }
 
         // Mô tả hàng hóa
-        public string Description { get; set; } = string.Empty;
+        public string Description { get; set; } 
 
         // Kích thước
         public string? Size { get; set; }
@@ -35,5 +35,13 @@ namespace DeliveryManagement.Models
         public DeliveryOrder? DeliveryOrder { get; set; }
 
         public PackageType? PackageType { get; set; }
+        // Ghi nhận đơn hàng
+        public int? OriginalPackageTypeId { get; set; }
+
+        public string? ClassifiedBy { get; set; }
+
+        public DateTime? ClassifiedAt { get; set; }
+
+        public string? ClassificationNote { get; set; }
     }
 }

@@ -4,6 +4,7 @@ using DeliveryManagement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DeliveryManagement.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929160937_AddDistancePricing")]
+    partial class AddDistancePricing
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -217,12 +220,6 @@ namespace DeliveryManagement.Migrations
                     b.Property<string>("ProofImage")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ReceivedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ReceivedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("ReceiverAddress")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -233,9 +230,6 @@ namespace DeliveryManagement.Migrations
 
                     b.Property<string>("ReceiverPhone")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReceptionNote")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SenderAddress")
@@ -334,15 +328,6 @@ namespace DeliveryManagement.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderItemId"));
 
-                    b.Property<string>("ClassificationNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ClassifiedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ClassifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -356,9 +341,6 @@ namespace DeliveryManagement.Migrations
                     b.Property<string>("OrderCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("OriginalPackageTypeId")
-                        .HasColumnType("int");
 
                     b.Property<int>("PackageTypeId")
                         .HasColumnType("int");

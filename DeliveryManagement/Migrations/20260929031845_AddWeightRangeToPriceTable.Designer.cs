@@ -4,6 +4,7 @@ using DeliveryManagement.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace DeliveryManagement.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929031845_AddWeightRangeToPriceTable")]
+    partial class AddWeightRangeToPriceTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -195,10 +198,6 @@ namespace DeliveryManagement.Migrations
                     b.Property<string>("DeliveryStaffId")
                         .HasColumnType("nvarchar(450)");
 
-                    b.Property<decimal>("DistanceKm")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
                     b.Property<decimal?>("PaymentAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -217,12 +216,6 @@ namespace DeliveryManagement.Migrations
                     b.Property<string>("ProofImage")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<DateTime?>("ReceivedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ReceivedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("ReceiverAddress")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -233,9 +226,6 @@ namespace DeliveryManagement.Migrations
 
                     b.Property<string>("ReceiverPhone")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("ReceptionNote")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("SenderAddress")
@@ -334,15 +324,6 @@ namespace DeliveryManagement.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("OrderItemId"));
 
-                    b.Property<string>("ClassificationNote")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("ClassifiedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("ClassifiedBy")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -356,9 +337,6 @@ namespace DeliveryManagement.Migrations
                     b.Property<string>("OrderCode")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
-
-                    b.Property<int?>("OriginalPackageTypeId")
-                        .HasColumnType("int");
 
                     b.Property<int>("PackageTypeId")
                         .HasColumnType("int");
@@ -450,15 +428,7 @@ namespace DeliveryManagement.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("MaxDistance")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
                     b.Property<decimal>("MaxWeight")
-                        .HasPrecision(10, 2)
-                        .HasColumnType("decimal(10,2)");
-
-                    b.Property<decimal>("MinDistance")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
 

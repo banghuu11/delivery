@@ -1,4 +1,4 @@
-﻿using DeliveryManagement.Data;
+using DeliveryManagement.Data;
 using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -27,21 +27,37 @@ builder.Services.AddDefaultIdentity<ApplicationUser>(options =>
 // MVC
 builder.Services.AddControllersWithViews();
 
-var app = builder.Build();
+var app = builder.Build(); 
+var invariant = System.Globalization.CultureInfo.InvariantCulture;
+System.Globalization.CultureInfo.DefaultThreadCurrentCulture = invariant;
+System.Globalization.CultureInfo.DefaultThreadCurrentUICulture = invariant;
 
 using (var scope = app.Services.CreateScope())
 {
-    var roleManager = scope.ServiceProvider
-        .GetRequiredService<RoleManager<IdentityRole>>();
+    var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var dbContext = services.GetRequiredService<ApplicationDbContext>();
+        
+        if (dbContext.Database.IsRelational())
+        {
+            await dbContext.Database.MigrateAsync();
+        }
 
-    await IdentitySeeder.SeedRolesAsync(roleManager);
-}
-using (var scope = app.Services.CreateScope())
-{
-    var userManager = scope.ServiceProvider
-        .GetRequiredService<UserManager<ApplicationUser>>();
+        var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
+        await IdentitySeeder.SeedRolesAsync(roleManager);
 
-    await AdminSeeder.SeedAdminAsync(userManager);
+        var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+        await AdminSeeder.SeedAdminAsync(userManager);
+        await StaffSeeder.SeedStaffAsync(userManager);
+
+        await DataSeeder.SeedInitialDataAsync(dbContext);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Đã xảy ra lỗi trong quá trình khởi tạo cơ sở dữ liệu.");
+    }
 }
 // HTTP request pipeline
 if (!app.Environment.IsDevelopment())

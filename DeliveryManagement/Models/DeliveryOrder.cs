@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryManagement.Models
 {
@@ -22,6 +23,8 @@ namespace DeliveryManagement.Models
 
         // Thông tin giao hàng
         public string DeliveryMethod { get; set; } = string.Empty;
+        [Precision(10, 2)]
+        public decimal DistanceKm { get; set; }
 
         // Thông tin thanh toán
         public string PaymentMethod { get; set; } = string.Empty;
@@ -55,5 +58,11 @@ namespace DeliveryManagement.Models
 
         public ICollection<OrderStatusHistory> OrderStatusHistories { get; set; }
             = new List<OrderStatusHistory>();
+        // Thông tin tiếp nhận
+        public string? ReceivedBy { get; set; }
+
+        public DateTime? ReceivedAt { get; set; }
+
+        public string? ReceptionNote { get; set; }
     }
 }

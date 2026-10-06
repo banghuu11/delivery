@@ -1,8 +1,90 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Trang chủ";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="home-page">
+
+    <section class="home-hero">
+
+        <div class="home-hero-content">
+
+            <span class="home-badge">
+                DELIVERY MANAGEMENT
+            </span>
+
+            <h1>
+                Quản lý giao hàng
+                <br />
+                đơn giản và thuận tiện
+            </h1>
+
+            <p>
+                Tạo yêu cầu giao hàng, theo dõi đơn hàng
+                và quản lý thông tin vận chuyển trên một hệ thống.
+            </p>
+
+            @if (User.Identity?.IsAuthenticated == true)
+            {
+                @if (User.IsInRole("Customer"))
+                {
+                    <a asp-controller="DeliveryOrder"
+                       asp-action="Create"
+                       class="home-create-btn">
+                        + Tạo yêu cầu giao hàng
+                    </a>
+                }
+            }
+            else
+            {
+                <a asp-controller="Account"
+                   asp-action="Login"
+                   class="home-create-btn">
+                    + Tạo yêu cầu giao hàng
+                </a>
+            }
+
+        </div>
+
+    </section>
+
+
+    <section class="home-features">
+
+        <div class="home-feature-card">
+
+            <h3>Tạo đơn nhanh</h3>
+
+            <p>
+                Nhập thông tin người gửi, người nhận
+                và hàng hóa để tạo yêu cầu giao hàng.
+            </p>
+
+        </div>
+
+
+        <div class="home-feature-card">
+
+            <h3>Theo dõi đơn hàng</h3>
+
+            <p>
+                Theo dõi trạng thái và hành trình
+                vận chuyển của đơn hàng.
+            </p>
+
+        </div>
+
+
+        <div class="home-feature-card">
+
+            <h3>Quản lý dễ dàng</h3>
+
+            <p>
+                Các chức năng được phân quyền
+                theo từng vai trò người dùng.
+            </p>
+
+        </div>
+
+    </section>
+
 </div>

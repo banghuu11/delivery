@@ -48,7 +48,8 @@ namespace DeliveryManagement.Models.ViewModels
 
         [Required(ErrorMessage = "Vui lòng chọn hình thức giao hàng")]
         public string DeliveryMethod { get; set; } = string.Empty;
-
+        [Range(0.01, 100000, ErrorMessage = "Khoảng cách phải lớn hơn 0 km")]
+        public decimal DistanceKm { get; set; }
 
         // =========================
         // THÔNG TIN THANH TOÁN
@@ -59,10 +60,18 @@ namespace DeliveryManagement.Models.ViewModels
 
 
         // =========================
-        // THÔNG TIN HÀNG HÓA
+        // THÔNG TIN HÀNG HÓA (nhiều dòng)
         // =========================
 
-        [Required(ErrorMessage = "Vui lòng chọn loại đóng gói")]
+        [Required(ErrorMessage = "Vui lòng thêm ít nhất một hàng hóa")]
+        [MinLength(1, ErrorMessage = "Vui lòng thêm ít nhất một hàng hóa")]
+        [MaxLength(20, ErrorMessage = "Mỗi đơn tối đa 20 hàng hóa")]
+        public List<OrderItemInputModel> Items { get; set; } = new();
+    }
+
+    public class OrderItemInputModel
+    {
+        [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn loại đóng gói")]
         public int PackageTypeId { get; set; }
 
         [StringLength(500)]
@@ -71,12 +80,10 @@ namespace DeliveryManagement.Models.ViewModels
         [StringLength(100)]
         public string? Size { get; set; }
 
-        [Range(1, 1000,
-            ErrorMessage = "Số lượng phải từ 1 đến 1000")]
+        [Range(1, 1000, ErrorMessage = "Số lượng phải từ 1 đến 1000")]
         public int Quantity { get; set; } = 1;
 
-        [Range(0.01, 10000,
-            ErrorMessage = "Khối lượng phải lớn hơn 0")]
+        [Range(0.01, 10000, ErrorMessage = "Khối lượng phải lớn hơn 0")]
         public decimal Weight { get; set; }
 
         public bool IsFragile { get; set; }

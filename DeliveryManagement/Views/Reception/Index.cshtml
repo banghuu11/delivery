@@ -1,0 +1,168 @@
+﻿@model List<DeliveryManagement.Models.DeliveryOrder>
+
+@{
+    ViewData["Title"] = "Tiếp nhận đơn hàng";
+}
+
+<div class="container mt-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="mb-1">Tiếp nhận đơn hàng</h2>
+
+            <p class="text-muted mb-0">
+                Kiểm tra và ghi nhận thông tin người nhận, hàng hóa.
+            </p>
+        </div>
+
+    </div>
+
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-info">
+            Hiện chưa có đơn hàng cần tiếp nhận.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0">
+
+            <div class="card-body p-0">
+
+                <div class="table-responsive">
+
+                    <table class="table table-hover align-middle mb-0">
+
+                        <thead class="table-light">
+
+                            <tr>
+                                <th>Mã đơn</th>
+                                <th>Người nhận</th>
+                                <th>Hình thức</th>
+                                <th>Khối lượng</th>
+                                <th>Trạng thái</th>
+                                <th>Tiếp nhận</th>
+                                <th></th>
+                            </tr>
+
+                        </thead>
+
+
+                        <tbody>
+
+                            @foreach (var order in Model)
+                            {
+                                var totalWeight =
+                                order.OrderItems.Sum(
+                                i => i.Weight * i.Quantity);
+
+                                <tr>
+
+                                    <td>
+                                        <strong>
+                                            @order.OrderCode
+                                        </strong>
+
+                                        <div class="small text-muted">
+                                            @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                        </div>
+                                    </td>
+
+
+                                    <td>
+                                        @order.ReceiverName
+
+                                        <div class="small text-muted">
+                                            @order.ReceiverPhone
+                                        </div>
+                                    </td>
+
+
+                                    <td>
+                                        @order.DeliveryMethod
+                                    </td>
+
+
+                                    <td>
+                                        @totalWeight.ToString("0.##") kg
+                                    </td>
+
+
+                                    <td>
+
+                                        <span class="badge bg-secondary">
+                                            @order.CurrentStatus
+                                        </span>
+
+                                    </td>
+
+
+                                    <td>
+
+                                        @if (order.ReceivedAt.HasValue)
+                                        {
+                                            <span class="badge bg-success">
+                                                Đã ghi nhận
+                                            </span>
+
+                                            <div class="small text-muted mt-1">
+                                                @order.ReceivedAt.Value.ToString(
+                                                "dd/MM/yyyy HH:mm")
+                                </div>
+                                                                }
+                                        else
+                                        {
+                                            <span class="badge bg-warning text-dark">
+                                                Chưa ghi nhận
+                                            </span>
+                                        }
+
+                                </td>
+
+
+                                <td class="text-end">
+
+                                    <a asp-action="Record"
+                                       asp-route-id="@order.OrderCode"
+                                       class="btn btn-primary btn-sm">
+
+                                        @(order.ReceivedAt.HasValue
+                                                                            ? "Xem / chỉnh sửa"
+                                                                            : "Ghi nhận")
+
+                                </a>
+
+                                    </td>
+
+                                </tr>
+                                                }
+
+                        </tbody>
+
+                    </table>
+
+                </div>
+
+            </div>
+
+        </div>
+    }
+
+</div>

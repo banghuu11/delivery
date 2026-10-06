@@ -1,0 +1,358 @@
+﻿@model DeliveryManagement.Models.ViewModels.ReceptionViewModel
+
+@{
+    ViewData["Title"] = "Ghi nhận thông tin đơn hàng";
+}
+
+<div class="container mt-4 mb-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+
+            <h2 class="mb-1">
+                Ghi nhận thông tin đơn hàng
+            </h2>
+
+            <p class="text-muted mb-0">
+                Mã đơn:
+                <strong>@Model.OrderCode</strong>
+            </p>
+
+        </div>
+
+
+        <a asp-action="Index"
+           class="btn btn-outline-secondary">
+            ← Quay lại
+        </a>
+
+    </div>
+
+
+    <form asp-action="Record"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               asp-for="OrderCode" />
+
+
+        <div asp-validation-summary="ModelOnly"
+             class="alert alert-danger"></div>
+
+
+        <!-- =========================
+             1. NGƯỜI NHẬN
+             ========================= -->
+
+        <div class="card shadow-sm border-0 mb-4">
+
+            <div class="card-header bg-white fw-bold">
+                1. Thông tin người nhận
+            </div>
+
+
+            <div class="card-body">
+
+                <div class="row">
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="ReceiverName"
+                               class="form-label fw-semibold">
+                            Họ và tên
+                        </label>
+
+                        <input asp-for="ReceiverName"
+                               class="form-control" />
+
+                        <span asp-validation-for="ReceiverName"
+                              class="text-danger"></span>
+
+                    </div>
+
+
+                    <div class="col-md-6 mb-3">
+
+                        <label asp-for="ReceiverPhone"
+                               class="form-label fw-semibold">
+                            Số điện thoại
+                        </label>
+
+                        <input asp-for="ReceiverPhone"
+                               class="form-control" />
+
+                        <span asp-validation-for="ReceiverPhone"
+                              class="text-danger"></span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="mb-0">
+
+                    <label asp-for="ReceiverAddress"
+                           class="form-label fw-semibold">
+                        Địa chỉ
+                    </label>
+
+                    <input asp-for="ReceiverAddress"
+                           class="form-control" />
+
+                    <span asp-validation-for="ReceiverAddress"
+                          class="text-danger"></span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             2. HÀNG HÓA
+             ========================= -->
+
+        <div class="card shadow-sm border-0 mb-4">
+
+            <div class="card-header bg-white fw-bold">
+                2. Thông tin hàng hóa
+            </div>
+
+
+            <div class="card-body">
+
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    <div class="border rounded p-3 mb-3">
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+
+                            <h5 class="mb-0">
+                                Hàng hóa @(i + 1)
+                            </h5>
+
+                            <span class="badge bg-light text-dark border">
+                                @Model.Items[i].PackageTypeName
+                            </span>
+
+                        </div>
+
+
+                        <input asp-for="Items[i].OrderItemId"
+                               type="hidden" />
+
+                        <input asp-for="Items[i].PackageTypeId"
+                               type="hidden" />
+
+
+                        <!-- Loại hàng -->
+
+                        <div class="mb-3">
+
+                            <label class="form-label fw-semibold">
+                                Loại hàng khách khai báo
+                            </label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   value="@Model.Items[i].PackageTypeName"
+                                   disabled />
+
+                            <div class="form-text">
+                                Nhân viên tiếp nhận không thay đổi
+                                loại hàng tại bước này.
+                            </div>
+
+                        </div>
+
+
+                        <!-- Mô tả -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="Items[i].Description"
+                                   class="form-label fw-semibold">
+                                Mô tả hàng hóa
+                            </label>
+
+                            <textarea asp-for="Items[i].Description"
+                                      class="form-control"
+                                      rows="2"
+                                      placeholder="Nhập nếu cần bổ sung thông tin"></textarea>
+
+                            <span asp-validation-for="Items[i].Description"
+                                  class="text-danger"></span>
+
+                        </div>
+
+
+                        <div class="row">
+
+                            <!-- Kích thước -->
+
+                            <div class="col-md-4 mb-3">
+
+                                <label asp-for="Items[i].Size"
+                                       class="form-label fw-semibold">
+                                    Kích thước
+                                </label>
+
+                                <input asp-for="Items[i].Size"
+                                       class="form-control" />
+
+                                <span asp-validation-for="Items[i].Size"
+                                      class="text-danger"></span>
+
+                            </div>
+
+
+                            <!-- Số lượng -->
+
+                            <div class="col-md-4 mb-3">
+
+                                <label asp-for="Items[i].Quantity"
+                                       class="form-label fw-semibold">
+                                    Số lượng
+                                </label>
+
+                                <input asp-for="Items[i].Quantity"
+                                       type="number"
+                                       min="1"
+                                       max="1000"
+                                       class="form-control" />
+
+                                <span asp-validation-for="Items[i].Quantity"
+                                      class="text-danger"></span>
+
+                            </div>
+
+
+                            <!-- Khối lượng -->
+
+                            <div class="col-md-4 mb-3">
+
+                                <label asp-for="Items[i].Weight"
+                                       class="form-label fw-semibold">
+                                    Khối lượng mỗi món (kg)
+                                </label>
+
+                                <input asp-for="Items[i].Weight"
+                                       type="number"
+                                       min="0.01"
+                                       max="10000"
+                                       step="0.01"
+                                       class="form-control" />
+
+                                <span asp-validation-for="Items[i].Weight"
+                                      class="text-danger"></span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- Thuộc tính -->
+
+                        <div class="d-flex gap-4">
+
+                            <div class="form-check">
+
+                                <input asp-for="Items[i].IsFragile"
+                                       class="form-check-input" />
+
+                                <label asp-for="Items[i].IsFragile"
+                                       class="form-check-label">
+                                    Hàng dễ vỡ
+                                </label>
+
+                            </div>
+
+
+                            <div class="form-check">
+
+                                <input asp-for="Items[i].IsValuable"
+                                       class="form-check-input" />
+
+                                <label asp-for="Items[i].IsValuable"
+                                       class="form-check-label">
+                                    Hàng có giá trị
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+                }
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             3. GHI CHÚ
+             ========================= -->
+
+        <div class="card shadow-sm border-0 mb-4">
+
+            <div class="card-header bg-white fw-bold">
+                3. Ghi chú tiếp nhận
+            </div>
+
+
+            <div class="card-body">
+
+                <label asp-for="ReceptionNote"
+                       class="form-label">
+                    Ghi chú
+                </label>
+
+                <textarea asp-for="ReceptionNote"
+                          class="form-control"
+                          rows="4"
+                          placeholder="Ví dụ: Đã đối chiếu thông tin người nhận và kiểm tra hàng hóa thực tế."></textarea>
+
+                <span asp-validation-for="ReceptionNote"
+                      class="text-danger"></span>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             BUTTON
+             ========================= -->
+
+        <div class="d-flex justify-content-end gap-2">
+
+            <a asp-action="Index"
+               class="btn btn-outline-secondary">
+                Hủy
+            </a>
+
+
+            <button type="submit"
+                    class="btn btn-primary">
+                Ghi nhận thông tin
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+}
