@@ -1420,44 +1420,72 @@ body {
 }
 
 /* ========================================================
-   ENTERPRISE HERO BANNER GRADIENT & TECH OVERLAY
+   EXACT PANORAMIC HERO BANNER (1:1 MOCKUP MATCH)
    ======================================================== */
-.tocdo-hero {
-    background: linear-gradient(125deg, #ff5500 0%, #ff3b00 45%, #ea580c 100%);
-    padding: 85px 0 125px 0;
+.tocdo-hero-panoramic {
+    background-size: cover;
+    background-position: center right;
+    background-repeat: no-repeat;
+    background-color: #ff5400;
+    padding: 70px 0 110px 0;
     position: relative;
     overflow: hidden;
 }
 
-.hero-ambient-glow {
-    position: absolute;
-    top: -20%;
-    right: 15%;
-    width: 650px;
-    height: 650px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, rgba(255, 140, 0, 0.1) 50%, transparent 75%);
-    border-radius: 50%;
-    pointer-events: none;
-    filter: blur(40px);
+.min-vh-hero-panoramic {
+    min-height: 380px;
 }
 
-.hero-tech-grid {
-    position: absolute;
-    inset: 0;
-    background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
-    background-size: 40px 40px;
-    mask-image: radial-gradient(circle at 60% 50%, black 40%, transparent 80%);
-    -webkit-mask-image: radial-gradient(circle at 60% 50%, black 40%, transparent 80%);
-    pointer-events: none;
+.tocdo-hero-title {
+    font-size: 2.9rem;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.hero-trust-pill {
-    background: rgba(0, 0, 0, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    backdrop-filter: blur(8px);
+.tocdo-hero-subtitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
+
+/* NÚT GỬI ĐƠN NGAY TRÒN CAM ĐỒNG BỘ */
+.btn-tocdo-hero-btn {
+    background: linear-gradient(180deg, #ff7a18 0%, #ff5400 100%);
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-weight: 700;
+    font-size: 1.05rem;
+    padding: 12px 32px;
+    border-radius: 50px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.4);
+    transition: all 0.25s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.btn-tocdo-hero-btn:hover {
+    background: linear-gradient(180deg, #ff8c37 0%, #ff620e 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35);
+    color: #ffffff !important;
+    text-decoration: none;
+}
+
+@media (max-width: 991px) {
+    .tocdo-hero-panoramic {
+        background-position: 70% center;
+        padding: 50px 0 90px 0;
+    }
+    .tocdo-hero-title {
+        font-size: 2.1rem;
+    }
+}
+
 
 .badge-pulse-dot {
     width: 8px;

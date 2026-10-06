@@ -1,149 +1,64 @@
 @model DeliveryManagement.Models.WebsiteSetting
 @{
     var isAuthenticated = User.Identity?.IsAuthenticated == true;
+    string bannerBgUrl = !string.IsNullOrWhiteSpace(Model?.HeroBannerImageUrl) && Model.HeroBannerImageUrl != "/images/hero_courier.jpg" 
+        ? Model.HeroBannerImageUrl 
+        : "/images/hero_banner_exact.jpg";
 }
 
-<section class="tocdo-hero position-relative overflow-hidden">
-    <!-- AMBIENT GLOW & TECH GRID OVERLAY -->
-    <div class="hero-ambient-glow"></div>
-    <div class="hero-tech-grid"></div>
-
+<section class="tocdo-hero-panoramic" style="background-image: url('@bannerBgUrl');">
     <div class="container position-relative z-2">
-        <div class="row align-items-center min-vh-hero g-5">
+        <div class="row align-items-center min-vh-hero-panoramic">
             
-            <!-- CỘT TRÁI: THÔNG ĐIỆP THƯƠNG HIỆU & DOANH NGHIỆP -->
-            <div class="col-lg-6 hero-text-col">
-                
-                <!-- ENTERPRISE BADGE -->
-                <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill hero-trust-pill mb-3 shadow-sm">
-                    <span class="badge-pulse-dot"></span>
-                    <span class="fw-bold small text-white text-uppercase tracking-wider">
-                        ⚡ Vận Chuyển Hỏa Tốc Doanh Nghiệp & Cá Nhân
-                    </span>
-                </div>
-
-                <!-- TIÊU ĐỀ CHÍNH -->
-                <h1 class="tocdo-hero-title text-uppercase fw-900 text-white mb-3">
+            <!-- CỘT TRÁI: TIÊU ĐỀ, SLOGAN & NÚT HÀNH ĐỘNG KHỚP 100% MOCKUP -->
+            <div class="col-lg-7 col-md-8 hero-text-col">
+                <h1 class="tocdo-hero-title text-uppercase fw-900 text-white mb-2">
                     @(string.IsNullOrWhiteSpace(Model?.Slogan) ? "GIAO HÀNG HỎA TỐC, NHẬN TRONG NGÀY" : Model.Slogan)
                 </h1>
 
-                <!-- PHỤ ĐỀ / SLOGAN PHỤ -->
-                <p class="tocdo-hero-subtitle text-white-90 mb-4 fs-5">
-                    @(string.IsNullOrWhiteSpace(Model?.SubSlogan) ? "Giải pháp logistics thông minh toàn diện — Cam kết an toàn, nhanh chóng và hỗ trợ 24/7 trên 63 tỉnh thành." : Model.SubSlogan)
+                <p class="tocdo-hero-subtitle text-white mb-4">
+                    @(string.IsNullOrWhiteSpace(Model?.SubSlogan) ? "An Toàn - Nhanh Chóng - Tin Cậy" : Model.SubSlogan)
                 </p>
 
-                <!-- NHÓM NÚT HÀNH ĐỘNG (CTA) -->
-                <div class="tocdo-hero-actions d-flex align-items-center flex-wrap gap-3 mb-4 pb-2">
+                <div class="tocdo-hero-actions">
                     @if (isAuthenticated)
                     {
                         @if (User.IsInRole("Customer"))
                         {
-                            <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-tocdo-cta shadow-lg">
-                                <span>Gửi Đơn Ngay</span>
-                                <i class="bi bi-arrow-right ms-2"></i>
+                            <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-tocdo-hero-btn shadow">
+                                Gửi Đơn Ngay
                             </a>
                         }
                         else if (User.IsInRole("Admin"))
                         {
-                            <a asp-controller="Admin" asp-action="Index" class="btn btn-tocdo-cta shadow-lg">
-                                <span>Bảng Điều Khiển Admin</span>
-                                <i class="bi bi-speedometer2 ms-2"></i>
+                            <a asp-controller="Admin" asp-action="Index" class="btn btn-tocdo-hero-btn shadow">
+                                Bảng Điều Khiển Admin
                             </a>
                         }
                         else if (User.IsInRole("ReceptionStaff"))
                         {
-                            <a asp-controller="Reception" asp-action="Index" class="btn btn-tocdo-cta shadow-lg">
-                                <span>Tiếp Nhận Đơn Hàng</span>
-                                <i class="bi bi-inbox ms-2"></i>
+                            <a asp-controller="Reception" asp-action="Index" class="btn btn-tocdo-hero-btn shadow">
+                                Tiếp Nhận Đơn Hàng
                             </a>
                         }
                         else if (User.IsInRole("WarehouseStaff"))
                         {
-                            <a asp-controller="Warehouse" asp-action="Index" class="btn btn-tocdo-cta shadow-lg">
-                                <span>Quản Lý Kho</span>
-                                <i class="bi bi-building ms-2"></i>
+                            <a asp-controller="Warehouse" asp-action="Index" class="btn btn-tocdo-hero-btn shadow">
+                                Quản Lý Kho
                             </a>
                         }
                     }
                     else
                     {
-                        <a asp-controller="Account" asp-action="Login" class="btn btn-tocdo-cta shadow-lg">
-                            <span>Gửi Đơn Ngay</span>
-                            <i class="bi bi-arrow-right ms-2"></i>
+                        <a asp-controller="Account" asp-action="Login" class="btn btn-tocdo-hero-btn shadow">
+                            Gửi Đơn Ngay
                         </a>
                     }
-
-                    <a href="/#pricing" class="btn btn-hero-outline text-white rounded-pill px-4 py-3 fw-bold">
-                        <i class="bi bi-calculator me-2"></i> Bảng Giá Cước
-                    </a>
-                </div>
-
-                <!-- CHỈ SỐ DOANH NGHIỆP ĐÁNG TIN CẬY (KPI PILLS) -->
-                <div class="row g-3 pt-3 border-top border-white-20">
-                    <div class="col-4">
-                        <div class="hero-stat-item">
-                            <div class="hero-stat-value text-white fw-900">15 - 30p</div>
-                            <div class="hero-stat-label text-white-75 small">Lấy hàng siêu tốc</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="hero-stat-item">
-                            <div class="hero-stat-value text-white fw-900">99.8%</div>
-                            <div class="hero-stat-label text-white-75 small">Giao đúng cam kết</div>
-                        </div>
-                    </div>
-                    <div class="col-4">
-                        <div class="hero-stat-item">
-                            <div class="hero-stat-value text-white fw-900">100%</div>
-                            <div class="hero-stat-label text-white-75 small">Bảo hiểm bưu phẩm</div>
-                        </div>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- CỘT PHẢI: KHUNG SHOWCASE DOANH NGHIỆP HIỆN ĐẠI + FLOATING CARDS -->
-            <div class="col-lg-6 hero-img-col position-relative text-center">
-                <div class="hero-showcase-container">
-                    
-                    <!-- MAIN HERO IMAGE -->
-                    <div class="hero-image-frame shadow-2xl rounded-4 overflow-hidden position-relative">
-                        <img src="@(string.IsNullOrWhiteSpace(Model?.HeroBannerImageUrl) ? "/images/hero_courier.jpg" : Model.HeroBannerImageUrl)" 
-                             alt="TỐC ĐỘ DELIVERY - Dịch Vụ Giao Hàng Hỏa Tốc" 
-                             class="img-fluid w-100 hero-banner-img" />
-                        <div class="hero-image-overlay"></div>
-                    </div>
-
-                    <!-- FLOATING CARD 1: LIVE STATUS BEACON (TOP RIGHT) -->
-                    <div class="hero-floating-card top-card shadow-lg animate-float-slow">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="floating-icon-box bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
-                                <i class="bi bi-shield-check fs-5"></i>
-                            </div>
-                            <div class="text-start">
-                                <div class="badge bg-success-subtle text-success fw-bold px-2 py-1 rounded-pill small mb-1">
-                                    <span class="pulse-beacon me-1"></span> Đang Giao Hỏa Tốc
-                                </div>
-                                <div class="fw-bold text-dark small">Shipper #TD-2026 đang tới</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- FLOATING CARD 2: RATING & TRUST (BOTTOM LEFT) -->
-                    <div class="hero-floating-card bottom-card shadow-lg animate-float-reverse">
-                        <div class="d-flex align-items-center gap-3">
-                            <div class="floating-icon-box bg-orange text-white rounded-circle d-flex align-items-center justify-content-center">
-                                <i class="bi bi-star-fill text-warning fs-5"></i>
-                            </div>
-                            <div class="text-start">
-                                <div class="fw-bold text-dark fs-6">4.9 / 5.0 ⭐</div>
-                                <small class="text-muted">Hơn 500,000+ Khách hàng tin dùng</small>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
             </div>
+
+            <!-- CỘT PHẢI ĐỂ TRỐNG ĐỂ LỘ HÌNH SHIPPER VÀ CẢNH THÀNH PHỐ TRONG NỀN -->
+            <div class="col-lg-5 col-md-4"></div>
 
         </div>
     </div>
