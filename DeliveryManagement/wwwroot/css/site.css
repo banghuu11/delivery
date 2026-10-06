@@ -1359,6 +1359,13 @@ body {
     text-transform: uppercase;
 }
 
+.app-navbar .nav-link {
+    white-space: nowrap !important;
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+
 /* BUTTONS TỐC ĐỘ CAM */
 .btn-tocdo-orange {
     background: var(--orange-gradient);

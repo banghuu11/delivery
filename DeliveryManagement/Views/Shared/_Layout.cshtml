@@ -45,7 +45,7 @@
                 <!-- BRAND LOGO -->
                 @if (isAdminArea)
                 {
-                    <a class="navbar-brand d-flex align-items-center me-3" asp-controller="Admin" asp-action="Index">
+                    <a class="navbar-brand d-flex align-items-center me-2 me-xl-3" asp-controller="Admin" asp-action="Index">
                         <div class="brand-logo-container">
                             <span class="logo-speed-lines"><i class="bi bi-shield-lock-fill text-orange"></i></span>
                             <div class="d-inline-block">
@@ -53,12 +53,11 @@
                                 <span class="logo-text-sub text-danger">ADMIN</span>
                             </div>
                         </div>
-                        <span class="badge bg-danger text-white ms-2 px-2 py-1 rounded-pill small fw-bold shadow-sm">PORTAL</span>
                     </a>
                 }
                 else
                 {
-                    <a class="navbar-brand d-flex align-items-center me-4" asp-controller="Home" asp-action="Index">
+                    <a class="navbar-brand d-flex align-items-center me-3 me-xl-4" asp-controller="Home" asp-action="Index">
                         <div class="brand-logo-container">
                             <span class="logo-speed-lines"><i class="bi bi-wind"></i></span>
                             <div class="d-inline-block">
@@ -84,46 +83,46 @@
                     <!-- MENU ĐIỀU HƯỚNG LINH HOẠT (DYNAMIC NAVBAR) -->
                     @if (isAdminArea)
                     {
-                        <!-- ===== MENU DÀNH CHO KHU VỰC QUẢN TRỊ ADMIN ===== -->
-                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold align-items-lg-center">
+                        <!-- ===== MENU DÀNH CHO KHU VỰC QUẢN TRỊ ADMIN (1 DÒNG GỌN GÀNG) ===== -->
+                        <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold align-items-lg-center gap-lg-1">
                             <li class="nav-item">
-                                <a class="nav-link px-3 @(currentController == "Admin" && currentAction == "Index" ? "active text-orange fw-bold" : "")" 
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Admin" && currentAction == "Index" ? "active text-orange fw-bold" : "")" 
                                    asp-controller="Admin" asp-action="Index">
                                     <i class="bi bi-speedometer2 me-1"></i> Dashboard
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-3 @(currentController == "Admin" && (currentAction == "Users" || currentAction == "CreateUser" || currentAction == "EditUser") ? "active text-orange fw-bold" : "")" 
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Admin" && (currentAction == "Users" || currentAction == "CreateUser" || currentAction == "EditUser") ? "active text-orange fw-bold" : "")" 
                                    asp-controller="Admin" asp-action="Users">
-                                    <i class="bi bi-people-fill me-1"></i> Người dùng & Quyền
+                                    <i class="bi bi-people-fill me-1"></i> Tài khoản
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-3 @(currentController == "Admin" && (currentAction == "Orders" || currentAction == "OrderDetails") ? "active text-orange fw-bold" : "")" 
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Admin" && (currentAction == "Orders" || currentAction == "OrderDetails") ? "active text-orange fw-bold" : "")" 
                                    asp-controller="Admin" asp-action="Orders">
-                                    <i class="bi bi-box-seam-fill me-1"></i> Quản lý Đơn hàng
+                                    <i class="bi bi-box-seam-fill me-1"></i> Đơn hàng
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-3 @(currentController == "Admin" && currentAction == "PackageTypes" ? "active text-orange fw-bold" : "")" 
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Admin" && currentAction == "PackageTypes" ? "active text-orange fw-bold" : "")" 
                                    asp-controller="Admin" asp-action="PackageTypes">
                                     <i class="bi bi-tags-fill me-1"></i> Loại hàng
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-3 @(currentController == "PriceTable" ? "active text-orange fw-bold" : "")" 
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "PriceTable" ? "active text-orange fw-bold" : "")" 
                                    asp-controller="PriceTable" asp-action="Index">
-                                    <i class="bi bi-table me-1"></i> Bảng giá cước
+                                    <i class="bi bi-table me-1"></i> Bảng giá
                                 </a>
                             </li>
 
                             <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle px-3" href="#" role="button" data-bs-toggle="dropdown">
-                                    <i class="bi bi-gear-wide-connected me-1"></i> Nghiệp vụ khác
+                                <a class="nav-link dropdown-toggle px-2 px-xl-3 text-nowrap" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-gear-wide-connected me-1"></i> Nghiệp vụ
                                 </a>
                                 <ul class="dropdown-menu shadow border-0">
                                     <li>
@@ -145,25 +144,25 @@
                         <!-- ===== MENU DÀNH CHO KHÁCH HÀNG & GIAO DIỆN CÔNG KHAI ===== -->
                         <ul class="navbar-nav me-auto mb-2 mb-lg-0 fw-semibold">
                             <li class="nav-item">
-                                <a class="nav-link px-3" href="/#services">
+                                <a class="nav-link px-3 text-nowrap" href="/#services">
                                     Dịch vụ
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-3" href="/#pricing">
+                                <a class="nav-link px-3 text-nowrap" href="/#pricing">
                                     Giá cả
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-3" asp-controller="Home" asp-action="Track">
+                                <a class="nav-link px-3 text-nowrap" asp-controller="Home" asp-action="Track">
                                     Theo dõi
                                 </a>
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-3" href="#contact">
+                                <a class="nav-link px-3 text-nowrap" href="#contact">
                                     Liên hệ
                                 </a>
                             </li>
@@ -172,7 +171,7 @@
                             @if (User.IsInRole("Admin"))
                             {
                                 <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-orange fw-bold" asp-controller="Admin" asp-action="Index">
+                                    <a class="nav-link text-orange fw-bold text-nowrap" asp-controller="Admin" asp-action="Index">
                                         <i class="bi bi-speedometer2 me-1"></i> Vào Trang Quản Trị
                                     </a>
                                 </li>
@@ -182,7 +181,7 @@
                             @if (User.IsInRole("ReceptionStaff"))
                             {
                                 <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold" asp-controller="Reception" asp-action="Index">
+                                    <a class="nav-link text-primary fw-bold text-nowrap" asp-controller="Reception" asp-action="Index">
                                         <i class="bi bi-inboxes me-1"></i> Tiếp nhận đơn
                                     </a>
                                 </li>
@@ -192,7 +191,7 @@
                             @if (User.IsInRole("WarehouseStaff"))
                             {
                                 <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold" asp-controller="Warehouse" asp-action="Index">
+                                    <a class="nav-link text-primary fw-bold text-nowrap" asp-controller="Warehouse" asp-action="Index">
                                         <i class="bi bi-building me-1"></i> Quản lý kho
                                     </a>
                                 </li>
@@ -202,7 +201,7 @@
                             @if (User.IsInRole("Customer"))
                             {
                                 <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold" asp-controller="DeliveryOrder" asp-action="Index">
+                                    <a class="nav-link text-primary fw-bold text-nowrap" asp-controller="DeliveryOrder" asp-action="Index">
                                         <i class="bi bi-box-seam me-1"></i> Đơn của tôi
                                     </a>
                                 </li>
