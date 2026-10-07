@@ -2,135 +2,250 @@
 @{
     ViewData["Title"] = "Đơn hàng của tôi";
     string selectedStatus = ViewBag.SelectedStatus as string ?? "";
+
+    var totalOrders = Model?.Count ?? 0;
+    var pendingOrders = Model?.Count(o => o.CurrentStatus == "Chưa nhận" || o.CurrentStatus == "Đã nhận" || o.CurrentStatus == "Đã tiếp nhận") ?? 0;
+    var deliveringOrders = Model?.Count(o => o.CurrentStatus == "Trong kho" || o.CurrentStatus == "Đang giao") ?? 0;
+    var completedOrders = Model?.Count(o => o.CurrentStatus == "Đã giao" || o.CurrentStatus == "Giao thành công") ?? 0;
+    var cancelledOrders = Model?.Count(o => o.CurrentStatus == "Đã hủy" || o.CurrentStatus == "Giao thất bại") ?? 0;
 }
 
 <div class="container py-4">
 
-    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
-        <div>
-            <h2 class="fw-bold mb-1"><i class="bi bi-box-seam text-primary me-2"></i>Đơn Hàng Của Tôi</h2>
-            <p class="text-muted mb-0">Theo dõi toàn bộ các yêu cầu giao hàng bạn đã tạo.</p>
-        </div>
-        <div>
-            <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-primary-custom shadow-sm">
-                <i class="bi bi-plus-lg me-1"></i> Tạo đơn hàng mới
-            </a>
+    <!-- PAGE HEADER -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-gradient-primary-soft text-dark overflow-hidden position-relative">
+        <div class="card-body p-4 p-lg-5">
+            <div class="row align-items-center justify-content-between g-3">
+                <div class="col-lg-7">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white shadow-xs text-primary small fw-semibold mb-3">
+                        <i class="bi bi-box-seam-fill"></i> Quản lý vận đơn cá nhân
+                    </div>
+                    <h2 class="fw-black mb-2 tracking-tight text-dark">Đơn Hàng Của Tôi</h2>
+                    <p class="text-secondary mb-0 fs-6">Theo dõi hành trình, cước phí và trạng thái chi tiết của tất cả các đơn bưu phẩm bạn đã tạo.</p>
+                </div>
+                <div class="col-lg-5 text-lg-end">
+                    <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-primary-custom px-4 py-3 rounded-pill shadow-sm fw-bold">
+                        <i class="bi bi-plus-circle-fill me-2"></i> Tạo đơn giao hàng mới
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- ALERTS -->
     @if (TempData["SuccessMessage"] != null)
     {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-success d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-check-circle-fill fs-5 text-success me-3"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
     @if (TempData["ErrorMessage"] != null)
     {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-octagon-fill me-2"></i> @TempData["ErrorMessage"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-danger d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-exclamation-octagon-fill fs-5 text-danger me-3"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
 
-    <!-- BỘ LỌC TRẠNG THÁI -->
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body p-3">
-            <div class="d-flex gap-2 flex-wrap">
-                <a href="/DeliveryOrder" class="btn btn-sm @(string.IsNullOrEmpty(selectedStatus) ? "btn-primary-custom" : "btn-outline-secondary")">Tất cả</a>
-                <a href="/DeliveryOrder?status=Chưa nhận" class="btn btn-sm @(selectedStatus == "Chưa nhận" ? "btn-primary-custom" : "btn-outline-secondary")">Chờ tiếp nhận</a>
-                <a href="/DeliveryOrder?status=Trong kho" class="btn btn-sm @(selectedStatus == "Trong kho" ? "btn-primary-custom" : "btn-outline-secondary")">Trong kho</a>
-                <a href="/DeliveryOrder?status=Đang giao" class="btn btn-sm @(selectedStatus == "Đang giao" ? "btn-primary-custom" : "btn-outline-secondary")">Đang giao</a>
-                <a href="/DeliveryOrder?status=Đã giao" class="btn btn-sm @(selectedStatus == "Đã giao" ? "btn-primary-custom" : "btn-outline-secondary")">Hoàn tất</a>
-                <a href="/DeliveryOrder?status=Đã hủy" class="btn btn-sm @(selectedStatus == "Đã hủy" ? "btn-primary-custom" : "btn-outline-secondary")">Đã hủy</a>
+    <!-- KPI STATS CARDS -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 h-100 p-3 bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng đơn hàng</span>
+                        <h3 class="fw-black text-dark mb-0 mt-1">@totalOrders</h3>
+                    </div>
+                    <div class="rounded-3 bg-primary-subtle text-primary p-2 fs-4">
+                        <i class="bi bi-boxes"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 h-100 p-3 bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Đang xử lý / Giao</span>
+                        <h3 class="fw-black text-warning mb-0 mt-1">@(pendingOrders + deliveringOrders)</h3>
+                    </div>
+                    <div class="rounded-3 bg-warning-subtle text-warning p-2 fs-4">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 h-100 p-3 bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Giao thành công</span>
+                        <h3 class="fw-black text-success mb-0 mt-1">@completedOrders</h3>
+                    </div>
+                    <div class="rounded-3 bg-success-subtle text-success p-2 fs-4">
+                        <i class="bi bi-check-circle"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 h-100 p-3 bg-white">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Đã hủy</span>
+                        <h3 class="fw-black text-danger mb-0 mt-1">@cancelledOrders</h3>
+                    </div>
+                    <div class="rounded-3 bg-danger-subtle text-danger p-2 fs-4">
+                        <i class="bi bi-x-circle"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- DANH SÁCH ĐƠN HÀNG -->
-    <div class="card shadow-sm border-0">
+    <!-- STATUS FILTER BAR -->
+    <div class="card border-0 shadow-xs rounded-4 mb-4 bg-white">
+        <div class="card-body p-2 p-md-3">
+            <div class="d-flex gap-2 flex-wrap align-items-center">
+                <span class="text-muted small fw-bold px-2 d-none d-md-inline"><i class="bi bi-funnel me-1"></i>Bộ lọc:</span>
+                <a href="/DeliveryOrder" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold @(string.IsNullOrEmpty(selectedStatus) ? "btn-primary-custom" : "btn-light text-secondary")">
+                    Tất cả
+                </a>
+                <a href="/DeliveryOrder?status=Chưa nhận" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold @(selectedStatus == "Chưa nhận" ? "btn-primary-custom" : "btn-light text-secondary")">
+                    <i class="bi bi-clock-history me-1"></i> Chờ tiếp nhận
+                </a>
+                <a href="/DeliveryOrder?status=Trong kho" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold @(selectedStatus == "Trong kho" ? "btn-primary-custom" : "btn-light text-secondary")">
+                    <i class="bi bi-building me-1"></i> Trong kho
+                </a>
+                <a href="/DeliveryOrder?status=Đang giao" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold @(selectedStatus == "Đang giao" ? "btn-primary-custom" : "btn-light text-secondary")">
+                    <i class="bi bi-bicycle me-1"></i> Đang giao
+                </a>
+                <a href="/DeliveryOrder?status=Đã giao" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold @(selectedStatus == "Đã giao" ? "btn-primary-custom" : "btn-light text-secondary")">
+                    <i class="bi bi-check2-circle me-1"></i> Hoàn tất
+                </a>
+                <a href="/DeliveryOrder?status=Đã hủy" class="btn btn-sm rounded-pill px-3 py-2 fw-semibold @(selectedStatus == "Đã hủy" ? "btn-primary-custom" : "btn-light text-secondary")">
+                    <i class="bi bi-x-lg me-1"></i> Đã hủy
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ORDER LIST TABLE -->
+    <div class="card border-0 shadow-xs rounded-4 overflow-hidden bg-white">
         <div class="card-body p-0">
             @if (Model == null || !Model.Any())
             {
-                <div class="text-center py-5">
-                    <i class="bi bi-inbox fs-1 text-muted d-block mb-3"></i>
-                    <h5 class="text-muted">Chưa có đơn hàng nào trong mục này</h5>
-                    <a asp-action="Create" class="btn btn-primary-custom mt-2">Tạo yêu cầu giao hàng ngay</a>
+                <div class="text-center py-5 px-3">
+                    <div class="avatar-lg bg-light rounded-circle text-muted d-inline-flex align-items-center justify-content-center p-4 mb-3" style="width: 80px; height: 80px;">
+                        <i class="bi bi-inbox fs-1"></i>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1">Chưa có đơn hàng nào</h5>
+                    <p class="text-muted small mb-3">Bạn chưa có đơn hàng nào trong trạng thái này hoặc chưa tạo đơn nào.</p>
+                    <a asp-action="Create" class="btn btn-primary-custom rounded-pill px-4 shadow-sm">
+                        <i class="bi bi-plus-lg me-1"></i> Tạo đơn hàng ngay
+                    </a>
                 </div>
             }
             else
             {
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light">
+                        <thead class="bg-light text-secondary text-uppercase small fw-bold">
                             <tr>
-                                <th>Mã đơn</th>
-                                <th>Người nhận</th>
-                                <th>Địa chỉ nhận</th>
-                                <th>Hình thức</th>
-                                <th>Tổng tiền</th>
-                                <th>Ngày tạo</th>
-                                <th>Trạng thái</th>
-                                <th class="text-end">Thao tác</th>
+                                <th class="ps-4 py-3">Mã đơn</th>
+                                <th class="py-3">Người nhận</th>
+                                <th class="py-3">Địa chỉ nhận hàng</th>
+                                <th class="py-3 text-center">Gói cước</th>
+                                <th class="py-3 text-end">Tổng cước</th>
+                                <th class="py-3 text-center">Thời gian</th>
+                                <th class="py-3 text-center">Trạng thái</th>
+                                <th class="pe-4 py-3 text-end">Thao tác</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach (var order in Model)
                             {
                                 <tr>
-                                    <td>
-                                        <a asp-action="Details" asp-route-id="@order.OrderCode" class="fw-bold text-primary text-decoration-none">
-                                            @order.OrderCode
-                                        </a>
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rounded-3 bg-primary-subtle text-primary d-flex align-items-center justify-content-center fw-bold" style="width: 36px; height: 36px;">
+                                                <i class="bi bi-receipt"></i>
+                                            </div>
+                                            <div>
+                                                <a asp-action="Details" asp-route-id="@order.OrderCode" class="fw-bold text-primary text-decoration-none font-monospace">
+                                                    @order.OrderCode
+                                                </a>
+                                                <div class="text-muted small">Kiện: @(order.OrderItems?.Count ?? 1) món</div>
+                                            </div>
+                                        </div>
                                     </td>
-                                    <td>
-                                        <div class="fw-semibold">@order.ReceiverName</div>
-                                        <small class="text-muted">@order.ReceiverPhone</small>
+                                    <td class="py-3">
+                                        <div class="fw-bold text-dark">@order.ReceiverName</div>
+                                        <small class="text-muted"><i class="bi bi-telephone me-1"></i>@order.ReceiverPhone</small>
                                     </td>
-                                    <td>
-                                        <span class="d-inline-block text-truncate" style="max-width: 200px;" title="@order.ReceiverAddress">
-                                            @order.ReceiverAddress
-                                        </span>
+                                    <td class="py-3">
+                                        <div class="d-inline-block text-truncate text-secondary small" style="max-width: 240px;" title="@order.ReceiverAddress">
+                                            <i class="bi bi-geo-alt me-1 text-danger"></i>@order.ReceiverAddress
+                                        </div>
                                     </td>
-                                    <td>
-                                        <span class="badge @(order.DeliveryMethod == "Nhanh" ? "bg-warning text-dark" : "bg-light text-dark border")">
-                                            @order.DeliveryMethod
-                                        </span>
+                                    <td class="py-3 text-center">
+                                        @if (order.DeliveryMethod == "Nhanh")
+                                        {
+                                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle rounded-pill px-3 py-1">
+                                                <i class="bi bi-lightning-charge-fill me-1"></i> Hỏa tốc
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-secondary border rounded-pill px-3 py-1">
+                                                <i class="bi bi-truck me-1"></i> Tiêu chuẩn
+                                            </span>
+                                        }
                                     </td>
-                                    <td class="fw-bold text-success">
-                                        @order.TotalAmount.ToString("N0") đ
+                                    <td class="py-3 text-end">
+                                        <div class="fw-bold text-success fs-6">
+                                            @order.TotalAmount.ToString("N0") ₫
+                                        </div>
                                     </td>
-                                    <td class="small text-muted">
-                                        @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    <td class="py-3 text-center small text-muted">
+                                        @order.CreatedAt.ToString("dd/MM/yyyy")
+                                        <div class="text-muted small">@order.CreatedAt.ToString("HH:mm")</div>
                                     </td>
-                                    <td>
+                                    <td class="py-3 text-center">
                                         @{
-                                            string badgeClass = order.CurrentStatus switch
+                                            string statusBadgeClass = order.CurrentStatus switch
                                             {
-                                                "Chưa nhận" => "bg-secondary",
-                                                "Đã nhận" or "Đã tiếp nhận" => "bg-info text-dark",
-                                                "Trong kho" => "bg-primary",
-                                                "Đang giao" => "bg-warning text-dark",
-                                                "Đã giao" or "Giao thành công" => "bg-success",
-                                                "Đã hủy" or "Giao thất bại" => "bg-danger",
-                                                _ => "bg-secondary"
+                                                "Chưa nhận" => "bg-secondary-subtle text-secondary border border-secondary-subtle",
+                                                "Đã nhận" or "Đã tiếp nhận" => "bg-info-subtle text-info-emphasis border border-info-subtle",
+                                                "Trong kho" => "bg-primary-subtle text-primary border border-primary-subtle",
+                                                "Đang giao" => "bg-warning-subtle text-warning-emphasis border border-warning-subtle",
+                                                "Đã giao" or "Giao thành công" => "bg-success-subtle text-success border border-success-subtle",
+                                                "Đã hủy" or "Giao thất bại" => "bg-danger-subtle text-danger border border-danger-subtle",
+                                                _ => "bg-secondary-subtle text-secondary"
                                             };
                                         }
-                                        <span class="badge @badgeClass">@order.CurrentStatus</span>
+                                        <span class="badge @statusBadgeClass rounded-pill px-3 py-1 fw-semibold">
+                                            @order.CurrentStatus
+                                        </span>
                                     </td>
-                                    <td class="text-end">
-                                        <a asp-action="Details" asp-route-id="@order.OrderCode" class="btn btn-sm btn-outline-primary me-1" title="Chi tiết">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        @if (order.CurrentStatus == "Chưa nhận")
-                                        {
-                                            <form asp-action="Cancel" asp-route-id="@order.OrderCode" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng @order.OrderCode này?');">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Hủy đơn">
-                                                    <i class="bi bi-x-lg"></i>
-                                                </button>
-                                            </form>
-                                        }
+                                    <td class="pe-4 py-3 text-end">
+                                        <div class="d-inline-flex gap-1">
+                                            <a asp-action="Details" asp-route-id="@order.OrderCode" class="btn btn-sm btn-light text-primary rounded-circle p-2 shadow-xs" title="Xem chi tiết">
+                                                <i class="bi bi-eye-fill"></i>
+                                            </a>
+                                            @if (order.CurrentStatus == "Chưa nhận")
+                                            {
+                                                <form asp-action="Cancel" asp-route-id="@order.OrderCode" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng @order.OrderCode này không?');">
+                                                    <button type="submit" class="btn btn-sm btn-light text-danger rounded-circle p-2 shadow-xs" title="Hủy đơn hàng">
+                                                        <i class="bi bi-x-circle-fill"></i>
+                                                    </button>
+                                                </form>
+                                            }
+                                        </div>
                                     </td>
                                 </tr>
                             }
