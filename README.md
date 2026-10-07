@@ -227,10 +227,13 @@ DeliveryManagement/
 
 ---
 
-## 👥 Đóng Góp & Phát Triển (Git Workflow)
+## 👥 Đóng Góp & Quản Lý Cấu Hình (Gitflow & CI/CD)
 - **Nhánh `main`:** Mã nguồn phiên bản ổn định (Production ready).
-- **Nhánh `develop`:** Nhánh phát triển tính năng mới.
+- **Nhánh `develop`:** Nhánh tích hợp và phát triển tính năng mới.
+- **Tự động hóa CI (GitHub Actions):** Kiểm tra compile .NET 8 và build Docker tự động trên mỗi Push & Pull Request.
+- **Kế hoạch Quản lý cấu hình chi tiết:** Xem tại [docs/CONFIGURATION_MANAGEMENT.md](file:///Users/Huflit/DeliveryManagement_v1/DeliveryManagement/docs/CONFIGURATION_MANAGEMENT.md).
 - **Repository:** [https://github.com/banghuu11/delivery](https://github.com/banghuu11/delivery)
 
 ---
 © 2026 **TỐC ĐỘ DELIVERY** - Hệ Thống Vận Chuyển Hỏa Tốc Thông Minh.
+

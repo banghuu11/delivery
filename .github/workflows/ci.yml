@@ -1,0 +1,31 @@
+name: .NET Core CI & Build Validation
+
+on:
+  push:
+    branches: [ "main", "develop" ]
+  pull_request:
+    branches: [ "main", "develop" ]
+
+jobs:
+  build-and-test:
+    name: Build & Verify Solution
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Source Code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET SDK 8.0
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Restore Dependencies
+      run: dotnet restore DeliveryManagement.sln
+
+    - name: Build Solution (Release Mode)
+      run: dotnet build DeliveryManagement.sln --configuration Release --no-restore
+
+    - name: Verify Dockerfile Build
+      run: |
+        docker build -t delivery-management-webapp:ci -f DeliveryManagement/Dockerfile DeliveryManagement
