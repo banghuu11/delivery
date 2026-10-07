@@ -26,6 +26,26 @@ jobs:
     - name: Build Solution (Release Mode)
       run: dotnet build DeliveryManagement.sln --configuration Release --no-restore
 
+    - name: Validate Commit Messages (Conventional Commits)
+      run: |
+        echo "Validating latest commit message format..."
+        COMMIT_MSG=$(git log -1 --pretty=%B)
+        echo "Commit message: $COMMIT_MSG"
+        
+        # Skip merge/revert commits
+        if echo "$COMMIT_MSG" | grep -qE '^(Merge|Revert) '; then
+          echo "Merge/Revert commit detected. Skipping check."
+          exit 0
+        fi
+        
+        PATTERN="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\.\/-]+\))?: .+"
+        if ! echo "$COMMIT_MSG" | grep -qE "$PATTERN"; then
+          echo "::error::Commit message does not follow Conventional Commits format! (e.g. feat(order): add create order)"
+          exit 1
+        fi
+        echo "Commit message follows Conventional Commits standard."
+
     - name: Verify Dockerfile Build
       run: |
         docker build -t delivery-management-webapp:ci -f DeliveryManagement/Dockerfile DeliveryManagement
+

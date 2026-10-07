@@ -1,0 +1,42 @@
+#!/bin/sh
+# Git commit-msg hook: Enforce Conventional Commits
+
+commit_msg_file="$1"
+commit_msg=$(head -n 1 "$commit_msg_file")
+
+# Allow Merge & Revert commits created by Git automatically
+if echo "$commit_msg" | grep -qE '^(Merge|Revert) '; then
+  exit 0
+fi
+
+# Regex pattern: feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert with optional (scope)
+pattern="^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-zA-Z0-9_\.\/-]+\))?: .+"
+
+if ! echo "$commit_msg" | grep -qE "$pattern"; then
+  echo ""
+  echo "❌ [LỖI COMMIT MESSAGE] Nội dung commit không hợp lệ!"
+  echo "------------------------------------------------------------------"
+  echo "📝 Nội dung vừa nhập: \"$commit_msg\""
+  echo ""
+  echo "📌 Quy tắc bắt buộc tuân theo chuẩn Conventional Commits:"
+  echo "   <type>(<scope>): <mô tả ngắn>"
+  echo "   hoặc: <type>: <mô tả ngắn>"
+  echo ""
+  echo "🔍 Các <type> hợp lệ:"
+  echo "   • feat     : Thêm chức năng mới (VD: feat(order): add create order)"
+  echo "   • fix      : Sửa lỗi (VD: fix(auth): fix login redirect)"
+  echo "   • docs     : Cập nhật tài liệu (VD: docs: update README)"
+  echo "   • style    : Chỉnh sửa CSS / Giao diện (VD: style(banner): fix responsive)"
+  echo "   • refactor : Tái cấu trúc code (VD: refactor(db): streamline migrations)"
+  echo "   • perf     : Cải thiện hiệu năng"
+  echo "   • test     : Thêm hoặc sửa unit test"
+  echo "   • ci       : Cấu hình CI/CD, Git hooks, GitHub Actions"
+  echo "   • build    : Thay đổi build system, dependencies"
+  echo "   • chore    : Các tác vụ bảo trì định kỳ"
+  echo "------------------------------------------------------------------"
+  echo "💡 Vui lòng chỉnh sửa commit message theo đúng chuẩn trên để tiếp tục!"
+  echo ""
+  exit 1
+fi
+
+exit 0
