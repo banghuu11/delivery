@@ -26,6 +26,22 @@ jobs:
     - name: Build Solution (Release Mode)
       run: dotnet build DeliveryManagement.sln --configuration Release --no-restore
 
+    - name: Validate Branch Name (on Pull Requests)
+      if: github.event_name == 'pull_request'
+      run: |
+        BRANCH_NAME="${{ github.head_ref }}"
+        echo "Validating PR branch name: $BRANCH_NAME"
+        if echo "$BRANCH_NAME" | grep -qE '^(main|develop)$'; then
+          echo "Base branch detected."
+          exit 0
+        fi
+        BRANCH_PATTERN="^(feature|bugfix|hotfix|release|refactor|docs|ci)\/[a-zA-Z0-9_.-]+$"
+        if ! echo "$BRANCH_NAME" | grep -qE "$BRANCH_PATTERN"; then
+          echo "::error::Branch name '$BRANCH_NAME' is invalid! Must follow pattern: feature/*, bugfix/*, hotfix/*, release/*, refactor/*, docs/*, ci/*"
+          exit 1
+        fi
+        echo "Branch name is valid."
+
     - name: Validate Commit Messages (Conventional Commits)
       run: |
         echo "Validating latest commit message format..."

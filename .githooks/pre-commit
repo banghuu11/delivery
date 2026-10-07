@@ -1,0 +1,42 @@
+#!/bin/sh
+# Git pre-commit hook: Validate Branch Name
+
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+if [ -z "$current_branch" ]; then
+  exit 0
+fi
+
+# Allow main, develop
+if echo "$current_branch" | grep -qE '^(main|develop|master)$'; then
+  exit 0
+fi
+
+# Valid branch pattern
+valid_pattern="^(feature|bugfix|hotfix|release|refactor|docs|ci)\/[a-zA-Z0-9_.-]+$"
+
+if ! echo "$current_branch" | grep -qE "$valid_pattern"; then
+  echo ""
+  echo "❌ [LỖI TÊN NHÁNH (BRANCH)] Tên nhánh không đúng quy định!"
+  echo "------------------------------------------------------------------"
+  echo "🌿 Nhánh hiện tại: \"$current_branch\""
+  echo ""
+  echo "📌 Quy tắc đặt tên nhánh bắt buộc có tiền tố: <tiền-tố>/<tên-mô-tả>"
+  echo ""
+  echo "🔍 Các tiền tố hợp lệ:"
+  echo "   • feature/<tên>  : Phát triển tính năng mới (VD: feature/order-crud)"
+  echo "   • bugfix/<tên>   : Sửa lỗi (VD: bugfix/login-redirect)"
+  echo "   • hotfix/<tên>   : Vá lỗi gấp (VD: hotfix/v1.0.1-fix)"
+  echo "   • release/<ver>  : Bản phát hành (VD: release/v1.0.0)"
+  echo "   • refactor/<tên> : Tái cấu trúc (VD: refactor/clean-models)"
+  echo "   • docs/<tên>     : Cập nhật tài liệu (VD: docs/update-readme)"
+  echo "   • ci/<tên>       : CI/CD (VD: ci/git-hooks)"
+  echo "------------------------------------------------------------------"
+  echo "💡 Hướng dẫn đổi tên nhánh hiện tại:"
+  echo "   git branch -m feature/<ten-tinh-nang>"
+  echo "------------------------------------------------------------------"
+  echo ""
+  exit 1
+fi
+
+exit 0
