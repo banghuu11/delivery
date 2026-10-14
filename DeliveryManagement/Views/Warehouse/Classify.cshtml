@@ -1,0 +1,475 @@
+﻿@model DeliveryManagement.Models.ViewModels.WarehouseOrderViewModel
+
+@{
+    ViewData["Title"] = "Xử lý đơn hàng";
+
+    var packageTypes =
+        ViewBag.PackageTypes
+        as List<DeliveryManagement.Models.PackageType>
+        ?? new List<DeliveryManagement.Models.PackageType>();
+}
+
+<div class="container mt-4 mb-5">
+
+    <!-- =========================
+         HEADER
+         ========================= -->
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+
+        <div>
+            <h2 class="mb-1">
+                Xử lý đơn hàng
+            </h2>
+
+            <p class="text-muted mb-0">
+                Mã đơn:
+                <strong>@Model.OrderCode</strong>
+            </p>
+        </div>
+
+
+        <a asp-action="Index"
+           class="btn btn-outline-secondary">
+            ← Quay lại
+        </a>
+
+    </div>
+
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+
+    <div asp-validation-summary="ModelOnly"
+         class="alert alert-danger"></div>
+
+
+    <!-- =========================
+         THÔNG TIN ĐƠN
+         ========================= -->
+
+    <div class="card border-0 shadow-sm mb-4">
+
+        <div class="card-header bg-white fw-bold">
+            Thông tin đơn hàng
+        </div>
+
+
+        <div class="card-body">
+
+            <div class="row">
+
+                <div class="col-md-4">
+                    <strong>Mã đơn</strong>
+
+                    <div class="text-muted">
+                        @Model.OrderCode
+                    </div>
+                </div>
+
+
+                <div class="col-md-4">
+                    <strong>Hình thức giao</strong>
+
+                    <div class="text-muted">
+                        @Model.DeliveryMethod
+                    </div>
+                </div>
+
+
+                <div class="col-md-4">
+                    <strong>Trạng thái</strong>
+
+                    <div class="mt-1">
+
+                        @if (Model.CurrentStatus == "Đã Giao")
+                        {
+                            <span class="badge bg-success">
+                                @Model.CurrentStatus
+                            </span>
+                        }
+                        else if (
+                        Model.CurrentStatus ==
+                        "Đã nhận – Đang giao")
+                        {
+                            <span class="badge bg-primary">
+                                @Model.CurrentStatus
+                            </span>
+                        }
+                        else if (
+                        Model.CurrentStatus ==
+                        "Đã nhận - Chưa giao")
+                        {
+                            <span class="badge bg-warning text-dark">
+                                @Model.CurrentStatus
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">
+                                @Model.CurrentStatus
+                            </span>
+                        }
+
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         #14 PHÂN LOẠI HÀNG HÓA
+         ========================= -->
+
+    <form asp-action="Classify"
+          method="post">
+
+        @Html.AntiForgeryToken()
+
+        <input type="hidden"
+               asp-for="OrderCode" />
+
+
+        <div class="card border-0 shadow-sm mb-4">
+
+            <div class="card-header bg-white">
+
+                <div class="fw-bold">
+                    Phân loại hàng hóa
+                </div>
+
+                <div class="small text-muted">
+                    Kiểm tra loại hàng khách khai báo
+                    và xác nhận loại hàng thực tế.
+                </div>
+
+            </div>
+
+
+            <div class="card-body">
+
+                @for (int i = 0; i < Model.Items.Count; i++)
+                {
+                    <div class="border rounded p-3 mb-4">
+
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+
+                            <h5 class="mb-0">
+                                Hàng hóa @(i + 1)
+                            </h5>
+
+                            <span class="badge bg-light text-dark border">
+                                @Model.Items[i].Quantity ×
+                                @Model.Items[i].Weight.ToString("0.##") kg
+                            </span>
+
+                        </div>
+
+
+                        <input asp-for="Items[i].OrderItemId"
+                               type="hidden" />
+
+
+                        <!-- LOẠI KHÁCH KHAI BÁO -->
+
+                        <div class="mb-3">
+
+                            <label class="form-label fw-semibold">
+                                Loại khách khai báo
+                            </label>
+
+                            <input type="text"
+                                   class="form-control"
+                                   value="@Model.Items[i].OriginalPackageTypeName"
+                                   disabled />
+
+                        </div>
+
+
+                        <!-- LOẠI THỰC TẾ -->
+
+                        <div class="mb-3">
+
+                            <label asp-for="Items[i].PackageTypeId"
+                                   class="form-label fw-semibold">
+                                Phân loại thực tế
+                            </label>
+
+                            <select asp-for="Items[i].PackageTypeId"
+                                    class="form-select">
+
+                                <option value="">
+                                    -- Chọn loại hàng hóa --
+                                </option>
+
+                                @foreach (var type in packageTypes)
+                                {
+                                    <option value="@type.PackageTypeId">
+                                        @type.TypeName
+                                    </option>
+                                }
+
+                        </select>
+
+                        <span asp-validation-for="Items[i].PackageTypeId"
+                              class="text-danger"></span>
+
+                    </div>
+
+
+                    <!-- MÔ TẢ -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label fw-semibold">
+                            Mô tả hàng hóa
+                        </label>
+
+                        <textarea class="form-control"
+                                  rows="2"
+                                  disabled>@Model.Items[i].Description</textarea>
+
+                    </div>
+
+
+                    <!-- THÔNG TIN KHÁC -->
+
+                    <div class="row mb-3">
+
+                        <div class="col-md-6">
+
+                            <div class="border rounded p-2">
+
+                                <strong>Kích thước:</strong>
+
+                                <span class="text-muted">
+                                    @(string.IsNullOrWhiteSpace(
+                                                                        Model.Items[i].Size)
+                                                                        ? "Chưa có"
+                                                                        : Model.Items[i].Size)
+                                                                                          </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="col-md-6">
+
+                            <div class="border rounded p-2">
+
+                                <strong>Tổng khối lượng:</strong>
+
+                                <span class="text-muted">
+                                    @(
+                                                                        (
+                                                                        Model.Items[i].Weight *
+                                                                        Model.Items[i].Quantity
+                                                                        ).ToString("0.##")
+                                                                        ) kg
+                                </span>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="d-flex gap-4 mb-3">
+
+                            <div class="form-check">
+
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       checked="@Model.Items[i].IsFragile"
+                                       disabled />
+
+                                <label class="form-check-label">
+                                    Hàng dễ vỡ
+                                </label>
+
+                            </div>
+
+
+                            <div class="form-check">
+
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       checked="@Model.Items[i].IsValuable"
+                                       disabled />
+
+                                <label class="form-check-label">
+                                    Hàng có giá trị
+                                </label>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- GHI CHÚ PHÂN LOẠI -->
+
+                        <div class="mb-0">
+
+                            <label asp-for="Items[i].ClassificationNote"
+                                   class="form-label fw-semibold">
+                                Ghi chú phân loại
+                            </label>
+
+                            <textarea asp-for="Items[i].ClassificationNote"
+                                      class="form-control"
+                                      rows="2"
+                                      placeholder="Ví dụ: Laptop được đóng trong thùng chống sốc."></textarea>
+
+                            <span asp-validation-for="Items[i].ClassificationNote"
+                                  class="text-danger"></span>
+
+                        </div>
+
+                    </div>
+                                }
+
+
+                <div class="text-end">
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Lưu phân loại
+                    </button>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </form>
+
+
+    <!-- =========================
+         #16 CẬP NHẬT TRẠNG THÁI
+         ========================= -->
+
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white">
+
+            <div class="fw-bold">
+                Cập nhật trạng thái đơn hàng
+            </div>
+
+            <div class="small text-muted">
+                Thực hiện theo đúng thứ tự trạng thái.
+            </div>
+
+        </div>
+
+
+        <div class="card-body">
+
+            @if (Model.CurrentStatus == "Đã Giao")
+            {
+                <div class="alert alert-success mb-0">
+                    Đơn hàng đã ở trạng thái <strong>Đã Giao</strong>.
+                    Không thể cập nhật thêm.
+                </div>
+            }
+            else
+            {
+                string nextStatus = Model.CurrentStatus switch
+                {
+                    "Chưa nhận" =>
+                    "Đã nhận - Chưa giao",
+
+                    "Đã nhận - Chưa giao" =>
+                    "Đã nhận – Đang giao",
+
+                    "Đã nhận – Đang giao" =>
+                    "Đã Giao",
+
+                    _ => string.Empty
+                };
+
+
+                <div class="d-flex align-items-center justify-content-between gap-3 flex-wrap">
+
+                    <div>
+
+                        <div class="text-muted small">
+                            Trạng thái hiện tại
+                        </div>
+
+                        <strong>
+                            @Model.CurrentStatus
+                        </strong>
+
+                    </div>
+
+
+                    @if (!string.IsNullOrWhiteSpace(nextStatus))
+                    {
+                        <form asp-action="UpdateStatus"
+                              method="post"
+                              class="d-flex align-items-center gap-2">
+
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="id"
+                                   value="@Model.OrderCode" />
+
+                            <input type="hidden"
+                                   name="newStatus"
+                                   value="@nextStatus" />
+
+
+                            <span class="text-muted">
+                                →
+                            </span>
+
+
+                            <button type="submit"
+                                    class="btn btn-success">
+
+                                Chuyển sang:
+                                @nextStatus
+
+                            </button>
+
+                        </form>
+                    }
+
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+}

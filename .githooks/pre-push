@@ -1,0 +1,44 @@
+#!/bin/sh
+# Git pre-push hook: Enforce Branch Naming Rules
+
+current_branch=$(git symbolic-ref --short HEAD 2>/dev/null)
+
+# If in detached HEAD state (e.g. during rebase/tag checkouts), allow push
+if [ -z "$current_branch" ]; then
+  exit 0
+fi
+
+# Allow main, develop, master
+if echo "$current_branch" | grep -qE '^(main|develop|master)$'; then
+  exit 0
+fi
+
+# Valid branch prefixes: feature, bugfix, hotfix, release, refactor, docs, ci
+# Followed by slash and kebab-case or ticket-id (e.g. feature/order-crud, bugfix/fix-login, release/v1.0.0)
+valid_pattern="^(feature|bugfix|hotfix|release|refactor|docs|ci)\/[a-zA-Z0-9_.-]+$"
+
+if ! echo "$current_branch" | grep -qE "$valid_pattern"; then
+  echo ""
+  echo "❌ [LỖI TÊN NHÁNH (BRANCH)] Tên nhánh không đúng quy định!"
+  echo "------------------------------------------------------------------"
+  echo "🌿 Nhánh hiện tại: \"$current_branch\""
+  echo ""
+  echo "📌 Quy tắc đặt tên nhánh bắt buộc có định dạng: <tiền-tố>/<tên-mô-tả>"
+  echo ""
+  echo "🔍 Các tiền tố hợp lệ:"
+  echo "   • feature/<tên>  : Phát triển tính năng mới (VD: feature/order-crud, feature/user-profile)"
+  echo "   • bugfix/<tên>   : Sửa lỗi trong quá trình dev (VD: bugfix/login-redirect)"
+  echo "   • hotfix/<tên>   : Vá lỗi khẩn cấp production (VD: hotfix/v1.0.1-db-fix)"
+  echo "   • release/<ver>  : Chuẩn bị đóng gói bản phát hành (VD: release/v1.0.0)"
+  echo "   • refactor/<tên> : Tái cấu trúc mã nguồn (VD: refactor/clean-controllers)"
+  echo "   • docs/<tên>     : Cập nhật tài liệu dự án (VD: docs/update-readme)"
+  echo "   • ci/<tên>       : Cập nhật cấu hình CI/CD (VD: ci/github-actions)"
+  echo "------------------------------------------------------------------"
+  echo "💡 Hướng dẫn đổi tên nhánh hiện tại sang đúng chuẩn:"
+  echo "   git branch -m feature/<ten-tinh-nang-moi>"
+  echo "------------------------------------------------------------------"
+  echo ""
+  exit 1
+fi
+
+exit 0
