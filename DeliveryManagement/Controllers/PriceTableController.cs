@@ -16,7 +16,11 @@ namespace DeliveryManagement.Controllers
             _context = context;
         }
 
+<<<<<<< HEAD
+        // Danh sách bảng giá.
+=======
         // Danh sách bảng giá
+>>>>>>> 05adc2e63de59480d4efadc7dd000a1eb59f8597
         public async Task<IActionResult> Index()
         {
             var list = await _context.PriceTables
