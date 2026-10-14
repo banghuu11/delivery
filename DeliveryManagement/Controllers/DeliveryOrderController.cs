@@ -21,7 +21,6 @@ namespace DeliveryManagement.Controllers
             _context = context;
             _userManager = userManager;
         }
-
         // ==========================================
         // LOAD DANH SÁCH LOẠI HÀNG HÓA
         // ==========================================
