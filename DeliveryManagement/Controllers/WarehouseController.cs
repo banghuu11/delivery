@@ -112,7 +112,6 @@ namespace DeliveryManagement.Controllers
                                 "Chưa phân loại"),
 
                         Description = i.Description,
-                        Size = i.Size,
                         Quantity = i.Quantity,
                         Weight = i.Weight,
                         IsFragile = i.IsFragile,
