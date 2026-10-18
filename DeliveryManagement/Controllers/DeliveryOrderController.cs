@@ -21,7 +21,6 @@ namespace DeliveryManagement.Controllers
             _context = context;
             _userManager = userManager;
         }
-
         // ==========================================
         // LOAD DANH SÁCH LOẠI HÀNG HÓA
         // ==========================================
@@ -273,7 +272,6 @@ namespace DeliveryManagement.Controllers
                     PackageTypeId = i.PackageTypeId,
 
                     Description = i.Description,
-                    Size = i.Size,
                     Quantity = i.Quantity,
                     Weight = i.Weight,
                     IsFragile = i.IsFragile,
