@@ -1,4 +1,4 @@
-﻿@model DeliveryManagement.Models.ViewModels.LoginViewModel
+@model DeliveryManagement.Models.ViewModels.LoginViewModel
 
 @{
     ViewData["Title"] = "Đăng nhập";
@@ -30,9 +30,96 @@
 
         </div>
 
+        <!-- DEMO ACCOUNTS QUICK LOGIN -->
+        <div class="demo-login-wrapper">
+            <div class="demo-login-header">
+                <label class="demo-auto-submit-toggle" title="Nếu bật, bấm vào vai trò sẽ đăng nhập ngay">
+                    <input type="checkbox" id="autoSubmitDemo" />
+                    <span>Tự động đăng nhập</span>
+                </label>
+            </div>
+
+            <div class="demo-accounts-grid">
+                <!-- 1. Quản trị viên (Admin) -->
+                <button type="button" 
+                        class="demo-role-btn" 
+                        data-email="admin@delivery.com" 
+                        data-password="Admin@123"
+                        data-role-name="Quản trị viên (Admin)"
+                        title="admin@delivery.com / Admin@123">
+                    <span class="demo-role-text">
+                        <span class="demo-role-title">Admin</span>
+                        <span class="demo-role-email">admin@delivery.com</span>
+                    </span>
+                </button>
+
+                <!-- 2. Nhân viên Tiếp nhận -->
+                <button type="button" 
+                        class="demo-role-btn" 
+                        data-email="reception@delivery.com" 
+                        data-password="Staff@123"
+                        data-role-name="Nhân viên Tiếp nhận"
+                        title="reception@delivery.com / Staff@123">
+                    <span class="demo-role-text">
+                        <span class="demo-role-title">Tiếp nhận</span>
+                        <span class="demo-role-email">reception@delivery.com</span>
+                    </span>
+                </button>
+
+                <!-- 3. Nhân viên Kho -->
+                <button type="button" 
+                        class="demo-role-btn" 
+                        data-email="warehouse@delivery.com" 
+                        data-password="Staff@123"
+                        data-role-name="Nhân viên Kho"
+                        title="warehouse@delivery.com / Staff@123">
+                    <span class="demo-role-text">
+                        <span class="demo-role-title">Kho bãi</span>
+                        <span class="demo-role-email">warehouse@delivery.com</span>
+                    </span>
+                </button>
+
+                <!-- 4. Nhân viên Giao hàng -->
+                <button type="button" 
+                        class="demo-role-btn" 
+                        data-email="shipper@delivery.com" 
+                        data-password="Staff@123"
+                        data-role-name="Nhân viên Giao hàng"
+                        title="shipper@delivery.com / Staff@123">
+                    <span class="demo-role-text">
+                        <span class="demo-role-title">Giao hàng</span>
+                        <span class="demo-role-email">shipper@delivery.com</span>
+                    </span>
+                </button>
+
+                <!-- 5. Khách hàng (Customer) -->
+                <button type="button" 
+                        class="demo-role-btn" 
+                        data-email="customer@delivery.com" 
+                        data-password="Customer@123"
+                        data-role-name="Khách hàng (Customer)"
+                        title="customer@delivery.com / Customer@123">
+                    <span class="demo-role-text">
+                        <span class="demo-role-title">Khách hàng</span>
+                        <span class="demo-role-email">customer@delivery.com</span>
+                    </span>
+                </button>
+            </div>
+
+            <div id="demoSelectedAlert" class="demo-selected-alert" style="display: none;">
+                <span class="alert-icon"><i class="bi bi-check-lg"></i></span>
+                <span id="demoAlertText"></span>
+            </div>
+        </div>
+
+        <div class="auth-divider">
+            <span>hoặc nhập tài khoản</span>
+        </div>
+
         <form asp-controller="Account"
               asp-action="Login"
               method="post"
+              id="accountLoginForm"
               class="auth-form">
 
             <input type="hidden"
@@ -51,6 +138,7 @@
 
                 <input asp-for="Email"
                        class="form-control"
+                       id="loginEmail"
                        autocomplete="email"
                        placeholder="Nhập email của bạn" />
 
@@ -101,6 +189,7 @@
             </div>
 
             <button type="submit"
+                    id="btnSubmitLogin"
                     class="auth-submit">
                 Đăng nhập
             </button>
@@ -129,14 +218,11 @@
     }
 
     <script>
+        // Toggle ẩn/hiện mật khẩu
         document.querySelectorAll(".password-toggle")
             .forEach(button => {
-
                 button.addEventListener("click", function () {
-
-                    const input =
-                        document.getElementById(this.dataset.target);
-
+                    const input = document.getElementById(this.dataset.target);
                     if (input.type === "password") {
                         input.type = "text";
                         this.textContent = "Ẩn";
@@ -145,9 +231,63 @@
                         input.type = "password";
                         this.textContent = "Hiện";
                     }
-
                 });
-
             });
+
+        // Điền nhanh tài khoản theo vai trò (Demo Accounts)
+        const demoButtons = document.querySelectorAll(".demo-role-btn");
+        const emailInput = document.getElementById("loginEmail");
+        const passwordInput = document.getElementById("loginPassword");
+        const alertBox = document.getElementById("demoSelectedAlert");
+        const alertText = document.getElementById("demoAlertText");
+        const autoSubmitCheckbox = document.getElementById("autoSubmitDemo");
+        const loginForm = document.getElementById("accountLoginForm");
+
+        demoButtons.forEach(btn => {
+            btn.addEventListener("click", function () {
+                const email = this.getAttribute("data-email");
+                const password = this.getAttribute("data-password");
+                const roleName = this.getAttribute("data-role-name");
+
+                // Điền thông tin
+                if (emailInput) {
+                    emailInput.value = email;
+                    emailInput.dispatchEvent(new Event("input", { bubbles: true }));
+                    emailInput.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+
+                if (passwordInput) {
+                    passwordInput.value = password;
+                    passwordInput.dispatchEvent(new Event("input", { bubbles: true }));
+                    passwordInput.dispatchEvent(new Event("change", { bubbles: true }));
+                }
+
+                // Xóa trạng thái lỗi xác thực (nếu có trước đó)
+                if (window.jQuery && typeof $(emailInput).valid === "function") {
+                    $(emailInput).valid();
+                    $(passwordInput).valid();
+                }
+
+                // Cập nhật trạng thái active cho nút
+                demoButtons.forEach(b => b.classList.remove("active"));
+                this.classList.add("active");
+
+                // Hiển thị thông báo đã chọn
+                if (alertBox && alertText) {
+                    alertText.innerHTML = `Đã điền thông tin: <strong>${roleName}</strong>. Bấm <em>"Đăng nhập"</em> để tiếp tục.`;
+                    alertBox.style.display = "flex";
+                }
+
+                // Nếu bật tự động đăng nhập -> submit form ngay
+                if (autoSubmitCheckbox && autoSubmitCheckbox.checked && loginForm) {
+                    loginForm.submit();
+                } else {
+                    const submitBtn = document.getElementById("btnSubmitLogin");
+                    if (submitBtn) {
+                        submitBtn.focus();
+                    }
+                }
+            });
+        });
     </script>
 }

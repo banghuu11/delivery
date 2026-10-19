@@ -1,0 +1,76 @@
+<!-- BANNER / WIDGET TÌNH HÌNH THỜI TIẾT & GIAO THÔNG THỜI GIAN THỰC -->
+<section class="live-condition-section py-4 bg-white border-bottom shadow-sm">
+    <div class="container">
+        <div class="card border-0 rounded-4 p-3 p-md-4 live-condition-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="live-pulse-dot"></span>
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-broadcast text-danger me-1"></i> Tình Hình Thời Tiết & Giao Thông Thực Tế
+                    </h5>
+                    <span class="badge bg-primary-subtle text-primary border rounded-pill px-3 py-1 small" id="homeLocationBadge">
+                        <i class="bi bi-geo-alt-fill me-1"></i> <span id="homeLocationText">Khu vực: TP. Hồ Chí Minh</span>
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="text-muted small" id="homeUpdateTime">
+                        <i class="bi bi-clock-history me-1"></i> Cập nhật: <span id="homeUpdateTimeText">Đang tải...</span>
+                    </span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-2 py-0" id="btnRefreshConditions" title="Cập nhật lại ngay">
+                        <i class="bi bi-arrow-clockwise"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- 1. THỜI TIẾT KHU VỰC -->
+                <div class="col-md-6">
+                    <div class="condition-box p-3 rounded-4 border d-flex align-items-center justify-content-between h-100 bg-light-subtle">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="condition-icon-box bg-white shadow-sm rounded-circle d-flex align-items-center justify-content-center" id="homeWeatherIcon">
+                                <i class="bi bi-sun-fill text-warning fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="text-muted small fw-semibold text-uppercase">Thời tiết khu vực</div>
+                                <div class="fs-5 fw-bold text-dark" id="homeWeatherDesc">Đang cập nhật...</div>
+                                <div class="small text-secondary" id="homeWeatherSub">
+                                    Nhiệt độ: <span id="homeTemp">--</span>°C &bull; Mưa: <span id="homeRain">--</span> mm
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-success-subtle text-success border px-2 py-1 rounded-pill" id="homeWeatherBadge">
+                                Thuận lợi
+                            </span>
+                            <div class="text-muted small mt-1" id="homeWeatherFeeNote">Không phụ phí</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. MẬT ĐỘ GIAO THÔNG -->
+                <div class="col-md-6">
+                    <div class="condition-box p-3 rounded-4 border d-flex align-items-center justify-content-between h-100 bg-light-subtle">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="condition-icon-box bg-white shadow-sm rounded-circle d-flex align-items-center justify-content-center" id="homeTrafficIcon">
+                                <i class="bi bi-car-front-fill text-primary fs-3"></i>
+                            </div>
+                            <div>
+                                <div class="text-muted small fw-semibold text-uppercase">Mật độ giao thông</div>
+                                <div class="fs-5 fw-bold text-dark" id="homeTrafficDesc">Đang cập nhật...</div>
+                                <div class="small text-secondary" id="homeTrafficSub">
+                                    Tốc độ lưu thông ổn định
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-info-subtle text-info border px-2 py-1 rounded-pill" id="homeTrafficBadge">
+                                Thông thoáng
+                            </span>
+                            <div class="text-muted small mt-1" id="homeTrafficFeeNote">Không phụ phí</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

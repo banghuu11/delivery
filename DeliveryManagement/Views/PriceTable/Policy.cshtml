@@ -1,0 +1,220 @@
+@model DeliveryManagement.Models.PricingPolicy
+
+@{
+    ViewData["Title"] = "Cấu hình Chính sách Giá Động & Phụ thu";
+}
+
+<div class="container py-4">
+
+    <!-- HEADER & TABS -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom">
+        <div>
+            <h1 class="h3 fw-bold text-dark mb-1"><i class="bi bi-gear-wide-connected text-primary me-2"></i>Cấu hình Giá Động & Phụ Thu</h1>
+            <p class="text-muted mb-0">Thiết lập đơn giá cự ly (km), khối lượng và phụ thu thời tiết/giao thông theo thời gian thực.</p>
+        </div>
+        <div class="d-flex gap-2 mt-2 mt-md-0">
+            <a asp-action="Index" class="btn btn-outline-secondary">
+                <i class="bi bi-table me-1"></i> Xem bảng giá cũ
+            </a>
+            <a asp-controller="Admin" asp-action="Index" class="btn btn-outline-primary">
+                <i class="bi bi-arrow-left me-1"></i> Về Dashboard Admin
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <form asp-action="Policy" method="post">
+        <input type="hidden" asp-for="PricingPolicyId" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+        <div class="row g-4">
+
+            <!-- 1. CƯỚC THEO CÂY SỐ (KM) -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 rounded-3 h-100">
+                    <div class="card-header bg-primary text-white py-3">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-geo-alt-fill me-2"></i> 1. Cước Quãng Đường (Theo Km)
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label asp-for="BaseDistanceKm" class="form-label fw-semibold"></label>
+                            <div class="input-group">
+                                <input asp-for="BaseDistanceKm" type="number" step="0.1" min="0.1" class="form-control" />
+                                <span class="input-group-text">km</span>
+                            </div>
+                            <span class="form-text text-muted">Khoảng cách tối thiểu được tính theo giá mở cửa.</span>
+                            <span asp-validation-for="BaseDistanceKm" class="text-danger small"></span>
+                        </div>
+
+                        <hr class="my-3" />
+
+                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-truck text-primary me-1"></i> Giao thường (Standard)</h6>
+                        <div class="row g-3 mb-3">
+                            <div class="col-sm-6">
+                                <label asp-for="StandardBasePrice" class="form-label fw-semibold"></label>
+                                <div class="input-group">
+                                    <input asp-for="StandardBasePrice" type="number" step="1000" min="0" class="form-control" />
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                                <span asp-validation-for="StandardBasePrice" class="text-danger small"></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <label asp-for="StandardPricePerKm" class="form-label fw-semibold"></label>
+                                <div class="input-group">
+                                    <input asp-for="StandardPricePerKm" type="number" step="500" min="0" class="form-control" />
+                                    <span class="input-group-text">đ / km</span>
+                                </div>
+                                <span asp-validation-for="StandardPricePerKm" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <h6 class="fw-bold text-danger mb-3"><i class="bi bi-lightning-charge-fill text-danger me-1"></i> Giao nhanh (Hỏa tốc)</h6>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label asp-for="ExpressBasePrice" class="form-label fw-semibold"></label>
+                                <div class="input-group">
+                                    <input asp-for="ExpressBasePrice" type="number" step="1000" min="0" class="form-control" />
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                                <span asp-validation-for="ExpressBasePrice" class="text-danger small"></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <label asp-for="ExpressPricePerKm" class="form-label fw-semibold"></label>
+                                <div class="input-group">
+                                    <input asp-for="ExpressPricePerKm" type="number" step="500" min="0" class="form-control" />
+                                    <span class="input-group-text">đ / km</span>
+                                </div>
+                                <span asp-validation-for="ExpressPricePerKm" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. PHỤ PHÍ KHỐI LƯỢNG (KG) -->
+            <div class="col-lg-6">
+                <div class="card shadow-sm border-0 rounded-3 mb-4">
+                    <div class="card-header bg-secondary text-white py-3">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-box-seam-fill me-2"></i> 2. Phụ Phí Khối Lượng (Kg)
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label asp-for="WeightThresholdKg" class="form-label fw-semibold"></label>
+                                <div class="input-group">
+                                    <input asp-for="WeightThresholdKg" type="number" step="0.5" min="0.1" class="form-control" />
+                                    <span class="input-group-text">kg</span>
+                                </div>
+                                <span class="form-text text-muted">Mức dưới ngưỡng này không tính thêm tiền.</span>
+                                <span asp-validation-for="WeightThresholdKg" class="text-danger small"></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <label asp-for="ExtraPricePerKg" class="form-label fw-semibold"></label>
+                                <div class="input-group">
+                                    <input asp-for="ExtraPricePerKg" type="number" step="500" min="0" class="form-control" />
+                                    <span class="input-group-text">đ / kg vượt</span>
+                                </div>
+                                <span class="form-text text-muted">Cộng thêm cho mỗi kg vượt ngưỡng.</span>
+                                <span asp-validation-for="ExtraPricePerKg" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. PHỤ THU THỜI TIẾT (OPEN-METEO) -->
+                <div class="card shadow-sm border-0 rounded-3 mb-4">
+                    <div class="card-header bg-info text-dark py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-cloud-rain-heavy-fill me-2"></i> 3. Phụ Thu Thời Tiết (Open-Meteo API)
+                        </h5>
+                        <div class="form-check form-switch mb-0">
+                            <input asp-for="EnableWeatherSurcharge" class="form-check-input" type="checkbox" id="switchWeather" />
+                            <label class="form-check-label fw-semibold" for="switchWeather">Bật phụ thu</label>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="alert alert-info py-2 small mb-3">
+                            <i class="bi bi-info-circle-fill me-1"></i> Tự động gọi API Open-Meteo theo toạ độ người gửi để nhận diện mưa rào hoặc dông bão.
+                        </div>
+                        <div class="row g-3">
+                            <div class="col-sm-6">
+                                <label asp-for="WeatherRainSurcharge" class="form-label fw-semibold"><i class="bi bi-cloud-rain-fill text-primary me-1"></i> Mưa rào / to (+VNĐ)</label>
+                                <div class="input-group">
+                                    <input asp-for="WeatherRainSurcharge" type="number" step="1000" min="0" class="form-control" />
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                                <span asp-validation-for="WeatherRainSurcharge" class="text-danger small"></span>
+                            </div>
+                            <div class="col-sm-6">
+                                <label asp-for="WeatherStormSurcharge" class="form-label fw-semibold"><i class="bi bi-cloud-lightning-rain-fill text-danger me-1"></i> Dông bão / xấu (+VNĐ)</label>
+                                <div class="input-group">
+                                    <input asp-for="WeatherStormSurcharge" type="number" step="1000" min="0" class="form-control" />
+                                    <span class="input-group-text">đ</span>
+                                </div>
+                                <span asp-validation-for="WeatherStormSurcharge" class="text-danger small"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. PHỤ THU GIAO THÔNG & GIỜ CAO ĐIỂM -->
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-header bg-warning text-dark py-3 d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0 fw-bold">
+                            <i class="bi bi-traffic-light-fill me-2"></i> 4. Phụ Thu Giao Thông / Cao Điểm
+                        </h5>
+                        <div class="form-check form-switch mb-0">
+                            <input asp-for="EnableTrafficSurcharge" class="form-check-input" type="checkbox" id="switchTraffic" />
+                            <label class="form-check-label fw-semibold" for="switchTraffic">Bật phụ thu</label>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="mb-3">
+                            <label asp-for="TrafficJamSurcharge" class="form-label fw-semibold">Phụ thu khi kẹt xe / cao điểm (+VNĐ)</label>
+                            <div class="input-group">
+                                <input asp-for="TrafficJamSurcharge" type="number" step="1000" min="0" class="form-control" />
+                                <span class="input-group-text">đ</span>
+                            </div>
+                            <span class="form-text text-muted">Áp dụng tự động trong khung giờ cao điểm (07:00 - 09:00 & 16:30 - 18:45) hoặc khi TomTom API báo tắc đường.</span>
+                            <span asp-validation-for="TrafficJamSurcharge" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-2">
+                            <label asp-for="TomTomApiKey" class="form-label fw-semibold">TomTom Traffic API Key (Tùy chọn)</label>
+                            <input asp-for="TomTomApiKey" class="form-control" placeholder="Để trống nếu muốn dùng cơ chế Giờ cao điểm tự động" />
+                            <span class="form-text text-muted small">Nếu có key TomTom (Free 2.500 lượt/ngày), hệ thống sẽ đo lường tốc độ dòng xe thời gian thực.</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div class="mt-4 pt-3 border-top d-flex justify-content-end gap-2">
+            <a asp-action="Index" class="btn btn-secondary px-4">Hủy bỏ</a>
+            <button type="submit" class="btn btn-primary px-5 fw-bold shadow">
+                <i class="bi bi-save me-1"></i> Lưu Chính Sách Giá
+            </button>
+        </div>
+
+    </form>
+
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -98,11 +98,22 @@
                                 </a>
                             </li>
 
-                            <li class="nav-item">
-                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "PriceTable" ? "active text-orange fw-bold" : "")" 
-                                   asp-controller="PriceTable" asp-action="Index">
-                                    <i class="bi bi-table me-1"></i> Bảng giá
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle px-2 px-xl-3 text-nowrap @(currentController == "PriceTable" ? "active text-orange fw-bold" : "")" href="#" role="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-currency-dollar me-1"></i> Quản lý giá
                                 </a>
+                                <ul class="dropdown-menu shadow border-0">
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="PriceTable" asp-action="Policy">
+                                            <i class="bi bi-sliders me-2 text-primary"></i> Cấu hình giá động (Thời tiết & Giao thông)
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item py-2" asp-controller="PriceTable" asp-action="Index">
+                                            <i class="bi bi-table me-2 text-success"></i> Bảng giá bậc thang
+                                        </a>
+                                    </li>
+                                </ul>
                             </li>
 
                             <li class="nav-item dropdown">

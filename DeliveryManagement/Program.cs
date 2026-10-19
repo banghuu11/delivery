@@ -1,5 +1,6 @@
 using DeliveryManagement.Data;
 using DeliveryManagement.Models;
+using DeliveryManagement.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,6 +35,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 
 // MVC
 builder.Services.AddControllersWithViews();
+builder.Services.AddMemoryCache();
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<IPricingService, PricingService>();
 
 var app = builder.Build(); 
 var invariant = System.Globalization.CultureInfo.InvariantCulture;

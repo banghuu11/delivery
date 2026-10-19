@@ -1,4 +1,4 @@
-﻿using DeliveryManagement.Models;
+using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace DeliveryManagement.Data
@@ -11,16 +11,30 @@ namespace DeliveryManagement.Data
             await CreateStaffAsync(
                 userManager,
                 "reception@delivery.com",
-                "Reception@123",
+                "Staff@123",
                 "Nhân viên tiếp nhận",
                 "ReceptionStaff");
 
             await CreateStaffAsync(
                 userManager,
                 "warehouse@delivery.com",
-                "Warehouse@123",
+                "Staff@123",
                 "Nhân viên kho",
                 "WarehouseStaff");
+
+            await CreateStaffAsync(
+                userManager,
+                "shipper@delivery.com",
+                "Staff@123",
+                "Nhân viên giao hàng",
+                "DeliveryStaff");
+
+            await CreateStaffAsync(
+                userManager,
+                "customer@delivery.com",
+                "Customer@123",
+                "Khách hàng mẫu",
+                "Customer");
         }
 
         private static async Task CreateStaffAsync(
@@ -54,6 +68,15 @@ namespace DeliveryManagement.Data
                             result.Errors.Select(e => e.Description)
                         )
                     );
+                }
+            }
+            else
+            {
+                // Ensure password matches expected demo password
+                if (!await userManager.CheckPasswordAsync(user, password))
+                {
+                    var token = await userManager.GeneratePasswordResetTokenAsync(user);
+                    await userManager.ResetPasswordAsync(user, token, password);
                 }
             }
 

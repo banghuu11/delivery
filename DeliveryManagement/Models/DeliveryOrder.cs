@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryManagement.Models
@@ -32,8 +32,25 @@ namespace DeliveryManagement.Models
         public decimal? PaymentAmount { get; set; }
         public DateTime? PaymentTime { get; set; }
 
-        // Tiền đơn hàng
+        // Tiền đơn hàng & Cấu thành chi phí chi tiết
+        [Precision(18, 2)]
         public decimal TotalAmount { get; set; }
+
+        [Precision(18, 2)]
+        public decimal BaseShippingFee { get; set; }
+
+        [Precision(18, 2)]
+        public decimal WeightFee { get; set; }
+
+        [Precision(18, 2)]
+        public decimal WeatherFee { get; set; }
+
+        [Precision(18, 2)]
+        public decimal TrafficFee { get; set; }
+
+        public string? WeatherDescription { get; set; }
+
+        public string? TrafficDescription { get; set; }
 
         // Trạng thái đơn hàng
         public string CurrentStatus { get; set; } = string.Empty;

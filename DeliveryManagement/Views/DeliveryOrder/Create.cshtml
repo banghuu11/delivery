@@ -1,4 +1,4 @@
-﻿@model DeliveryManagement.Models.ViewModels.CreateOrderViewModel
+@model DeliveryManagement.Models.ViewModels.CreateOrderViewModel
 
 @{
     ViewData["Title"] = "Tạo yêu cầu giao hàng";
@@ -22,6 +22,9 @@
           asp-action="Create"
           method="post"
           class="order-form">
+
+        <input type="hidden" asp-for="Latitude" id="senderLat" />
+        <input type="hidden" asp-for="Longitude" id="senderLon" />
 
         <div asp-validation-summary="All"
              class="text-danger validation-summary"></div>
@@ -77,14 +80,28 @@
 
             <div class="form-group">
 
-                <label asp-for="SenderAddress"
-                       class="form-label">
-                    Địa chỉ
-                </label>
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <label asp-for="SenderAddress"
+                           class="form-label mb-0">
+                        Địa chỉ
+                    </label>
+
+                    <button type="button"
+                            class="btn btn-sm btn-link text-primary p-0 text-decoration-none"
+                            id="btnLocateAddress"
+                            title="Lấy vị trí GPS hiện tại">
+                        <i class="bi bi-crosshair"></i> Định vị vị trí của tôi
+                    </button>
+                </div>
 
                 <input asp-for="SenderAddress"
+                       id="senderAddressInput"
                        class="form-control"
                        placeholder="Nhập địa chỉ người gửi" />
+
+                <div id="locationBadge" class="mt-1 small text-success" style="display:none;">
+                    <i class="bi bi-geo-alt-fill"></i> <span id="locationBadgeText">Đã xác định vị trí GPS</span>
+                </div>
 
                 <span asp-validation-for="SenderAddress"
                       class="field-validation-error"></span>
@@ -387,6 +404,47 @@
 
             </div>
 
+            <!-- BẢNG CHI TIẾT CƯỚC PHÍ LINH HOẠT -->
+            <div id="fareBreakdownCard" class="fare-breakdown-card" style="display: none;">
+                <div class="fare-breakdown-header">
+                    <span><i class="bi bi-receipt-cutoff me-1 text-primary"></i> Chi tiết bảng tính cước:</span>
+                    <span class="fare-live-badge"><i class="bi bi-broadcast"></i> Cập nhật Realtime</span>
+                </div>
+                <div class="fare-breakdown-body">
+                    <div class="fare-row">
+                        <div class="fare-label">
+                            <i class="bi bi-truck text-secondary"></i>
+                            <span>Cước vận chuyển cơ bản (<span id="bdDistanceText">0 km</span>)</span>
+                        </div>
+                        <div class="fare-amount" id="bdBaseFee">0 VNĐ</div>
+                    </div>
+
+                    <div class="fare-row" id="rowWeightFee">
+                        <div class="fare-label">
+                            <i class="bi bi-box-seam text-secondary"></i>
+                            <span>Phụ phí vượt khối lượng (<span id="bdWeightText">0 kg</span>)</span>
+                        </div>
+                        <div class="fare-amount" id="bdWeightFee">0 VNĐ</div>
+                    </div>
+
+                    <div class="fare-row" id="rowWeatherFee">
+                        <div class="fare-label">
+                            <span id="bdWeatherIcon"><i class="bi bi-sun-fill text-warning"></i></span>
+                            <span>Phụ thu thời tiết: <strong id="bdWeatherDesc">Bình thường</strong></span>
+                        </div>
+                        <div class="fare-amount" id="bdWeatherFee">+0 VNĐ</div>
+                    </div>
+
+                    <div class="fare-row" id="rowTrafficFee">
+                        <div class="fare-label">
+                            <span id="bdTrafficIcon"><i class="bi bi-car-front-fill text-primary"></i></span>
+                            <span>Mật độ giao thông: <strong id="bdTrafficDesc">Bình thường</strong></span>
+                        </div>
+                        <div class="fare-amount" id="bdTrafficFee">+0 VNĐ</div>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
 
@@ -411,6 +469,27 @@
         </div>
 
     </form>
+
+    <!-- =========================
+         POPUP XIN QUYỀN TRUY CẬP VỊ TRÍ
+         ========================= -->
+    <div id="geoConsentToast" class="geo-consent-toast" style="display: none;">
+        <div class="geo-toast-content">
+            <div class="geo-toast-icon">
+                <i class="bi bi-geo-alt-fill"></i>
+            </div>
+            <div class="geo-toast-text">
+                <strong>Cập nhật vị trí thời gian thực</strong>
+                <p>Hệ thống dùng tọa độ để cập nhật thời tiết và mật độ giao thông tại chỗ, áp dụng biểu phí chính xác và điều phối nhanh nhất.</p>
+            </div>
+        </div>
+        <div class="geo-toast-actions">
+            <button type="button" class="btn-geo-dismiss" id="btnDismissGeo">Để sau</button>
+            <button type="button" class="btn-geo-grant" id="btnGrantGeo">
+                <i class="bi bi-check2-circle"></i> Cho phép
+            </button>
+        </div>
+    </div>
 
 </div>
 
@@ -466,6 +545,37 @@
 
         const btnAddItem =
             document.getElementById('btnAddItem');
+
+
+        const senderLatInput =
+            document.getElementById('senderLat');
+
+        const senderLonInput =
+            document.getElementById('senderLon');
+
+        const senderAddressInput =
+            document.getElementById('senderAddressInput');
+
+        const locationBadge =
+            document.getElementById('locationBadge');
+
+        const locationBadgeText =
+            document.getElementById('locationBadgeText');
+
+        const btnLocateAddress =
+            document.getElementById('btnLocateAddress');
+
+        const geoToast =
+            document.getElementById('geoConsentToast');
+
+        const btnGrantGeo =
+            document.getElementById('btnGrantGeo');
+
+        const btnDismissGeo =
+            document.getElementById('btnDismissGeo');
+
+        const breakdownCard =
+            document.getElementById('fareBreakdownCard');
 
 
         /* ==========================================
@@ -574,6 +684,10 @@
                 priceDescriptionElement.textContent =
                     'Vui lòng chọn hình thức giao hàng.';
 
+                if (breakdownCard) {
+                    breakdownCard.style.display = 'none';
+                }
+
                 return;
 
             }
@@ -591,6 +705,10 @@
 
                 priceDescriptionElement.textContent =
                     'Vui lòng nhập khoảng cách dự kiến.';
+
+                if (breakdownCard) {
+                    breakdownCard.style.display = 'none';
+                }
 
                 return;
 
@@ -610,6 +728,10 @@
                 priceDescriptionElement.textContent =
                     'Vui lòng nhập khối lượng hàng hóa.';
 
+                if (breakdownCard) {
+                    breakdownCard.style.display = 'none';
+                }
+
                 return;
 
             }
@@ -627,11 +749,18 @@
 
             try {
 
-                const url =
+                const lat = senderLatInput ? senderLatInput.value : '';
+                const lon = senderLonInput ? senderLonInput.value : '';
+
+                let url =
                     '@Url.Action("CalculatePrice", "DeliveryOrder")' +
                     `?deliveryMethod=${encodeURIComponent(deliveryMethod)}` +
                     `&totalWeight=${encodeURIComponent(totalWeight)}` +
                     `&distanceKm=${encodeURIComponent(distanceKm)}`;
+
+                if (lat && lon) {
+                    url += `&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+                }
 
 
                 const response =
@@ -673,6 +802,69 @@
                     priceDescriptionElement.textContent =
                         `Tổng khối lượng: ${totalWeight.toLocaleString('vi-VN')} kg | Khoảng cách: ${distanceKm.toLocaleString('vi-VN')} km`;
 
+
+                    if (breakdownCard) {
+                        breakdownCard.style.display = 'block';
+
+                        const bdDist = document.getElementById('bdDistanceText');
+                        if (bdDist) bdDist.textContent = `${distanceKm.toLocaleString('vi-VN')} km`;
+
+                        const bdBase = document.getElementById('bdBaseFee');
+                        if (bdBase) bdBase.textContent = (data.baseShippingFee || 0).toLocaleString('vi-VN') + ' VNĐ';
+
+                        const bdWeight = document.getElementById('bdWeightText');
+                        if (bdWeight) bdWeight.textContent = `${totalWeight.toLocaleString('vi-VN')} kg`;
+
+                        const bdWeightFee = document.getElementById('bdWeightFee');
+                        if (bdWeightFee) bdWeightFee.textContent = (data.weightFee || 0).toLocaleString('vi-VN') + ' VNĐ';
+
+                        const weatherFee = data.weatherFee || 0;
+                        const rowWeather = document.getElementById('rowWeatherFee');
+                        const bdWeatherFee = document.getElementById('bdWeatherFee');
+                        const bdWeatherDesc = document.getElementById('bdWeatherDesc');
+                        const bdWeatherIcon = document.getElementById('bdWeatherIcon');
+
+                        if (bdWeatherFee) {
+                            bdWeatherFee.textContent = (weatherFee > 0 ? '+' : '') + weatherFee.toLocaleString('vi-VN') + ' VNĐ';
+                        }
+                        if (bdWeatherDesc) {
+                            bdWeatherDesc.textContent = data.weatherDescription || 'Bình thường';
+                        }
+                        if (bdWeatherIcon) {
+                            bdWeatherIcon.innerHTML = '<i class="' + (data.weatherIcon || 'bi bi-sun-fill text-warning') + '"></i>';
+                        }
+                        if (rowWeather) {
+                            if (data.isWeatherSurchargeApplied) {
+                                rowWeather.classList.add('surcharge-active');
+                            } else {
+                                rowWeather.classList.remove('surcharge-active');
+                            }
+                        }
+
+                        const trafficFee = data.trafficFee || 0;
+                        const rowTraffic = document.getElementById('rowTrafficFee');
+                        const bdTrafficFee = document.getElementById('bdTrafficFee');
+                        const bdTrafficDesc = document.getElementById('bdTrafficDesc');
+                        const bdTrafficIcon = document.getElementById('bdTrafficIcon');
+
+                        if (bdTrafficFee) {
+                            bdTrafficFee.textContent = (trafficFee > 0 ? '+' : '') + trafficFee.toLocaleString('vi-VN') + ' VNĐ';
+                        }
+                        if (bdTrafficDesc) {
+                            bdTrafficDesc.textContent = data.trafficDescription || 'Bình thường';
+                        }
+                        if (bdTrafficIcon) {
+                            bdTrafficIcon.innerHTML = '<i class="' + (data.trafficIcon || 'bi bi-car-front-fill text-primary') + '"></i>';
+                        }
+                        if (rowTraffic) {
+                            if (data.isTrafficSurchargeApplied) {
+                                rowTraffic.classList.add('surcharge-active');
+                            } else {
+                                rowTraffic.classList.remove('surcharge-active');
+                            }
+                        }
+                    }
+
                 }
                 else {
 
@@ -681,7 +873,12 @@
 
 
                     priceDescriptionElement.textContent =
+                        data.message ||
                         `Không có mức giá phù hợp cho ${totalWeight.toLocaleString('vi-VN')} kg và ${distanceKm.toLocaleString('vi-VN')} km trong bảng giá.`;
+
+                    if (breakdownCard) {
+                        breakdownCard.style.display = 'none';
+                    }
 
                 }
 
@@ -697,6 +894,10 @@
 
                 priceDescriptionElement.textContent =
                     'Không thể lấy dữ liệu bảng giá.';
+
+                if (breakdownCard) {
+                    breakdownCard.style.display = 'none';
+                }
 
             }
 
@@ -1103,6 +1304,93 @@
 
 
         updatePrice();
+
+
+        /* ==========================================
+           QUẢN LÝ VỊ TRÍ & POPUP XIN QUYỀN
+           ========================================== */
+
+        function requestUserLocation() {
+            if (!navigator.geolocation) {
+                alert('Trình duyệt của bạn không hỗ trợ định vị.');
+                return;
+            }
+
+            if (locationBadge && locationBadgeText) {
+                locationBadge.style.display = 'block';
+                locationBadgeText.textContent = 'Đang lấy vị trí GPS...';
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                async function (pos) {
+                    const lat = pos.coords.latitude;
+                    const lon = pos.coords.longitude;
+
+                    if (senderLatInput) senderLatInput.value = lat;
+                    if (senderLonInput) senderLonInput.value = lon;
+                    if (geoToast) geoToast.style.display = 'none';
+
+                    if (locationBadge && locationBadgeText) {
+                        locationBadge.style.display = 'block';
+                        locationBadgeText.textContent = `Tọa độ: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+                    }
+
+                    // Tự động điền địa chỉ nếu đang trống (sử dụng OpenStreetMap Nominatim miễn phí)
+                    if (senderAddressInput && !senderAddressInput.value.trim()) {
+                        try {
+                            const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                            if (revRes.ok) {
+                                const revData = await revRes.json();
+                                if (revData && revData.display_name) {
+                                    senderAddressInput.value = revData.display_name;
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('Reverse geocoding error:', e);
+                        }
+                    }
+
+                    // Tính lại giá với tọa độ thực tế
+                    updatePrice();
+                },
+                function (err) {
+                    console.warn('Geolocation error:', err);
+                    if (geoToast) geoToast.style.display = 'none';
+                    if (locationBadge && locationBadgeText) {
+                        locationBadge.style.display = 'none';
+                    }
+                },
+                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
+            );
+        }
+
+        if (btnGrantGeo) {
+            btnGrantGeo.addEventListener('click', function () {
+                requestUserLocation();
+            });
+        }
+
+        if (btnDismissGeo) {
+            btnDismissGeo.addEventListener('click', function () {
+                if (geoToast) geoToast.style.display = 'none';
+                sessionStorage.setItem('geo_consent_dismissed', 'true');
+            });
+        }
+
+        if (btnLocateAddress) {
+            btnLocateAddress.addEventListener('click', function () {
+                requestUserLocation();
+            });
+        }
+
+        // Tự động hiện popup hỏi sau 800ms nếu chưa từ chối
+        if (!sessionStorage.getItem('geo_consent_dismissed') && navigator.geolocation) {
+            setTimeout(function () {
+                if (geoToast && !senderLatInput?.value) {
+                    geoToast.style.display = 'block';
+                }
+            }, 800);
+        }
 
     })();
 

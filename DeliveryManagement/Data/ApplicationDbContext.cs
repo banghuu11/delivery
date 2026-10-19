@@ -32,6 +32,7 @@ namespace DeliveryManagement.Data
         public DbSet<Message> Messages { get; set; }
 
         public DbSet<PriceTable> PriceTables { get; set; }
+        public DbSet<PricingPolicy> PricingPolicies { get; set; }
         public DbSet<HomeFeature> HomeFeatures { get; set; }
         public DbSet<WebsiteSetting> WebsiteSettings { get; set; }
 

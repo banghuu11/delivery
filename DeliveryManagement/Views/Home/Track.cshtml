@@ -49,11 +49,11 @@
                             @{
                                 string badgeClass = Model.CurrentStatus switch
                                 {
-                                    "Chưa nhận" => "bg-secondary",
+                                    "Chưa nhận" or "Chờ tiếp nhận" => "bg-secondary",
                                     "Đã nhận" or "Đã tiếp nhận" => "bg-info text-dark",
-                                    "Trong kho" => "bg-primary",
-                                    "Đang giao" => "bg-warning text-dark",
-                                    "Đã giao" or "Giao thành công" => "bg-success",
+                                    "Trong kho" or "Đang xử lý" or "Đã nhận - Chưa giao" or "Đã nhận – Chưa giao" => "bg-primary",
+                                    "Đang giao" or "Đã nhận – Đang giao" or "Đã nhận - Đang giao" => "bg-warning text-dark",
+                                    "Đã giao" or "Đã Giao" or "Giao thành công" => "bg-success",
                                     "Đã hủy" or "Giao thất bại" => "bg-danger",
                                     _ => "bg-secondary"
                                 };
@@ -72,9 +72,9 @@
                                 {
                                     "Chưa nhận" or "Chờ tiếp nhận" => 0,
                                     "Đã nhận" or "Đã tiếp nhận" => 1,
-                                    "Trong kho" or "Đang xử lý" => 2,
-                                    "Đang giao" => 3,
-                                    "Đã giao" or "Giao thành công" => 4,
+                                    "Trong kho" or "Đang xử lý" or "Đã nhận - Chưa giao" or "Đã nhận – Chưa giao" => 2,
+                                    "Đang giao" or "Đã nhận – Đang giao" or "Đã nhận - Đang giao" => 3,
+                                    "Đã giao" or "Đã Giao" or "Giao thành công" => 4,
                                     "Đã hủy" or "Giao thất bại" => -1,
                                     _ => 0
                                 };
@@ -168,6 +168,45 @@
                                 </table>
                             </div>
                         </div>
+
+                        <!-- CƯỚC PHÍ & PHỤ THU VẬN CHUYỂN -->
+                        @if (Model.TotalAmount > 0)
+                        {
+                            <div class="mt-4 p-3 bg-light rounded-3 border">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <h6 class="fw-bold mb-0 text-primary"><i class="bi bi-receipt me-2"></i>Chi tiết cước phí vận chuyển</h6>
+                                    <span class="badge bg-white text-dark border">Hình thức: @Model.DeliveryMethod</span>
+                                </div>
+                                <div class="row g-2 small">
+                                    <div class="col-sm-6 d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted"><i class="bi bi-truck me-1"></i>Cước cơ bản (@Model.DistanceKm km):</span>
+                                        <span class="fw-semibold">@(Model.BaseShippingFee > 0 ? Model.BaseShippingFee.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) + " VNĐ" : "-")</span>
+                                    </div>
+                                    <div class="col-sm-6 d-flex justify-content-between py-1 border-bottom">
+                                        <span class="text-muted"><i class="bi bi-box-seam me-1"></i>Phụ phí khối lượng:</span>
+                                        <span class="fw-semibold">@(Model.WeightFee > 0 ? "+" + Model.WeightFee.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) + " VNĐ" : "0 VNĐ")</span>
+                                    </div>
+                                    @if (Model.WeatherFee > 0 || !string.IsNullOrEmpty(Model.WeatherDescription))
+                                    {
+                                        <div class="col-sm-6 d-flex justify-content-between py-1 border-bottom text-danger">
+                                            <span><i class="bi bi-cloud-rain me-1"></i>Phụ thu thời tiết (@(Model.WeatherDescription ?? "Thời tiết xấu")):</span>
+                                            <span class="fw-semibold">+@Model.WeatherFee.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) VNĐ</span>
+                                        </div>
+                                    }
+                                    @if (Model.TrafficFee > 0 || !string.IsNullOrEmpty(Model.TrafficDescription))
+                                    {
+                                        <div class="col-sm-6 d-flex justify-content-between py-1 border-bottom text-warning">
+                                            <span><i class="bi bi-stoplights me-1"></i>Phụ thu giao thông (@(Model.TrafficDescription ?? "Cao điểm")):</span>
+                                            <span class="fw-semibold">+@Model.TrafficFee.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) VNĐ</span>
+                                        </div>
+                                    }
+                                    <div class="col-12 d-flex justify-content-between pt-2 fw-bold fs-6 text-primary">
+                                        <span>Tổng thanh toán:</span>
+                                        <span>@Model.TotalAmount.ToString("N0", new System.Globalization.CultureInfo("vi-VN")) VNĐ</span>
+                                    </div>
+                                </div>
+                            </div>
+                        }
 
                         <!-- LỊCH SỬ THAY ĐỔI TRẠNG THÁI -->
                         @if (Model.OrderStatusHistories != null && Model.OrderStatusHistories.Any())

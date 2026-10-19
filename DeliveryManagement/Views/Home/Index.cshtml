@@ -11,17 +11,171 @@
     <!-- 2. FLOATING FEATURE DOCK (Dữ liệu động từ DB HomeFeatures) -->
     <partial name="Partials/_FeatureDock" model="Model.DockFeatures" />
 
+    <!-- 2.5 TÌNH HÌNH THỜI TIẾT & GIAO THÔNG THỜI GIAN THỰC -->
+    <partial name="Partials/_LiveConditions" />
+
     <!-- 3. TRA CỨU & TÍNH CƯỚC -->
     <partial name="Partials/_TrackingAndPricing" />
 
     <!-- 4. DỊCH VỤ CHI TIẾT & TRẠM BƯU CỤC (Dữ liệu động từ DB) -->
     <partial name="Partials/_ServicesAndProcess" model="Model" />
 
+    <!-- POPUP XIN QUYỀN TRUY CẬP VỊ TRÍ TRÊN TRANG CHỦ -->
+    <div id="geoConsentToast" class="geo-consent-toast" style="display: none;">
+        <div class="geo-toast-content">
+            <div class="geo-toast-icon">
+                <i class="bi bi-geo-alt-fill"></i>
+            </div>
+            <div class="geo-toast-text">
+                <strong>Cập nhật vị trí thời gian thực</strong>
+                <p>Cho phép truy cập vị trí để hệ thống hiển thị chính xác thời tiết và mật độ giao thông tại khu vực của bạn.</p>
+            </div>
+        </div>
+        <div class="geo-toast-actions">
+            <button type="button" class="btn-geo-dismiss" id="btnDismissGeo">Để sau</button>
+            <button type="button" class="btn-geo-grant" id="btnGrantGeo">
+                <i class="bi bi-check2-circle"></i> Cho phép
+            </button>
+        </div>
+    </div>
+
 </div>
 
 @section Scripts {
     <script>
         $(document).ready(function () {
+            let currentLat = sessionStorage.getItem('user_lat') || null;
+            let currentLon = sessionStorage.getItem('user_lon') || null;
+
+            // Hàm lấy dữ liệu Thời tiết & Giao thông
+            function loadLiveConditions(lat, lon) {
+                const params = {};
+                if (lat && lon) {
+                    params.lat = lat;
+                    params.lon = lon;
+                }
+
+                $('#homeWeatherDesc').text('Đang cập nhật...');
+                $('#homeTrafficDesc').text('Đang cập nhật...');
+
+                $.get('/Home/GetLiveConditions', params, function (res) {
+                    if (res && res.success) {
+                        // Thời tiết
+                        $('#homeWeatherIcon').html('<i class="' + (res.weatherIcon || 'bi bi-sun-fill text-warning') + ' fs-3"></i>');
+                        $('#homeWeatherDesc').text(res.weatherDescription || 'Trời quang đãng');
+                        const tempText = (res.temperature !== null && res.temperature !== undefined) ? res.temperature.toFixed(1) : '--';
+                        const rainText = (res.rainMm !== null && res.rainMm !== undefined) ? res.rainMm.toFixed(1) : '0';
+                        $('#homeTemp').text(tempText);
+                        $('#homeRain').text(rainText);
+
+                        if (res.isWeatherSurchargeApplied) {
+                            $('#homeWeatherBadge').removeClass('bg-success-subtle text-success').addClass('bg-danger-subtle text-danger').text('Thời tiết xấu');
+                            $('#homeWeatherFeeNote').html('<span class="text-danger">+' + Number(res.weatherFee || 0).toLocaleString('vi-VN') + ' đ phụ thu</span>');
+                        } else {
+                            $('#homeWeatherBadge').removeClass('bg-danger-subtle text-danger').addClass('bg-success-subtle text-success').text('Thuận lợi');
+                            $('#homeWeatherFeeNote').text('Không phụ phí');
+                        }
+
+                        // Giao thông
+                        $('#homeTrafficIcon').html('<i class="' + (res.trafficIcon || 'bi bi-car-front-fill text-primary') + ' fs-3"></i>');
+                        $('#homeTrafficDesc').text(res.trafficDescription || 'Lưu thông ổn định');
+
+                        if (res.isTrafficSurchargeApplied) {
+                            $('#homeTrafficBadge').removeClass('bg-info-subtle text-info bg-success-subtle text-success').addClass('bg-warning-subtle text-warning').text('Cao điểm / Kẹt xe');
+                            $('#homeTrafficFeeNote').html('<span class="text-warning">+' + Number(res.trafficFee || 0).toLocaleString('vi-VN') + ' đ phụ thu</span>');
+                        } else {
+                            $('#homeTrafficBadge').removeClass('bg-warning-subtle text-warning bg-danger-subtle text-danger').addClass('bg-info-subtle text-info').text('Thông thoáng');
+                            $('#homeTrafficFeeNote').text('Không phụ phí');
+                        }
+
+                        $('#homeUpdateTimeText').text(res.updatedAt || new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }));
+                    }
+                }).fail(function () {
+                    $('#homeWeatherDesc').text('Không thể kết nối');
+                    $('#homeTrafficDesc').text('Không thể kết nối');
+                });
+            }
+
+            // Reverse geocode vị trí hiển thị tên quận/huyện
+            function updateLocationName(lat, lon) {
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.address) {
+                            const addr = data.address;
+                            const district = addr.suburb || addr.district || addr.quarter || addr.city_district || '';
+                            const city = addr.city || addr.state || 'Việt Nam';
+                            const display = district ? `${district}, ${city}` : (data.display_name.split(',').slice(0, 2).join(',') || 'Vị trí của bạn');
+                            $('#homeLocationText').text(display);
+                        } else {
+                            $('#homeLocationText').text(`GPS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+                        }
+                    })
+                    .catch(() => {
+                        $('#homeLocationText').text(`GPS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+                    });
+            }
+
+            // Yêu cầu quyền vị trí
+            function requestLocation() {
+                if (!navigator.geolocation) {
+                    alert('Trình duyệt của bạn không hỗ trợ định vị.');
+                    return;
+                }
+
+                $('#homeLocationText').text('Đang lấy vị trí GPS...');
+
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        currentLat = pos.coords.latitude;
+                        currentLon = pos.coords.longitude;
+                        sessionStorage.setItem('user_lat', currentLat);
+                        sessionStorage.setItem('user_lon', currentLon);
+                        $('#geoConsentToast').fadeOut(250);
+
+                        updateLocationName(currentLat, currentLon);
+                        loadLiveConditions(currentLat, currentLon);
+                    },
+                    function (err) {
+                        console.warn('Geolocation error:', err);
+                        $('#geoConsentToast').fadeOut(250);
+                        $('#homeLocationText').text('Mặc định: TP. Hồ Chí Minh');
+                        loadLiveConditions(null, null);
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
+                );
+            }
+
+            // Event Listeners cho Popup
+            $('#btnGrantGeo').click(function () {
+                requestLocation();
+            });
+
+            $('#btnDismissGeo').click(function () {
+                $('#geoConsentToast').fadeOut(250);
+                sessionStorage.setItem('geo_consent_dismissed', 'true');
+            });
+
+            $('#btnRefreshConditions').click(function () {
+                loadLiveConditions(currentLat, currentLon);
+            });
+
+            // Khởi tạo trang: Nếu đã có tọa độ thì dùng, nếu chưa thì tải mặc định và hiện popup sau 800ms
+            if (currentLat && currentLon) {
+                updateLocationName(parseFloat(currentLat), parseFloat(currentLon));
+                loadLiveConditions(parseFloat(currentLat), parseFloat(currentLon));
+            } else {
+                $('#homeLocationText').text('Mặc định: TP. Hồ Chí Minh');
+                loadLiveConditions(null, null);
+
+                if (!sessionStorage.getItem('geo_consent_dismissed') && navigator.geolocation) {
+                    setTimeout(function () {
+                        $('#geoConsentToast').fadeIn(300);
+                    }, 800);
+                }
+            }
+
+            // Tính cước dự kiến trên Trang chủ
             $('#btnCalcPrice').click(function () {
                 var method = $('#calcMethod').val();
                 var weight = parseFloat($('#calcWeight').val());
@@ -29,20 +183,43 @@
 
                 if (!weight || weight <= 0 || !distance || distance <= 0) {
                     $('#calcResultBox').removeClass('d-none alert-success').addClass('alert-danger')
-                        .html('⚠️ Vui lòng nhập khối lượng và khoảng cách lớn hơn 0.');
+                        .html('<i class="bi bi-exclamation-triangle-fill me-1"></i> Vui lòng nhập khối lượng và khoảng cách lớn hơn 0.');
                     return;
                 }
 
-                $.get('/Home/EstimatePrice', { deliveryMethod: method, weight: weight, distance: distance }, function (res) {
+                const params = {
+                    deliveryMethod: method,
+                    weight: weight,
+                    distance: distance
+                };
+                if (currentLat && currentLon) {
+                    params.lat = currentLat;
+                    params.lon = currentLon;
+                }
+
+                $.get('/Home/EstimatePrice', params, function (res) {
                     var $box = $('#calcResultBox').removeClass('d-none alert-danger alert-success');
                     if (res.success) {
-                        var formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(res.price);
-                        $box.addClass('alert-success').html(
-                            '<strong>Cước phí ước tính: ' + formattedPrice + '</strong><br/>' +
-                            '<small class="text-muted">Mốc giá: ' + res.weightRange + ' | ' + res.distanceRange + ' (' + method + ')</small>'
-                        );
+                        var formattedPrice = Number(res.price).toLocaleString('vi-VN') + ' VNĐ';
+                        var baseFeeText = Number(res.baseShippingFee || 0).toLocaleString('vi-VN') + ' VNĐ';
+                        
+                        var breakdownHtml = '<strong>Cước phí dự kiến: ' + formattedPrice + '</strong> (' + method + ' - ' + distance + ' km)';
+                        breakdownHtml += '<div class="mt-1 small">';
+                        breakdownHtml += '&bull; Cước cơ bản: ' + baseFeeText;
+                        if (res.weightFee > 0) {
+                            breakdownHtml += ' | Phụ phí khối lượng: +' + Number(res.weightFee).toLocaleString('vi-VN') + ' VNĐ';
+                        }
+                        if (res.weatherFee > 0) {
+                            breakdownHtml += ' | <span class="text-danger"><i class="' + (res.weatherIcon || 'bi bi-cloud-rain-fill') + ' me-1"></i> Phụ thu thời tiết: +' + Number(res.weatherFee).toLocaleString('vi-VN') + ' VNĐ</span>';
+                        }
+                        if (res.trafficFee > 0) {
+                            breakdownHtml += ' | <span class="text-warning"><i class="' + (res.trafficIcon || 'bi bi-stoplights-fill') + ' me-1"></i> Phụ thu giao thông: +' + Number(res.trafficFee).toLocaleString('vi-VN') + ' VNĐ</span>';
+                        }
+                        breakdownHtml += '</div>';
+
+                        $box.addClass('alert-success').html(breakdownHtml);
                     } else {
-                        $box.addClass('alert-danger').html('⚠️ ' + (res.message || 'Không tìm thấy bảng giá phù hợp.'));
+                        $box.addClass('alert-danger').html('<i class="bi bi-exclamation-triangle-fill me-1"></i> ' + (res.message || 'Không tìm thấy bảng giá phù hợp.'));
                     }
                 });
             });

@@ -11,9 +11,14 @@
             <h1>Quản lý bảng giá</h1>
             <p>Giá giao hàng theo hình thức giao và tổng khối lượng đơn hàng</p>
         </div>
-        <a asp-action="Create" class="btn-submit-order d-inline-flex align-items-center text-decoration-none">
-            Thêm mức giá
-        </a>
+        <div class="d-flex gap-2">
+            <a asp-action="Policy" class="btn btn-warning fw-bold d-inline-flex align-items-center shadow-sm">
+                <i class="bi bi-sliders me-1"></i> Cấu hình Giá Động (Km, Thời tiết, Giao thông)
+            </a>
+            <a asp-action="Create" class="btn-submit-order d-inline-flex align-items-center text-decoration-none">
+                Thêm mức giá bậc thang
+            </a>
+        </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)

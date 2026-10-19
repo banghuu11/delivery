@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryManagement.Models.ViewModels
 {
@@ -50,6 +50,9 @@ namespace DeliveryManagement.Models.ViewModels
         public string DeliveryMethod { get; set; } = string.Empty;
         [Range(0.01, 100000, ErrorMessage = "Khoảng cách phải lớn hơn 0 km")]
         public decimal DistanceKm { get; set; }
+
+        public double? Latitude { get; set; }
+        public double? Longitude { get; set; }
 
         // =========================
         // THÔNG TIN THANH TOÁN

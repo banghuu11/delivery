@@ -199,6 +199,31 @@ namespace DeliveryManagement.Data
                 await context.PriceTables.AddRangeAsync(priceTables);
                 await context.SaveChangesAsync();
             }
+
+            // 6. SEED DYNAMIC PRICING POLICY
+            if (!await context.PricingPolicies.AnyAsync())
+            {
+                var defaultPolicy = new PricingPolicy
+                {
+                    BaseDistanceKm = 2.0m,
+                    StandardBasePrice = 15000m,
+                    StandardPricePerKm = 5000m,
+                    ExpressBasePrice = 25000m,
+                    ExpressPricePerKm = 8000m,
+                    WeightThresholdKg = 3.0m,
+                    ExtraPricePerKg = 3000m,
+                    WeatherRainSurcharge = 15000m,
+                    WeatherStormSurcharge = 25000m,
+                    TrafficJamSurcharge = 10000m,
+                    EnableWeatherSurcharge = true,
+                    EnableTrafficSurcharge = true,
+                    TomTomApiKey = null,
+                    UpdatedAt = DateTime.Now
+                };
+
+                await context.PricingPolicies.AddAsync(defaultPolicy);
+                await context.SaveChangesAsync();
+            }
         }
     }
 }

@@ -1,6 +1,7 @@
 using DeliveryManagement.Data;
 using DeliveryManagement.Models;
 using DeliveryManagement.Models.ViewModels;
+using DeliveryManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -13,13 +14,16 @@ namespace DeliveryManagement.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IPricingService _pricingService;
 
         public DeliveryOrderController(
             ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager)
+            UserManager<ApplicationUser> userManager,
+            IPricingService pricingService)
         {
             _context = context;
             _userManager = userManager;
+            _pricingService = pricingService;
         }
 
         // ==========================================
@@ -205,14 +209,16 @@ namespace DeliveryManagement.Controllers
                 .AnyAsync(o => o.OrderCode == orderCode));
 
             // ------------------------------------------
-            // TÌM GIÁ THEO:
-            // Hình thức + Khối lượng + Khoảng cách
+            // TÍNH GIÁ ĐỘNG THEO:
+            // Cự ly (km) + Khối lượng + Thời tiết + Giao thông
             // ------------------------------------------
 
-            var price = await FindPriceAsync(
+            var priceCalc = await _pricingService.CalculatePriceAsync(
                 model.DeliveryMethod,
                 totalWeight,
-                model.DistanceKm);
+                model.DistanceKm,
+                model.Latitude,
+                model.Longitude);
 
             // ------------------------------------------
             // TẠO DELIVERY ORDER
@@ -240,7 +246,13 @@ namespace DeliveryManagement.Controllers
                 PaymentAmount = null,
                 PaymentTime = null,
 
-                TotalAmount = price ?? 0,
+                TotalAmount = priceCalc.TotalPrice,
+                BaseShippingFee = priceCalc.BaseShippingFee,
+                WeightFee = priceCalc.WeightFee,
+                WeatherFee = priceCalc.WeatherFee,
+                TrafficFee = priceCalc.TrafficFee,
+                WeatherDescription = priceCalc.WeatherDescription,
+                TrafficDescription = priceCalc.TrafficDescription,
 
                 CurrentStatus = "Chưa nhận",
 
@@ -326,7 +338,7 @@ namespace DeliveryManagement.Controllers
             // THÔNG BÁO
             // ------------------------------------------
 
-            TempData["SuccessMessage"] = price == null
+            TempData["SuccessMessage"] = !priceCalc.Success
                 ? $"Tạo yêu cầu giao hàng thành công. " +
                   $"Mã đơn: {orderCode}. " +
                   $"Chưa có mức giá phù hợp trong bảng giá."
@@ -347,10 +359,13 @@ namespace DeliveryManagement.Controllers
         // ==========================================
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> CalculatePrice(
             string deliveryMethod,
             decimal totalWeight,
-            decimal distanceKm)
+            decimal distanceKm,
+            double? lat = null,
+            double? lon = null)
         {
             if (string.IsNullOrWhiteSpace(deliveryMethod) ||
                 totalWeight <= 0 ||
@@ -359,19 +374,34 @@ namespace DeliveryManagement.Controllers
                 return Json(new
                 {
                     success = false,
-                    price = 0
+                    price = 0,
+                    message = "Vui lòng nhập đầy đủ thông tin hợp lệ."
                 });
             }
 
-            var price = await FindPriceAsync(
+            var result = await _pricingService.CalculatePriceAsync(
                 deliveryMethod,
                 totalWeight,
-                distanceKm);
+                distanceKm,
+                lat,
+                lon);
 
             return Json(new
             {
-                success = price.HasValue,
-                price = price ?? 0
+                success = result.Success,
+                price = result.TotalPrice,
+                baseShippingFee = result.BaseShippingFee,
+                weightFee = result.WeightFee,
+                weatherFee = result.WeatherFee,
+                trafficFee = result.TrafficFee,
+                weatherDescription = result.WeatherDescription,
+                trafficDescription = result.TrafficDescription,
+                weatherIcon = result.WeatherIcon,
+                trafficIcon = result.TrafficIcon,
+                currentTemperature = result.CurrentTemperature,
+                currentRainMm = result.CurrentRainMm,
+                isWeatherSurchargeApplied = result.IsWeatherSurchargeApplied,
+                isTrafficSurchargeApplied = result.IsTrafficSurchargeApplied
             });
         }
 

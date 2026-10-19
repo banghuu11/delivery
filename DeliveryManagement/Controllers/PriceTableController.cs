@@ -1,5 +1,6 @@
-﻿using DeliveryManagement.Data;
+using DeliveryManagement.Data;
 using DeliveryManagement.Models;
+using DeliveryManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -10,20 +11,48 @@ namespace DeliveryManagement.Controllers
     public class PriceTableController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IPricingService _pricingService;
 
-        public PriceTableController(ApplicationDbContext context)
+        public PriceTableController(
+            ApplicationDbContext context,
+            IPricingService pricingService)
         {
             _context = context;
+            _pricingService = pricingService;
         }
 
-        // Danh sách bảng giá
+        // Cấu hình chính sách giá động (Theo km, Thời tiết, Giao thông)
+        [HttpGet]
+        public async Task<IActionResult> Policy()
+        {
+            var policy = await _pricingService.GetActivePolicyAsync();
+            return View(policy);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Policy(PricingPolicy model)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            await _pricingService.UpdatePolicyAsync(model);
+            TempData["SuccessMessage"] = "Đã cập nhật chính sách giá động (theo km, thời tiết và giao thông) thành công.";
+            return RedirectToAction(nameof(Policy));
+        }
+
+        // Danh sách bảng giá bậc thang cũ
         public async Task<IActionResult> Index()
         {
             var list = await _context.PriceTables
                 .OrderBy(p => p.DeliveryMethod)
                 .ThenBy(p => p.MinWeight)
+                .ThenBy(p => p.MinDistance)
                 .ToListAsync();
 
+            ViewBag.ActivePolicy = await _pricingService.GetActivePolicyAsync();
             return View(list);
         }
 
@@ -128,14 +157,14 @@ namespace DeliveryManagement.Controllers
                 var overlap = await _context.PriceTables.AnyAsync(p =>
                     p.PriceTableId != m.PriceTableId &&
                     p.DeliveryMethod == m.DeliveryMethod &&
-                    p.MinWeight < m.MaxWeight &&
-                    m.MinWeight < p.MaxWeight);
+                    p.MinWeight < m.MaxWeight && m.MinWeight < p.MaxWeight &&
+                    p.MinDistance < m.MaxDistance && m.MinDistance < p.MaxDistance);
 
                 if (overlap)
                 {
                     ModelState.AddModelError(
                         string.Empty,
-                        "Khoảng khối lượng bị trùng với một mức giá khác của cùng hình thức giao hàng.");
+                        "Khoảng khối lượng và khoảng cách bị trùng với một mức giá khác của cùng hình thức giao hàng.");
                 }
             }
 
