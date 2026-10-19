@@ -1,0 +1,154 @@
+@model List<DeliveryManagement.Models.PackageType>
+@{
+    ViewData["Title"] = "Quản lý loại hàng hóa";
+}
+
+<div class="container-fluid py-4 px-lg-4">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1"><i class="bi bi-tags-fill text-primary me-2"></i>Danh Mục Loại Hàng Hóa</h2>
+            <p class="text-muted mb-0">Quản lý danh sách các loại kiện hàng (Gói nhỏ, Bọc, Thùng, Đồ điện tử...).</p>
+        </div>
+        <div>
+            <button type="button" class="btn btn-primary-custom shadow-sm" data-bs-toggle="modal" data-bs-target="#createPackageModal">
+                <i class="bi bi-plus-lg me-1"></i> Thêm loại hàng mới
+            </button>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-octagon-fill me-2"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th># ID</th>
+                            <th>Tên loại hàng</th>
+                            <th>Mô tả chi tiết</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">Chưa có loại hàng hóa nào.</td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="fw-bold">@item.PackageTypeId</td>
+                                    <td class="fw-semibold text-primary">@item.TypeName</td>
+                                    <td>@(string.IsNullOrWhiteSpace(item.Description) ? "-" : item.Description)</td>
+                                    <td>
+                                        @if (item.IsActive)
+                                        {
+                                            <span class="badge bg-success">Đang áp dụng</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Ngưng áp dụng</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <button type="button" class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#editModal_@item.PackageTypeId" title="Chỉnh sửa">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <form asp-action="DeletePackageType" asp-route-id="@item.PackageTypeId" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa/ngưng loại hàng @item.TypeName này?');">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+
+                                <!-- MODAL SỬA LOẠI HÀNG -->
+                                <div class="modal fade" id="editModal_@item.PackageTypeId" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content border-0 shadow">
+                                            <form asp-action="EditPackageType" method="post">
+                                                <input type="hidden" name="PackageTypeId" value="@item.PackageTypeId" />
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title fw-bold">Chỉnh sửa loại hàng</h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                </div>
+                                                <div class="modal-body">
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Tên loại hàng <span class="text-danger">*</span></label>
+                                                        <input type="text" name="TypeName" class="form-control" value="@item.TypeName" required />
+                                                    </div>
+                                                    <div class="mb-3">
+                                                        <label class="form-label fw-semibold">Mô tả</label>
+                                                        <textarea name="Description" class="form-control" rows="3">@item.Description</textarea>
+                                                    </div>
+                                                    <div class="form-check form-switch">
+                                                        <input class="form-check-input" type="checkbox" name="IsActive" value="true" @(item.IsActive ? "checked" : "") id="active_@item.PackageTypeId" />
+                                                        <label class="form-check-label" for="active_@item.PackageTypeId">Đang áp dụng</label>
+                                                    </div>
+                                                </div>
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                    <button type="submit" class="btn btn-primary-custom">Lưu thay đổi</button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- MODAL TẠO MỚI LOẠI HÀNG -->
+<div class="modal fade" id="createPackageModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <form asp-action="CreatePackageType" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-primary">Thêm loại hàng mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tên loại hàng <span class="text-danger">*</span></label>
+                        <input type="text" name="TypeName" class="form-control" placeholder="VD: Đồ gốm sứ dễ vỡ" required />
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Mô tả</label>
+                        <textarea name="Description" class="form-control" rows="3" placeholder="Ghi chú về quy cách đóng gói..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary-custom">Thêm mới</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

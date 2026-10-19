@@ -1,0 +1,376 @@
+@model List<DeliveryManagement.Models.ViewModels.UserListViewModel>
+@{
+    ViewData["Title"] = "Quản lý tài khoản & Phân quyền";
+    string search = ViewBag.Search as string ?? "";
+    string selectedRole = ViewBag.SelectedRole as string ?? "";
+    string selectedStatus = ViewBag.SelectedStatus as string ?? "";
+    var allRoles = ViewBag.AllRoles as List<string> ?? new List<string>();
+
+    int totalUsers = ViewBag.TotalUsersCount ?? (Model?.Count ?? 0);
+    int countAdmin = ViewBag.AdminCount ?? 0;
+    int countStaff = ViewBag.StaffCount ?? 0;
+    int countCustomer = ViewBag.CustomerCount ?? 0;
+    int countLocked = ViewBag.LockedCount ?? 0;
+}
+
+<div class="container-fluid py-4 px-lg-4">
+
+    <!-- PAGE HEADER -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1 text-dark"><i class="bi bi-people-fill text-primary me-2"></i>Quản Lý Tài Khoản & Phân Quyền</h2>
+            <p class="text-muted mb-0">Quản trị danh sách thành viên, phân quyền vai trò nhân viên và kiểm soát bảo mật hệ thống.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Roles" class="btn btn-outline-primary rounded-pill px-3 shadow-xs">
+                <i class="bi bi-shield-shaded me-1"></i> Ma trận phân quyền
+            </a>
+            <a asp-action="CreateUser" class="btn btn-primary-custom rounded-pill px-3 shadow-sm">
+                <i class="bi bi-person-plus-fill me-1"></i> Thêm tài khoản mới
+            </a>
+        </div>
+    </div>
+
+    <!-- ALERTS -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-success mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2 text-success"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-danger mb-4" role="alert">
+            <i class="bi bi-exclamation-octagon-fill me-2 text-danger"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- KPI STATS OVERVIEW -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3 col-xl">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng tài khoản</span>
+                        <h3 class="fw-black text-dark mb-0 mt-1">@totalUsers</h3>
+                    </div>
+                    <div class="rounded-3 bg-primary-subtle text-primary p-2 fs-4">
+                        <i class="bi bi-people"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Quản trị viên (Admin)</span>
+                        <h3 class="fw-black text-danger mb-0 mt-1">@countAdmin</h3>
+                    </div>
+                    <div class="rounded-3 bg-danger-subtle text-danger p-2 fs-4">
+                        <i class="bi bi-shield-lock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Nhân sự nghiệp vụ</span>
+                        <h3 class="fw-black text-info mb-0 mt-1">@countStaff</h3>
+                    </div>
+                    <div class="rounded-3 bg-info-subtle text-info p-2 fs-4">
+                        <i class="bi bi-person-workspace"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Khách hàng</span>
+                        <h3 class="fw-black text-success mb-0 mt-1">@countCustomer</h3>
+                    </div>
+                    <div class="rounded-3 bg-success-subtle text-success p-2 fs-4">
+                        <i class="bi bi-person-check"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3 col-xl">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Bị khóa</span>
+                        <h3 class="fw-black text-secondary mb-0 mt-1">@countLocked</h3>
+                    </div>
+                    <div class="rounded-3 bg-secondary-subtle text-secondary p-2 fs-4">
+                        <i class="bi bi-lock"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- BỘ LỌC VÀ TÌM KIẾM ĐA TIÊU CHÍ -->
+    <div class="card shadow-sm border-0 mb-4 rounded-4">
+        <div class="card-body p-3">
+            <form method="get" class="row g-2 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Tìm theo tên, email, SĐT..." value="@search" />
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <select name="role" class="form-select">
+                        <option value="">-- Tất cả vai trò (Role) --</option>
+                        @foreach (var r in allRoles)
+                        {
+                            <option value="@r" selected="@(selectedRole == r)">@r</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">-- Tất cả trạng thái --</option>
+                        <option value="active" selected="@(selectedStatus == "active")">Đang hoạt động</option>
+                        <option value="locked" selected="@(selectedStatus == "locked")">Đang bị khóa</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary-custom flex-grow-1 rounded-3">
+                        <i class="bi bi-funnel-fill me-1"></i> Lọc
+                    </button>
+                    <a asp-action="Users" class="btn btn-outline-secondary rounded-3" title="Đặt lại bộ lọc">
+                        <i class="bi bi-arrow-counterclockwise"></i>
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- BẢNG TÀI KHOẢN -->
+    <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="ps-4">Họ và tên</th>
+                            <th>Email đăng nhập</th>
+                            <th>Số điện thoại</th>
+                            <th>Vai trò (Role)</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model == null || !Model.Any())
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-people text-muted" style="font-size: 2.5rem;"></i>
+                                    <div class="mt-2 fw-semibold">Không tìm thấy tài khoản nào phù hợp với bộ lọc.</div>
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            @foreach (var user in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-semibold">
+                                        <div class="d-flex align-items-center">
+                                            <span class="avatar-circle me-3 bg-light text-dark border">
+                                                @(string.IsNullOrWhiteSpace(user.FullName) ? "U" : user.FullName.Substring(0, 1))
+                                            </span>
+                                            <div>
+                                                <a asp-action="UserDetails" asp-route-id="@user.Id" class="text-dark text-decoration-none fw-bold hover-primary">
+                                                    @user.FullName
+                                                </a>
+                                                <div class="small text-muted font-monospace" style="font-size: 0.75rem;">ID: @user.Id.Substring(0, Math.Min(8, user.Id.Length))...</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <span class="text-dark">@user.Email</span>
+                                    </td>
+                                    <td>@(string.IsNullOrWhiteSpace(user.PhoneNumber) ? "-" : user.PhoneNumber)</td>
+                                    <td>
+                                        @{
+                                            string roleBadge = user.Role switch
+                                            {
+                                                "Admin" => "bg-danger",
+                                                "ReceptionStaff" => "bg-info text-dark",
+                                                "WarehouseStaff" => "bg-primary",
+                                                "DeliveryStaff" => "bg-warning text-dark",
+                                                "Customer" => "bg-success",
+                                                _ => "bg-secondary"
+                                            };
+                                        }
+                                        <span class="badge @roleBadge px-2 py-1 rounded-pill">@user.Role</span>
+                                    </td>
+                                    <td>
+                                        @if (user.IsLockedOut)
+                                        {
+                                            <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1 rounded-pill">
+                                                <i class="bi bi-lock-fill me-1"></i> Bị khóa
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success-subtle text-success border border-success px-2 py-1 rounded-pill">
+                                                <i class="bi bi-check-circle me-1"></i> Hoạt động
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <div class="btn-group btn-group-sm">
+                                            <!-- XEM CHI TIẾT -->
+                                            <a asp-action="UserDetails" asp-route-id="@user.Id" class="btn btn-outline-info" title="Xem hồ sơ & lịch sử đơn hàng">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+
+                                            <!-- SỬA TÀI KHOẢN & ĐỔI QUYỀN -->
+                                            <a asp-action="EditUser" asp-route-id="@user.Id" class="btn btn-outline-primary" title="Sửa thông tin / Đổi vai trò">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+
+                                            <!-- ĐẶT LẠI MẬT KHẨU NHANH -->
+                                            <button type="button" class="btn btn-outline-warning" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalQuickReset" 
+                                                    data-user-id="@user.Id" 
+                                                    data-user-email="@user.Email"
+                                                    title="Cấp lại mật khẩu">
+                                                <i class="bi bi-key"></i>
+                                            </button>
+
+                                            <!-- KHÓA / MỞ KHÓA -->
+                                            @if (user.Email != "admin@delivery.com")
+                                            {
+                                                <form asp-action="ToggleLock" asp-route-id="@user.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn thay đổi trạng thái khóa/mở cho tài khoản này?');">
+                                                    <button type="submit" class="btn @(user.IsLockedOut ? "btn-outline-success" : "btn-outline-secondary")" title="@(user.IsLockedOut ? "Mở khóa tài khoản" : "Khóa tài khoản")">
+                                                        <i class="bi @(user.IsLockedOut ? "bi-unlock" : "bi-lock")"></i>
+                                                    </button>
+                                                </form>
+
+                                                <!-- XÓA TÀI KHOẢN -->
+                                                <button type="button" class="btn btn-outline-danger" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalDeleteUser" 
+                                                        data-user-id="@user.Id" 
+                                                        data-user-email="@user.Email" 
+                                                        data-user-name="@user.FullName"
+                                                        title="Xóa tài khoản">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            }
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ==========================================
+     MODAL CẤP LẠI MẬT KHẨU NHANH
+     ========================================== -->
+<div class="modal fade" id="modalQuickReset" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-key-fill text-warning me-2"></i>Cấp Lại Mật Khẩu Nhanh</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="ResetPassword" method="post">
+                <input type="hidden" name="userId" id="resetUserId" />
+                <div class="modal-body p-4">
+                    <p class="text-muted small">Cấp lại mật khẩu mới cho tài khoản: <strong id="resetUserEmail" class="text-dark"></strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Mật khẩu mới khởi tạo <span class="text-danger">*</span></label>
+                        <input name="newPassword" type="password" class="form-control" placeholder="Tối thiểu 6 ký tự" required minlength="6" />
+                        <small class="text-muted">Nhập mật khẩu mới gồm ít nhất 6 ký tự (nên có chữ hoa, thường và số).</small>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary-custom rounded-pill px-4 fw-bold">Xác nhận cấp lại</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     MODAL XÓA TÀI KHOẢN AN TOÀN
+     ========================================== -->
+<div class="modal fade" id="modalDeleteUser" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Xác Nhận Xóa Tài Khoản</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="DeleteUser" method="post">
+                <input type="hidden" name="id" id="deleteUserId" />
+                <div class="modal-body p-4">
+                    <p class="text-dark">Bạn có chắc chắn muốn xóa tài khoản <strong id="deleteUserDisplay" class="text-danger"></strong>?</p>
+                    <div class="alert alert-warning small mb-0 rounded-3">
+                        <i class="bi bi-info-circle-fill me-1"></i>
+                        Lưu ý: Nếu tài khoản đã phát sinh lịch sử đơn hàng trong hệ thống logistics, hệ thống sẽ tự động chuyển sang <strong>khóa vĩnh viễn</strong> để bảo toàn toàn vẹn dữ liệu thay vì xóa cứng.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-danger rounded-pill px-4 fw-bold">Xác nhận xóa</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Modal Reset Password
+            var modalQuickReset = document.getElementById('modalQuickReset');
+            if (modalQuickReset) {
+                modalQuickReset.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var userId = button.getAttribute('data-user-id');
+                    var userEmail = button.getAttribute('data-user-email');
+
+                    document.getElementById('resetUserId').value = userId;
+                    document.getElementById('resetUserEmail').textContent = userEmail;
+                });
+            }
+
+            // Modal Delete User
+            var modalDeleteUser = document.getElementById('modalDeleteUser');
+            if (modalDeleteUser) {
+                modalDeleteUser.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var userId = button.getAttribute('data-user-id');
+                    var userEmail = button.getAttribute('data-user-email');
+                    var userName = button.getAttribute('data-user-name');
+
+                    document.getElementById('deleteUserId').value = userId;
+                    document.getElementById('deleteUserDisplay').textContent = (userName || '') + ' (' + userEmail + ')';
+                });
+            }
+        });
+    </script>
+}

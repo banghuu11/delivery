@@ -1,0 +1,51 @@
+@model DeliveryManagement.Models.ViewModels.HomeViewModel
+@{
+    ViewData["Title"] = $"{Model.Setting.BrandName} - {Model.Setting.Slogan}";
+}
+
+<div class="tocdo-home-wrapper">
+
+    <!-- 1. HERO SECTION (Dữ liệu động từ Model.Setting) -->
+    <partial name="Partials/_HeroBanner" model="Model.Setting" />
+
+    <!-- 2. FLOATING FEATURE DOCK (Dữ liệu động từ DB HomeFeatures) -->
+    <partial name="Partials/_FeatureDock" model="Model.DockFeatures" />
+
+    <!-- 3. TRA CỨU & TÍNH CƯỚC -->
+    <partial name="Partials/_TrackingAndPricing" />
+
+    <!-- 4. DỊCH VỤ CHI TIẾT & TRẠM BƯU CỤC (Dữ liệu động từ DB) -->
+    <partial name="Partials/_ServicesAndProcess" model="Model" />
+
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#btnCalcPrice').click(function () {
+                var method = $('#calcMethod').val();
+                var weight = parseFloat($('#calcWeight').val());
+                var distance = parseFloat($('#calcDistance').val());
+
+                if (!weight || weight <= 0 || !distance || distance <= 0) {
+                    $('#calcResultBox').removeClass('d-none alert-success').addClass('alert-danger')
+                        .html('⚠️ Vui lòng nhập khối lượng và khoảng cách lớn hơn 0.');
+                    return;
+                }
+
+                $.get('/Home/EstimatePrice', { deliveryMethod: method, weight: weight, distance: distance }, function (res) {
+                    var $box = $('#calcResultBox').removeClass('d-none alert-danger alert-success');
+                    if (res.success) {
+                        var formattedPrice = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(res.price);
+                        $box.addClass('alert-success').html(
+                            '<strong>Cước phí ước tính: ' + formattedPrice + '</strong><br/>' +
+                            '<small class="text-muted">Mốc giá: ' + res.weightRange + ' | ' + res.distanceRange + ' (' + method + ')</small>'
+                        );
+                    } else {
+                        $box.addClass('alert-danger').html('⚠️ ' + (res.message || 'Không tìm thấy bảng giá phù hợp.'));
+                    }
+                });
+            });
+        });
+    </script>
+}
