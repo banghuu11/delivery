@@ -22,6 +22,10 @@ namespace DeliveryManagement.Models.ViewModels
         [StringLength(255)]
         public string SenderAddress { get; set; } = string.Empty;
 
+        // Lưu vào sổ địa chỉ nếu chưa có
+        public bool SaveToAddressBook { get; set; }
+        public string? AddressTag { get; set; }
+
 
         // =========================
         // THÔNG TIN NGƯỜI NHẬN

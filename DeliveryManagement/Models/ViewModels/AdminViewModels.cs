@@ -69,6 +69,47 @@ namespace DeliveryManagement.Models.ViewModels
         public string? NewPassword { get; set; }
     }
 
+    public class UserDetailsViewModel
+    {
+        public string Id { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Role { get; set; } = string.Empty;
+        public bool IsLockedOut { get; set; }
+        public DateTimeOffset? LockoutEnd { get; set; }
+        public string? DefaultSenderAddress { get; set; }
+        public bool EmailConfirmed { get; set; }
+
+        public List<SenderAddress> SavedAddresses { get; set; } = new();
+        public List<DeliveryOrder> RelatedOrders { get; set; } = new();
+
+        public int TotalOrders { get; set; }
+        public int CompletedOrders { get; set; }
+        public decimal TotalAmount { get; set; }
+    }
+
+    public class RoleSummaryViewModel
+    {
+        public string RoleName { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string BadgeClass { get; set; } = string.Empty;
+        public int UserCount { get; set; }
+        public List<string> KeyPermissions { get; set; } = new();
+    }
+
+    public class PermissionMatrixItem
+    {
+        public string FeatureName { get; set; } = string.Empty;
+        public string Category { get; set; } = string.Empty;
+        public bool Admin { get; set; }
+        public bool ReceptionStaff { get; set; }
+        public bool WarehouseStaff { get; set; }
+        public bool DeliveryStaff { get; set; }
+        public bool Customer { get; set; }
+    }
+
     public class AdminCreateOrderViewModel
     {
         [Required(ErrorMessage = "Vui lòng chọn hoặc nhập khách hàng")]

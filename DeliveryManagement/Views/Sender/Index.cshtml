@@ -1,0 +1,439 @@
+@model DeliveryManagement.Models.ViewModels.SenderProfileViewModel
+@{
+    ViewData["Title"] = "Quản lý thông tin người gửi";
+}
+
+<div class="container py-4">
+
+    <!-- PAGE HEADER -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-gradient-primary-soft text-dark overflow-hidden position-relative">
+        <div class="card-body p-4 p-lg-5">
+            <div class="row align-items-center justify-content-between g-3">
+                <div class="col-lg-8">
+                    <div class="d-inline-flex align-items-center gap-2 px-3 py-1 rounded-pill bg-white shadow-xs text-primary small fw-semibold mb-3">
+                        <i class="bi bi-person-vcard-fill text-orange"></i> Hồ sơ khách hàng & Người gửi
+                    </div>
+                    <h2 class="fw-black mb-2 tracking-tight text-dark">Quản Lý Thông Tin Người Gửi</h2>
+                    <p class="text-secondary mb-0 fs-6">
+                        Thiết lập thông tin cá nhân, quản lý sổ địa chỉ kho hàng/điểm lấy hàng và tối ưu hóa quy trình gửi đơn bưu phẩm.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a asp-controller="DeliveryOrder" asp-action="Create" class="btn btn-primary-custom px-4 py-3 rounded-pill shadow-sm fw-bold">
+                        <i class="bi bi-send-plus-fill me-2"></i> Gửi đơn hàng mới
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ALERTS -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-success d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-check-circle-fill fs-5 text-success me-3"></i>
+            <div>@TempData["SuccessMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-danger d-flex align-items-center mb-4" role="alert">
+            <i class="bi bi-exclamation-octagon-fill fs-5 text-danger me-3"></i>
+            <div>@TempData["ErrorMessage"]</div>
+            <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <!-- STATS OVERVIEW -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng đơn đã gửi</span>
+                        <h3 class="fw-black text-dark mb-0 mt-1">@Model.TotalOrdersSent</h3>
+                    </div>
+                    <div class="rounded-3 bg-primary-subtle text-primary p-2 fs-4">
+                        <i class="bi bi-boxes"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Đang xử lý / Giao</span>
+                        <h3 class="fw-black text-warning mb-0 mt-1">@(Model.PendingOrders + Model.DeliveringOrders)</h3>
+                    </div>
+                    <div class="rounded-3 bg-warning-subtle text-warning p-2 fs-4">
+                        <i class="bi bi-truck"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Giao thành công</span>
+                        <h3 class="fw-black text-success mb-0 mt-1">@Model.CompletedOrders</h3>
+                    </div>
+                    <div class="rounded-3 bg-success-subtle text-success p-2 fs-4">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                <div class="d-flex align-items-center justify-content-between">
+                    <div>
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng cước phí</span>
+                        <h4 class="fw-black text-primary mb-0 mt-1">@Model.TotalSpent.ToString("N0") <small class="fs-6">đ</small></h4>
+                    </div>
+                    <div class="rounded-3 bg-info-subtle text-info p-2 fs-4">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+
+        <!-- CỘT TRÁI: THÔNG TIN NGƯỜI GỬI MẶC ĐỊNH & BẢO MẬT -->
+        <div class="col-lg-5">
+
+            <!-- THÔNG TIN TÀI KHOẢN NGƯỜI GỬI -->
+            <div class="card border-0 shadow-sm rounded-4 mb-4">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="avatar-circle fs-4 bg-orange text-white" style="width: 50px; height: 50px;">
+                            @(string.IsNullOrWhiteSpace(Model.FullName) ? "U" : Model.FullName.Substring(0, 1))
+                        </div>
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark">Thông Tin Người Gửi Mặc Định</h5>
+                            <small class="text-muted">Được dùng làm thông tin gửi hàng mặc định</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <form asp-action="UpdateProfile" method="post">
+                        <input type="hidden" asp-for="UserId" />
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Email đăng nhập</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope text-muted"></i></span>
+                                <input value="@Model.Email" class="form-control bg-light border-start-0" readonly />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="FullName" class="form-label fw-semibold text-secondary small">
+                                Họ và tên người gửi <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-person text-muted"></i></span>
+                                <input asp-for="FullName" class="form-control border-start-0" placeholder="Nhập họ tên người gửi" required />
+                            </div>
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label fw-semibold text-secondary small">
+                                Số điện thoại liên hệ <span class="text-danger">*</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-telephone text-muted"></i></span>
+                                <input asp-for="PhoneNumber" class="form-control border-start-0" placeholder="Số điện thoại người gửi" required />
+                            </div>
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="DefaultSenderAddress" class="form-label fw-semibold text-secondary small">
+                                Địa chỉ lấy hàng mặc định
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-alt text-muted"></i></span>
+                                <textarea asp-for="DefaultSenderAddress" class="form-control border-start-0" rows="3" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành phố..."></textarea>
+                            </div>
+                            <small class="text-muted">Địa chỉ này sẽ tự động điền sẵn khi bạn tạo đơn mới.</small>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary-custom w-100 py-2 rounded-3 fw-bold">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu thay đổi thông tin
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- BẢO MẬT & ĐỔI MẬT KHẨU -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-shield-lock-fill text-primary me-2"></i>Bảo Mật Tài Khoản</h5>
+                    <small class="text-muted">Thay đổi mật khẩu đăng nhập của bạn</small>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="ChangePassword" method="post">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Mật khẩu hiện tại</label>
+                            <input name="CurrentPassword" type="password" class="form-control" required placeholder="Nhập mật khẩu hiện tại" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Mật khẩu mới</label>
+                            <input name="NewPassword" type="password" class="form-control" required placeholder="Tối thiểu 6 ký tự" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-secondary small">Xác nhận mật khẩu mới</label>
+                            <input name="ConfirmPassword" type="password" class="form-control" required placeholder="Nhập lại mật khẩu mới" />
+                        </div>
+                        <button type="submit" class="btn btn-outline-secondary w-100 py-2 rounded-3 fw-semibold">
+                            <i class="bi bi-key-fill me-1"></i> Cập nhật mật khẩu
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- CỘT PHẢI: SỔ ĐỊA CHỈ NGƯỜI GỬI (SAVED ADDRESSES) -->
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm rounded-4 h-100">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-3">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <div>
+                            <h5 class="fw-bold mb-1 text-dark">
+                                <i class="bi bi-journal-bookmark-fill text-orange me-2"></i>Sổ Địa Chỉ Người Gửi
+                            </h5>
+                            <small class="text-muted">Lưu các điểm lấy hàng (Kho hàng, Chi nhánh, Nhà riêng...) để chọn nhanh khi tạo đơn</small>
+                        </div>
+                        <button type="button" class="btn btn-primary-custom rounded-pill px-3 py-2 fw-semibold btn-sm shadow-xs" data-bs-toggle="modal" data-bs-target="#modalAddAddress">
+                            <i class="bi bi-plus-lg me-1"></i> Thêm địa chỉ mới
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card-body px-4 pb-4 pt-1">
+
+                    @if (Model.SavedAddresses == null || !Model.SavedAddresses.Any())
+                    {
+                        <div class="text-center py-5">
+                            <div class="mb-3">
+                                <i class="bi bi-geo-alt text-muted" style="font-size: 3.5rem;"></i>
+                            </div>
+                            <h6 class="fw-bold text-dark mb-1">Chưa có địa chỉ nào trong sổ địa chỉ</h6>
+                            <p class="text-muted small mb-3">Thêm địa chỉ kho hàng hoặc điểm nhận hàng để thuận tiện khi gửi hàng.</p>
+                            <button type="button" class="btn btn-outline-primary rounded-pill px-4" data-bs-toggle="modal" data-bs-target="#modalAddAddress">
+                                <i class="bi bi-plus-circle me-1"></i> Thêm ngay địa chỉ đầu tiên
+                            </button>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var addr in Model.SavedAddresses)
+                            {
+                                <div class="card border @(addr.IsDefault ? "border-primary bg-primary-subtle bg-opacity-10 shadow-xs" : "border-light-subtle bg-white") rounded-3 p-3 transition-card">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div>
+                                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                                <span class="badge bg-light text-dark border px-2 py-1 fw-bold">
+                                                    <i class="bi bi-tag-fill text-orange me-1"></i>@(string.IsNullOrWhiteSpace(addr.AddressTag) ? "Điểm gửi hàng" : addr.AddressTag)
+                                                </span>
+
+                                                @if (addr.IsDefault)
+                                                {
+                                                    <span class="badge bg-success-subtle text-success border border-success px-2 py-1">
+                                                        <i class="bi bi-check-circle-fill me-1"></i> Mặc định
+                                                    </span>
+                                                }
+                                            </div>
+
+                                            <h6 class="fw-bold text-dark mb-1">@addr.SenderName</h6>
+                                            <div class="text-muted small mb-2">
+                                                <i class="bi bi-telephone-fill me-1 text-secondary"></i> @addr.SenderPhone
+                                            </div>
+                                            <div class="text-secondary small">
+                                                <i class="bi bi-geo-alt-fill me-1 text-danger"></i> @addr.SenderAddressText
+                                            </div>
+                                        </div>
+
+                                        <div class="d-flex flex-column align-items-end gap-1">
+                                            @if (!addr.IsDefault)
+                                            {
+                                                <form asp-action="SetDefaultAddress" asp-route-id="@addr.Id" method="post" class="d-inline">
+                                                    <button type="submit" class="btn btn-sm btn-link text-primary text-decoration-none p-0 small" title="Đặt làm địa chỉ mặc định">
+                                                        <i class="bi bi-star me-1"></i>Đặt mặc định
+                                                    </button>
+                                                </form>
+                                            }
+
+                                            <div class="btn-group btn-group-sm mt-2">
+                                                <button type="button" 
+                                                        class="btn btn-outline-secondary btn-sm"
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalEditAddress"
+                                                        data-id="@addr.Id"
+                                                        data-name="@addr.SenderName"
+                                                        data-phone="@addr.SenderPhone"
+                                                        data-address="@addr.SenderAddressText"
+                                                        data-tag="@addr.AddressTag"
+                                                        data-default="@addr.IsDefault.ToString().ToLower()"
+                                                        title="Sửa địa chỉ">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+
+                                                <form asp-action="DeleteAddress" asp-route-id="@addr.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa địa chỉ này khỏi sổ địa chỉ?');">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm" title="Xóa địa chỉ">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ==========================================
+     MODAL THÊM ĐỊA CHỈ MỚI
+     ========================================== -->
+<div class="modal fade" id="modalAddAddress" tabindex="-1" aria-labelledby="modalAddAddressLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalAddAddressLabel">
+                    <i class="bi bi-plus-circle text-primary me-2"></i>Thêm Địa Chỉ Người Gửi Mới
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="AddAddress" method="post">
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Tên nhãn địa chỉ (VD: Kho hàng Q.1, Nhà riêng, Chi nhánh...)</label>
+                        <input name="AddressTag" class="form-control" placeholder="Kho hàng chính" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Họ và tên người gửi tại điểm này <span class="text-danger">*</span></label>
+                        <input name="SenderName" class="form-control" value="@Model.FullName" placeholder="Họ tên người gửi" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Số điện thoại liên hệ <span class="text-danger">*</span></label>
+                        <input name="SenderPhone" class="form-control" value="@Model.PhoneNumber" placeholder="Số điện thoại" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Địa chỉ lấy hàng chi tiết <span class="text-danger">*</span></label>
+                        <textarea name="SenderAddressText" class="form-control" rows="3" placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh..." required></textarea>
+                    </div>
+
+                    <div class="form-check">
+                        <input name="IsDefault" class="form-check-input" type="checkbox" value="true" id="addIsDefault">
+                        <label class="form-check-label fw-semibold small" for="addIsDefault">
+                            Đặt làm địa chỉ lấy hàng mặc định
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary-custom rounded-pill px-4 fw-bold">Lưu địa chỉ</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ==========================================
+     MODAL SỬA ĐỊA CHỈ
+     ========================================== -->
+<div class="modal fade" id="modalEditAddress" tabindex="-1" aria-labelledby="modalEditAddressLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark" id="modalEditAddressLabel">
+                    <i class="bi bi-pencil-square text-primary me-2"></i>Chỉnh Sửa Địa Chỉ Người Gửi
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="EditAddress" method="post">
+                <input type="hidden" name="Id" id="editAddressId" />
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Tên nhãn địa chỉ</label>
+                        <input name="AddressTag" id="editAddressTag" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Họ và tên người gửi <span class="text-danger">*</span></label>
+                        <input name="SenderName" id="editSenderName" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Số điện thoại liên hệ <span class="text-danger">*</span></label>
+                        <input name="SenderPhone" id="editSenderPhone" class="form-control" required />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Địa chỉ lấy hàng chi tiết <span class="text-danger">*</span></label>
+                        <textarea name="SenderAddressText" id="editSenderAddressText" class="form-control" rows="3" required></textarea>
+                    </div>
+
+                    <div class="form-check">
+                        <input name="IsDefault" class="form-check-input" type="checkbox" value="true" id="editIsDefault">
+                        <label class="form-check-label fw-semibold small" for="editIsDefault">
+                            Đặt làm địa chỉ lấy hàng mặc định
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary-custom rounded-pill px-4 fw-bold">Cập nhật</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var modalEdit = document.getElementById('modalEditAddress');
+            if (modalEdit) {
+                modalEdit.addEventListener('show.bs.modal', function (event) {
+                    var button = event.relatedTarget;
+                    var id = button.getAttribute('data-id');
+                    var name = button.getAttribute('data-name');
+                    var phone = button.getAttribute('data-phone');
+                    var address = button.getAttribute('data-address');
+                    var tag = button.getAttribute('data-tag');
+                    var isDefault = button.getAttribute('data-default') === 'true';
+
+                    document.getElementById('editAddressId').value = id;
+                    document.getElementById('editSenderName').value = name;
+                    document.getElementById('editSenderPhone').value = phone;
+                    document.getElementById('editSenderAddressText').value = address;
+                    document.getElementById('editAddressTag').value = tag;
+                    document.getElementById('editIsDefault').checked = isDefault;
+                });
+            }
+        });
+    </script>
+}

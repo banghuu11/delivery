@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 
 namespace DeliveryManagement.Models
 {
@@ -7,5 +7,7 @@ namespace DeliveryManagement.Models
         public string FullName { get; set; } = string.Empty;
 
         public string? DefaultSenderAddress { get; set; }
+
+        public ICollection<SenderAddress> SenderAddresses { get; set; } = new List<SenderAddress>();
     }
 }

@@ -38,6 +38,15 @@ namespace DeliveryManagement.Controllers
                 .ToListAsync();
         }
 
+        private async Task LoadSenderAddressesAsync(string userId)
+        {
+            ViewBag.SenderAddresses = await _context.SenderAddresses
+                .Where(a => a.UserId == userId)
+                .OrderByDescending(a => a.IsDefault)
+                .ThenByDescending(a => a.CreatedAt)
+                .ToListAsync();
+        }
+
         // ==========================================
         // DANH SÁCH ĐƠN HÀNG CỦA TÔI
         // ==========================================
@@ -95,6 +104,7 @@ namespace DeliveryManagement.Controllers
             };
 
             await LoadPackageTypesAsync();
+            await LoadSenderAddressesAsync(user.Id);
 
             return View(model);
         }
@@ -122,6 +132,7 @@ namespace DeliveryManagement.Controllers
             if (!ModelState.IsValid)
             {
                 await LoadPackageTypesAsync();
+                await LoadSenderAddressesAsync(user.Id);
                 return View(model);
             }
 
@@ -136,6 +147,7 @@ namespace DeliveryManagement.Controllers
                     "Đơn hàng phải có ít nhất một hàng hóa.");
 
                 await LoadPackageTypesAsync();
+                await LoadSenderAddressesAsync(user.Id);
                 return View(model);
             }
 
@@ -160,6 +172,7 @@ namespace DeliveryManagement.Controllers
                     "Có loại hàng hóa không hợp lệ.");
 
                 await LoadPackageTypesAsync();
+                await LoadSenderAddressesAsync(user.Id);
                 return View(model);
             }
 
@@ -177,6 +190,7 @@ namespace DeliveryManagement.Controllers
                     "Tổng khối lượng phải lớn hơn 0.");
 
                 await LoadPackageTypesAsync();
+                await LoadSenderAddressesAsync(user.Id);
                 return View(model);
             }
 
@@ -191,6 +205,7 @@ namespace DeliveryManagement.Controllers
                     "Khoảng cách phải lớn hơn 0 km.");
 
                 await LoadPackageTypesAsync();
+                await LoadSenderAddressesAsync(user.Id);
                 return View(model);
             }
 
@@ -333,6 +348,31 @@ namespace DeliveryManagement.Controllers
             }
 
             await _userManager.UpdateAsync(user);
+
+            // ------------------------------------------
+            // LƯU VÀO SỔ ĐỊA CHỈ NẾU ĐƯỢC CHỌN
+            // ------------------------------------------
+            if (model.SaveToAddressBook)
+            {
+                bool exists = await _context.SenderAddresses
+                    .AnyAsync(a => a.UserId == user.Id && a.SenderAddressText == model.SenderAddress);
+
+                if (!exists)
+                {
+                    var newAddr = new SenderAddress
+                    {
+                        UserId = user.Id,
+                        SenderName = model.SenderName,
+                        SenderPhone = model.SenderPhone,
+                        SenderAddressText = model.SenderAddress,
+                        AddressTag = string.IsNullOrWhiteSpace(model.AddressTag) ? "Điểm gửi hàng" : model.AddressTag,
+                        IsDefault = false,
+                        CreatedAt = DateTime.Now
+                    };
+                    _context.SenderAddresses.Add(newAddr);
+                    await _context.SaveChangesAsync();
+                }
+            }
 
             // ------------------------------------------
             // THÔNG BÁO

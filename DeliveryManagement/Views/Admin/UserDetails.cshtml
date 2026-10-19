@@ -1,0 +1,276 @@
+@model DeliveryManagement.Models.ViewModels.UserDetailsViewModel
+@{
+    ViewData["Title"] = $"Chi tiết tài khoản: {Model.FullName}";
+}
+
+<div class="container-fluid py-4 px-lg-4">
+
+    <!-- HEADER & BREADCRUMB -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="Users" class="text-decoration-none">Quản lý tài khoản</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Chi tiết tài khoản</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-person-badge-fill text-primary me-2"></i>Hồ Sơ Tài Khoản</h2>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Users" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </a>
+            <a asp-action="EditUser" asp-route-id="@Model.Id" class="btn btn-primary-custom rounded-pill px-3 shadow-xs">
+                <i class="bi bi-pencil-square me-1"></i> Chỉnh sửa & Đổi quyền
+            </a>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-success mb-4" role="alert">
+            <i class="bi bi-check-circle-fill me-2 text-success"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3 shadow-xs border-0 border-start border-4 border-danger mb-4" role="alert">
+            <i class="bi bi-exclamation-octagon-fill me-2 text-danger"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="row g-4">
+
+        <!-- CỘT TRÁI: HỒ SƠ & THAO TÁC BẢO MẬT -->
+        <div class="col-lg-4">
+
+            <!-- THẺ HỒ SƠ -->
+            <div class="card border-0 shadow-sm rounded-4 text-center p-4 mb-4">
+                <div class="avatar-circle mx-auto mb-3 bg-orange text-white fs-1" style="width: 80px; height: 80px;">
+                    @(string.IsNullOrWhiteSpace(Model.FullName) ? "U" : Model.FullName.Substring(0, 1))
+                </div>
+
+                <h4 class="fw-bold text-dark mb-1">@Model.FullName</h4>
+                <div class="text-muted small mb-3">@Model.Email</div>
+
+                <div class="mb-3">
+                    @{
+                        string roleBadge = Model.Role switch
+                        {
+                            "Admin" => "bg-danger",
+                            "ReceptionStaff" => "bg-info text-dark",
+                            "WarehouseStaff" => "bg-primary",
+                            "DeliveryStaff" => "bg-warning text-dark",
+                            "Customer" => "bg-success",
+                            _ => "bg-secondary"
+                        };
+                    }
+                    <span class="badge @roleBadge px-3 py-2 fs-6 rounded-pill me-1">@Model.Role</span>
+
+                    @if (Model.IsLockedOut)
+                    {
+                        <span class="badge bg-danger-subtle text-danger border border-danger px-2 py-1">Đang bị khóa</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success-subtle text-success border border-success px-2 py-1">Đang hoạt động</span>
+                    }
+                </div>
+
+                <hr class="my-3 text-muted">
+
+                <div class="text-start small text-secondary">
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">User ID:</span>
+                        <span class="font-monospace text-dark text-truncate ms-2" style="max-width: 180px;" title="@Model.Id">@Model.Id</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Số điện thoại:</span>
+                        <span class="fw-semibold text-dark">@(string.IsNullOrWhiteSpace(Model.PhoneNumber) ? "(Chưa cập nhật)" : Model.PhoneNumber)</span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Email xác thực:</span>
+                        <span class="fw-semibold @(Model.EmailConfirmed ? "text-success" : "text-warning")">
+                            <i class="bi @(Model.EmailConfirmed ? "bi-check-circle" : "bi-x-circle") me-1"></i>@(Model.EmailConfirmed ? "Đã xác thực" : "Chưa xác thực")
+                        </span>
+                    </div>
+                    <div class="d-flex justify-content-between py-1">
+                        <span class="text-muted">Địa chỉ mặc định:</span>
+                        <span class="fw-semibold text-dark text-end ms-2">@(string.IsNullOrWhiteSpace(Model.DefaultSenderAddress) ? "(Chưa có)" : Model.DefaultSenderAddress)</span>
+                    </div>
+                </div>
+
+                <!-- HÀNH ĐỘNG NHANH -->
+                <div class="d-grid gap-2 mt-4">
+                    <button type="button" class="btn btn-outline-primary rounded-pill btn-sm" data-bs-toggle="modal" data-bs-target="#modalQuickReset">
+                        <i class="bi bi-key-fill me-1"></i> Cấp lại mật khẩu mới
+                    </button>
+
+                    @if (Model.Email != "admin@delivery.com")
+                    {
+                        <form asp-action="ToggleLock" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('Bạn có chắc muốn thay đổi trạng thái khóa/mở tài khoản này?');">
+                            <button type="submit" class="btn @(Model.IsLockedOut ? "btn-outline-success" : "btn-outline-warning") rounded-pill btn-sm w-100">
+                                <i class="bi @(Model.IsLockedOut ? "bi-unlock-fill" : "bi-lock-fill") me-1"></i> @(Model.IsLockedOut ? "Mở khóa tài khoản" : "Khóa tài khoản này")
+                            </button>
+                        </form>
+
+                        <form asp-action="DeleteUser" asp-route-id="@Model.Id" method="post" onsubmit="return confirm('CẢNH BÁO: Bạn có chắc chắn muốn xóa tài khoản này khỏi hệ thống?');">
+                            <button type="submit" class="btn btn-outline-danger rounded-pill btn-sm w-100">
+                                <i class="bi bi-trash-fill me-1"></i> Xóa tài khoản
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+
+            <!-- SỔ ĐỊA CHỈ NGƯỜI GỬI (NẾU CÓ) -->
+            @if (Model.SavedAddresses.Any())
+            {
+                <div class="card border-0 shadow-sm rounded-4 p-4">
+                    <h6 class="fw-bold text-dark mb-3">
+                        <i class="bi bi-geo-alt-fill text-danger me-2"></i>Sổ địa chỉ người gửi (@Model.SavedAddresses.Count)
+                    </h6>
+                    <div class="d-flex flex-column gap-2">
+                        @foreach (var addr in Model.SavedAddresses)
+                        {
+                            <div class="p-2 border rounded-3 small bg-light">
+                                <div class="fw-bold d-flex justify-content-between">
+                                    <span>@addr.AddressTag</span>
+                                    @if (addr.IsDefault)
+                                    {
+                                        <span class="badge bg-success">Mặc định</span>
+                                    }
+                                </div>
+                                <div class="text-muted">@addr.SenderName - @addr.SenderPhone</div>
+                                <div class="text-secondary text-truncate" title="@addr.SenderAddressText">@addr.SenderAddressText</div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+        </div>
+
+        <!-- CỘT PHẢI: HOẠT ĐỘNG & VẬN ĐƠN LIÊN QUAN -->
+        <div class="col-lg-8">
+
+            <!-- THỐNG KÊ HOẠT ĐỘNG -->
+            <div class="row g-3 mb-4">
+                <div class="col-sm-4">
+                    <div class="card border-0 shadow-xs rounded-4 p-3 bg-white text-center">
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng đơn liên quan</span>
+                        <h3 class="fw-black text-dark mb-0 mt-1">@Model.TotalOrders</h3>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="card border-0 shadow-xs rounded-4 p-3 bg-white text-center">
+                        <span class="text-muted small fw-semibold text-uppercase">Đã hoàn tất</span>
+                        <h3 class="fw-black text-success mb-0 mt-1">@Model.CompletedOrders</h3>
+                    </div>
+                </div>
+                <div class="col-sm-4">
+                    <div class="card border-0 shadow-xs rounded-4 p-3 bg-white text-center">
+                        <span class="text-muted small fw-semibold text-uppercase">Tổng giá trị đơn</span>
+                        <h4 class="fw-black text-primary mb-0 mt-1">@Model.TotalAmount.ToString("N0") <small class="fs-6">đ</small></h4>
+                    </div>
+                </div>
+            </div>
+
+            <!-- DANH SÁCH ĐƠN HÀNG GẦN ĐÂY -->
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-0 pt-4 px-4 pb-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-box-seam text-primary me-2"></i>Lịch Sử Vận Đơn Gần Đây</h5>
+                            <small class="text-muted">Các đơn hàng do tài khoản này tạo hoặc phụ trách giao nhận</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Mã đơn</th>
+                                    <th>Người gửi</th>
+                                    <th>Người nhận</th>
+                                    <th>Trạng thái</th>
+                                    <th>Tổng tiền</th>
+                                    <th>Ngày tạo</th>
+                                    <th class="text-end">Chi tiết</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if (Model.RelatedOrders == null || !Model.RelatedOrders.Any())
+                                {
+                                    <tr>
+                                        <td colspan="7" class="text-center py-4 text-muted">Tài khoản này chưa phát sinh giao dịch vận đơn nào.</td>
+                                    </tr>
+                                }
+                                else
+                                {
+                                    @foreach (var order in Model.RelatedOrders)
+                                    {
+                                        <tr>
+                                            <td class="fw-bold font-monospace text-primary">#@order.OrderCode</td>
+                                            <td>
+                                                <div class="fw-semibold">@order.SenderName</div>
+                                                <small class="text-muted">@order.SenderPhone</small>
+                                            </td>
+                                            <td>
+                                                <div class="fw-semibold">@order.ReceiverName</div>
+                                                <small class="text-muted">@order.ReceiverPhone</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark border px-2 py-1">@order.CurrentStatus</span>
+                                            </td>
+                                            <td class="fw-bold">@order.TotalAmount.ToString("N0") đ</td>
+                                            <td class="small text-muted">@order.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                            <td class="text-end">
+                                                <a asp-action="OrderDetails" asp-route-id="@order.OrderCode" class="btn btn-sm btn-outline-secondary" title="Xem chi tiết đơn">
+                                                    <i class="bi bi-eye"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- MODAL CẤP LẠI MẬT KHẨU NHANH -->
+<div class="modal fade" id="modalQuickReset" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title fw-bold text-dark"><i class="bi bi-key-fill text-warning me-2"></i>Cấp Lại Mật Khẩu Nhanh</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="ResetPassword" method="post">
+                <input type="hidden" name="userId" value="@Model.Id" />
+                <div class="modal-body p-4">
+                    <p class="text-muted small">Cấp lại mật khẩu mới cho tài khoản: <strong>@Model.Email</strong></p>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold small">Mật khẩu mới <span class="text-danger">*</span></label>
+                        <input name="newPassword" type="password" class="form-control" placeholder="Tối thiểu 6 ký tự" required minlength="6" />
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary-custom rounded-pill px-4 fw-bold">Xác nhận đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
