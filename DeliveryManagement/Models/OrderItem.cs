@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryManagement.Models
 {
@@ -15,6 +15,9 @@ namespace DeliveryManagement.Models
 
         // Mô tả hàng hóa
         public string Description { get; set; } 
+
+        // Kích thước
+        public string? Size { get; set; }
 
         // Số lượng
         public int Quantity { get; set; }

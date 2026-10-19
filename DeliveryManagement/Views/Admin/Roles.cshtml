@@ -1,0 +1,155 @@
+@{
+    ViewData["Title"] = "Quản lý vai trò & Ma trận phân quyền";
+    var roleSummaries = ViewBag.RoleSummaries as List<DeliveryManagement.Models.ViewModels.RoleSummaryViewModel> ?? new();
+    var permissionsMatrix = ViewBag.PermissionsMatrix as List<DeliveryManagement.Models.ViewModels.PermissionMatrixItem> ?? new();
+}
+
+<div class="container-fluid py-4 px-lg-4">
+
+    <!-- HEADER & ACTIONS -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-4">
+        <div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-1">
+                    <li class="breadcrumb-item"><a asp-action="Users" class="text-decoration-none">Quản lý tài khoản</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Phân quyền & Vai trò</li>
+                </ol>
+            </nav>
+            <h2 class="fw-bold mb-1 text-dark"><i class="bi bi-shield-shaded text-primary me-2"></i>Ma Trận Phân Quyền & Vai Trò Hệ Thống</h2>
+            <p class="text-muted mb-0">Tổng quan cấu trúc 5 nhóm vai trò và phạm vi quyền hạn nghiệp vụ vận tải bưu chính.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-action="Users" class="btn btn-outline-secondary rounded-pill px-3">
+                <i class="bi bi-people-fill me-1"></i> Danh sách tài khoản
+            </a>
+            <a asp-action="CreateUser" class="btn btn-primary-custom rounded-pill px-3 shadow-xs">
+                <i class="bi bi-person-plus-fill me-1"></i> Thêm tài khoản mới
+            </a>
+        </div>
+    </div>
+
+    <!-- CARDS THỐNG KÊ 5 VAI TRÒ -->
+    <div class="row g-3 mb-4">
+        @foreach (var role in roleSummaries)
+        {
+            <div class="col-md-6 col-xl">
+                <div class="card border-0 shadow-xs rounded-4 p-3 bg-white h-100">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <span class="badge @role.BadgeClass px-2 py-1">@role.RoleName</span>
+                        <a asp-action="Users" asp-route-role="@role.RoleName" class="btn btn-sm btn-link p-0 text-decoration-none" title="Xem danh sách người dùng">
+                            <i class="bi bi-box-arrow-up-right"></i>
+                        </a>
+                    </div>
+                    <h6 class="fw-bold text-dark mb-1">@role.DisplayName</h6>
+                    <div class="d-flex align-items-baseline gap-2 mb-2">
+                        <h3 class="fw-black text-dark mb-0">@role.UserCount</h3>
+                        <small class="text-muted">thành viên</small>
+                    </div>
+                    <p class="text-muted small mb-2 text-truncate-2" style="font-size: 0.8rem; min-height: 2.4rem;">@role.Description</p>
+                    <div class="mt-auto border-top pt-2">
+                        <small class="text-secondary fw-semibold" style="font-size: 0.75rem;">Quyền cốt lõi:</small>
+                        <ul class="list-unstyled mb-0 mt-1 small" style="font-size: 0.75rem;">
+                            @foreach (var perm in role.KeyPermissions.Take(2))
+                            {
+                                <li class="text-truncate text-muted"><i class="bi bi-check2 text-success me-1"></i>@perm</li>
+                            }
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- MA TRẬN PHÂN QUYỀN (PERMISSION MATRIX) -->
+    <div class="card border-0 shadow-sm rounded-4 mb-4">
+        <div class="card-header bg-white border-0 pt-4 px-4 pb-3">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-dark mb-1"><i class="bi bi-grid-3x3-gap-fill text-orange me-2"></i>Bảng Ma Trận Phân Quyền Tính Năng Chi Tiết</h5>
+                    <small class="text-muted">Chi tiết chức năng được phép truy cập theo từng vai trò (Role-Based Access Control - RBAC)</small>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0 text-center">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="text-start ps-4" style="min-width: 280px;">Chức năng / Phân hệ</th>
+                            <th style="min-width: 120px;">Phân nhóm</th>
+                            <th style="min-width: 120px;"><span class="badge bg-danger px-2 py-1">Admin</span></th>
+                            <th style="min-width: 130px;"><span class="badge bg-info text-dark px-2 py-1">Reception</span></th>
+                            <th style="min-width: 130px;"><span class="badge bg-primary px-2 py-1">Warehouse</span></th>
+                            <th style="min-width: 130px;"><span class="badge bg-warning text-dark px-2 py-1">Delivery</span></th>
+                            <th style="min-width: 130px;"><span class="badge bg-success px-2 py-1">Customer</span></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in permissionsMatrix)
+                        {
+                            <tr>
+                                <td class="text-start ps-4 fw-semibold text-dark">
+                                    <i class="bi bi-arrow-right-short text-primary me-1"></i>@item.FeatureName
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-secondary border">@item.Category</span>
+                                </td>
+                                <td>
+                                    @if (item.Admin)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted fs-4"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.ReceptionStaff)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted fs-4"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.WarehouseStaff)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted fs-4"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.DeliveryStaff)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted fs-4"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @if (item.Customer)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success fs-5"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted fs-4"></i>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+</div>

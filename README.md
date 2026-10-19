@@ -40,11 +40,23 @@
 - **Tra cứu vận đơn (Tracking):** Theo dõi lộ trình chi tiết thời gian thực qua mã vận đơn (VD: `#TD2610...`).
 - **Ước tính cước phí:** Tự động tính tiền cước dựa trên khối lượng bưu kiện, khoảng cách giao hàng (Km) và phương thức giao.
 - **Tạo đơn hàng:** Form gửi đơn tiện lợi, hỗ trợ nhiều kiện hàng, chọn giao tiêu chuẩn/hỏa tốc, ghi chú hàng dễ vỡ/giá trị cao.
+- **Quản lý thông tin người gửi (Story 3.0 - Mới):**
+  - Quản lý hồ sơ người gửi chính (Họ tên, SĐT, Email, Địa chỉ lấy hàng mặc định).
+  - **Sổ địa chỉ người gửi (Address Book):** Lưu nhiều kho hàng/điểm lấy hàng với nhãn địa chỉ tùy chỉnh, gắn cờ mặc định, thêm/sửa/xóa địa chỉ.
+  - Tích hợp trực tiếp vào Form tạo đơn: Chọn nhanh từ danh sách địa chỉ đã lưu với tính năng tự động điền (Auto-fill) và tùy chọn lưu địa chỉ mới vào sổ địa chỉ.
+  - Thống kê cá nhân hóa: Tổng số đơn đã gửi, đơn đang giao, đơn hoàn tất, tổng tiền cước.
 - **Quản lý đơn hàng cá nhân:** Xem danh sách đơn đã đặt, trạng thái xử lý và lịch sử hành trình.
 
 ### 2. 🛡️ Quản Trị Viên (Admin Portal - `/Admin`)
 - **Dashboard KPI:** Thống kê tổng số đơn, doanh thu thực tế, biểu đồ phân bổ trạng thái và đơn hàng mới nhất.
-- **Quản lý tài khoản & Phân quyền:** Thêm người dùng mới, đổi vai trò (Admin, Staff, Customer), khóa/mở khóa tài khoản, cấp lại mật khẩu.
+- **Quản lý tài khoản & Phân quyền (Story 23.0 - Nâng cấp toàn diện):**
+  - **Thống kê KPI tài khoản:** Phân bổ người dùng theo vai trò (Admin, Staff, Customer) và trạng thái (Hoạt động, Bị khóa).
+  - **Bộ lọc đa tiêu chí:** Tìm kiếm theo từ khóa (Tên, Email, SĐT), lọc theo vai trò (Role), lọc theo trạng thái tài khoản.
+  - **Xem chi tiết tài khoản (`UserDetails`):** Hồ sơ thành viên, thông tin bảo mật, sổ địa chỉ người gửi, thống kê và danh sách 25 đơn hàng liên quan gần nhất.
+  - **Cấp lại mật khẩu nhanh (`ResetPassword`):** Admin có thể đặt lại mật khẩu cho tài khoản người dùng ngay lập tức thông qua Modal.
+  - **Xóa tài khoản an toàn (`DeleteUser`):** Cơ chế bảo vệ toàn vẹn dữ liệu — Chặn xóa Admin tối cao, chặn tự xóa chính mình; tài khoản đã phát sinh đơn hàng sẽ tự động chuyển sang khóa vĩnh viễn thay vì xóa cứng.
+  - **Khóa/Mở khóa tài khoản (`ToggleLock`):** Vô hiệu hóa hoặc kích hoạt lại tài khoản tức thì.
+  - **Ma trận phân quyền hệ thống (`/Admin/Roles`):** Bảng ma trận đối chiếu quyền hạn chi tiết giữa 5 nhóm vai trò (Admin, ReceptionStaff, WarehouseStaff, DeliveryStaff, Customer) trên toàn bộ tính năng của nền tảng.
 - **Quản lý Đơn Hàng (Full CRUD):**
   - ➕ **Tạo mới đơn hàng:** Nhập thông tin, tạo kiện hàng, chỉ định shipper và cước phí.
   - ✏️ **Chỉnh sửa đơn hàng:** Cập nhật thông tin người nhận, địa chỉ, đổi trạng thái và shipper phụ trách.

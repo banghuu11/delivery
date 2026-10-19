@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 
 namespace DeliveryManagement.Models.ViewModels
 {
@@ -21,6 +21,10 @@ namespace DeliveryManagement.Models.ViewModels
         [Required(ErrorMessage = "Vui lòng nhập địa chỉ người gửi.")]
         [StringLength(255)]
         public string SenderAddress { get; set; } = string.Empty;
+
+        // Lưu vào sổ địa chỉ nếu chưa có
+        public bool SaveToAddressBook { get; set; }
+        public string? AddressTag { get; set; }
 
 
         // =========================

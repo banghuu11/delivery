@@ -78,9 +78,16 @@
                             </li>
 
                             <li class="nav-item">
-                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Admin" && (currentAction == "Users" || currentAction == "CreateUser" || currentAction == "EditUser") ? "active text-orange fw-bold" : "")" 
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Admin" && (currentAction == "Users" || currentAction == "UserDetails" || currentAction == "CreateUser" || currentAction == "EditUser") ? "active text-orange fw-bold" : "")" 
                                    asp-controller="Admin" asp-action="Users">
                                     <i class="bi bi-people-fill me-1"></i> Tài khoản
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Admin" && currentAction == "Roles" ? "active text-orange fw-bold" : "")" 
+                                   asp-controller="Admin" asp-action="Roles">
+                                    <i class="bi bi-shield-shaded me-1"></i> Phân quyền
                                 </a>
                             </li>
 
@@ -186,8 +193,13 @@
                             @if (User.IsInRole("Customer"))
                             {
                                 <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold text-nowrap" asp-controller="DeliveryOrder" asp-action="Index">
+                                    <a class="nav-link text-primary fw-bold text-nowrap @(currentController == "DeliveryOrder" ? "active text-orange" : "")" asp-controller="DeliveryOrder" asp-action="Index">
                                         <i class="bi bi-box-seam me-1"></i> Đơn của tôi
+                                    </a>
+                                </li>
+                                <li class="nav-item ms-lg-2">
+                                    <a class="nav-link text-primary fw-bold text-nowrap @(currentController == "Sender" ? "active text-orange" : "")" asp-controller="Sender" asp-action="Index">
+                                        <i class="bi bi-person-vcard me-1"></i> Thông tin người gửi
                                     </a>
                                 </li>
                             }
@@ -259,11 +271,17 @@
                                     {
                                         <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i>Bảng điều khiển Admin</a></li>
                                         <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-2"></i>Quản lý người dùng</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Roles"><i class="bi bi-shield-shaded me-2"></i>Ma trận phân quyền</a></li>
                                         <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Orders"><i class="bi bi-box-seam me-2"></i>Quản lý đơn hàng</a></li>
                                     }
                                     @if (User.IsInRole("Customer"))
                                     {
                                         <li><a class="dropdown-item py-2" asp-controller="DeliveryOrder" asp-action="Index"><i class="bi bi-box-seam me-2"></i>Đơn hàng của tôi</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Sender" asp-action="Index"><i class="bi bi-person-vcard me-2"></i>Thông tin người gửi</a></li>
+                                    }
+                                    else
+                                    {
+                                        <li><a class="dropdown-item py-2" asp-controller="Sender" asp-action="Index"><i class="bi bi-person-vcard me-2"></i>Thông tin tài khoản/người gửi</a></li>
                                     }
 
                                     <li><hr class="dropdown-divider"></li>

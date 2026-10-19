@@ -1,4 +1,4 @@
-﻿@model DeliveryManagement.Models.ViewModels.CreateOrderViewModel
+@model DeliveryManagement.Models.ViewModels.CreateOrderViewModel
 
 @{
     ViewData["Title"] = "Tạo yêu cầu giao hàng";
@@ -6,6 +6,10 @@
     var packageTypes = ViewBag.PackageTypes
         as List<DeliveryManagement.Models.PackageType>
         ?? new List<DeliveryManagement.Models.PackageType>();
+
+    var savedAddresses = ViewBag.SenderAddresses
+        as List<DeliveryManagement.Models.SenderAddress>
+        ?? new List<DeliveryManagement.Models.SenderAddress>();
 }
 
 <div class="order-create-page">
@@ -33,9 +37,38 @@
 
         <div class="order-section">
 
-            <div class="order-section-header">
-                <h2>1. Thông tin người gửi</h2>
+            <div class="order-section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                <div>
+                    <h2>1. Thông tin người gửi</h2>
+                    <p class="text-muted small mb-0">Nhập địa chỉ lấy hàng hoặc chọn nhanh từ sổ địa chỉ đã lưu</p>
+                </div>
+                <div>
+                    <a asp-controller="Sender" asp-action="Index" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
+                        <i class="bi bi-journal-bookmark-fill me-1 text-primary"></i> Quản lý sổ địa chỉ
+                    </a>
+                </div>
             </div>
+
+            @if (savedAddresses.Any())
+            {
+                <div class="mb-3 p-3 bg-light rounded-3 border">
+                    <label class="form-label fw-bold text-dark small mb-2 d-flex align-items-center">
+                        <i class="bi bi-bookmark-star-fill text-warning me-2"></i> Chọn nhanh từ sổ địa chỉ người gửi:
+                    </label>
+                    <select id="selectSavedAddress" class="form-select border-primary shadow-xs">
+                        <option value="">-- Chọn địa chỉ có sẵn hoặc nhập mới bên dưới --</option>
+                        @foreach (var a in savedAddresses)
+                        {
+                            <option value="@a.Id"
+                                    data-name="@a.SenderName"
+                                    data-phone="@a.SenderPhone"
+                                    data-address="@a.SenderAddressText">
+                                @(a.IsDefault ? "⭐ [Mặc định] " : "")@a.AddressTag: @a.SenderName - @a.SenderPhone - @a.SenderAddressText
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
 
             <div class="order-form-grid">
 
@@ -47,6 +80,7 @@
                     </label>
 
                     <input asp-for="SenderName"
+                           id="SenderNameInput"
                            class="form-control"
                            placeholder="Nhập họ và tên người gửi" />
 
@@ -64,6 +98,7 @@
                     </label>
 
                     <input asp-for="SenderPhone"
+                           id="SenderPhoneInput"
                            class="form-control"
                            placeholder="Nhập số điện thoại" />
 
@@ -83,12 +118,27 @@
                 </label>
 
                 <input asp-for="SenderAddress"
+                       id="SenderAddressInput"
                        class="form-control"
                        placeholder="Nhập địa chỉ người gửi" />
 
                 <span asp-validation-for="SenderAddress"
                       class="field-validation-error"></span>
 
+            </div>
+
+            <div class="row mt-2 g-2 align-items-center">
+                <div class="col-md-6">
+                    <div class="form-check">
+                        <input asp-for="SaveToAddressBook" class="form-check-input" type="checkbox" id="chkSaveAddress">
+                        <label class="form-check-label small fw-semibold text-secondary" for="chkSaveAddress">
+                            <i class="bi bi-plus-square me-1"></i> Lưu thông tin này vào sổ địa chỉ người gửi
+                        </label>
+                    </div>
+                </div>
+                <div class="col-md-6" id="divAddressTag" style="display: none;">
+                    <input asp-for="AddressTag" class="form-control form-control-sm" placeholder="Tên nhãn địa chỉ (VD: Kho hàng 2, Shop Bình Thạnh...)" />
+                </div>
             </div>
 
         </div>
@@ -1103,6 +1153,37 @@
 
 
         updatePrice();
+
+        /* ==========================================
+           SỔ ĐỊA CHỈ NGƯỜI GỬI
+           ========================================== */
+        var selectSavedAddress = document.getElementById('selectSavedAddress');
+        if (selectSavedAddress) {
+            selectSavedAddress.addEventListener('change', function () {
+                var selected = selectSavedAddress.options[selectSavedAddress.selectedIndex];
+                if (selected && selected.value) {
+                    var name = selected.getAttribute('data-name');
+                    var phone = selected.getAttribute('data-phone');
+                    var address = selected.getAttribute('data-address');
+
+                    var nameInput = document.getElementById('SenderNameInput');
+                    var phoneInput = document.getElementById('SenderPhoneInput');
+                    var addressInput = document.getElementById('SenderAddressInput');
+
+                    if (nameInput && name) nameInput.value = name;
+                    if (phoneInput && phone) phoneInput.value = phone;
+                    if (addressInput && address) addressInput.value = address;
+                }
+            });
+        }
+
+        var chkSaveAddress = document.getElementById('chkSaveAddress');
+        var divAddressTag = document.getElementById('divAddressTag');
+        if (chkSaveAddress && divAddressTag) {
+            chkSaveAddress.addEventListener('change', function () {
+                divAddressTag.style.display = chkSaveAddress.checked ? 'block' : 'none';
+            });
+        }
 
     })();
 

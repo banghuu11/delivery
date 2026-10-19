@@ -34,10 +34,18 @@ namespace DeliveryManagement.Data
         public DbSet<PriceTable> PriceTables { get; set; }
         public DbSet<HomeFeature> HomeFeatures { get; set; }
         public DbSet<WebsiteSetting> WebsiteSettings { get; set; }
+        public DbSet<SenderAddress> SenderAddresses { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // SenderAddress → ApplicationUser
+            builder.Entity<SenderAddress>()
+                .HasOne(s => s.User)
+                .WithMany(u => u.SenderAddresses)
+                .HasForeignKey(s => s.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
             // DeliveryOrder → Customer
             builder.Entity<DeliveryOrder>()

@@ -565,6 +565,50 @@ namespace DeliveryManagement.Migrations
                     b.ToTable("Reviews");
                 });
 
+            modelBuilder.Entity("DeliveryManagement.Models.SenderAddress", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AddressTag")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("SenderAddressText")
+                        .IsRequired()
+                        .HasMaxLength(300)
+                        .HasColumnType("nvarchar(300)");
+
+                    b.Property<string>("SenderName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("SenderPhone")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("SenderAddresses");
+                });
+
             modelBuilder.Entity("DeliveryManagement.Models.WebsiteSetting", b =>
                 {
                     b.Property<int>("SettingId")
@@ -893,6 +937,17 @@ namespace DeliveryManagement.Migrations
                     b.Navigation("Staff");
                 });
 
+            modelBuilder.Entity("DeliveryManagement.Models.SenderAddress", b =>
+                {
+                    b.HasOne("DeliveryManagement.Models.ApplicationUser", "User")
+                        .WithMany("SenderAddresses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<string>", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityRole", null)
@@ -942,6 +997,11 @@ namespace DeliveryManagement.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("DeliveryManagement.Models.ApplicationUser", b =>
+                {
+                    b.Navigation("SenderAddresses");
                 });
 
             modelBuilder.Entity("DeliveryManagement.Models.Conversation", b =>

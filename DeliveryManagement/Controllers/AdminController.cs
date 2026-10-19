@@ -77,7 +77,7 @@ namespace DeliveryManagement.Controllers
         // 2. QUẢN LÝ TÀI KHOẢN & PHÂN QUYỀN
         // ==========================================
         [HttpGet]
-        public async Task<IActionResult> Users(string? search, string? role)
+        public async Task<IActionResult> Users(string? search, string? role, string? status)
         {
             var query = _userManager.Users.AsQueryable();
 
@@ -90,17 +90,43 @@ namespace DeliveryManagement.Controllers
                     (u.PhoneNumber != null && u.PhoneNumber.Contains(search)));
             }
 
+            var allUsers = await _userManager.Users.ToListAsync();
             var users = await query.ToListAsync();
             var userList = new List<UserListViewModel>();
+
+            int countAdmin = 0;
+            int countStaff = 0;
+            int countCustomer = 0;
+            int countLocked = 0;
+
+            foreach (var u in allUsers)
+            {
+                var rList = await _userManager.GetRolesAsync(u);
+                if (rList.Contains("Admin")) countAdmin++;
+                else if (rList.Contains("Customer")) countCustomer++;
+                else countStaff++;
+
+                if (u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.Now)
+                {
+                    countLocked++;
+                }
+            }
 
             foreach (var u in users)
             {
                 var roles = await _userManager.GetRolesAsync(u);
                 var mainRole = roles.FirstOrDefault() ?? "Customer";
+                bool isLocked = u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.Now;
 
                 if (!string.IsNullOrWhiteSpace(role) && !roles.Contains(role))
                 {
                     continue;
+                }
+
+                if (!string.IsNullOrWhiteSpace(status))
+                {
+                    if (status == "active" && isLocked) continue;
+                    if (status == "locked" && !isLocked) continue;
                 }
 
                 userList.Add(new UserListViewModel
@@ -110,15 +136,67 @@ namespace DeliveryManagement.Controllers
                     FullName = u.FullName,
                     PhoneNumber = u.PhoneNumber ?? string.Empty,
                     Role = mainRole,
-                    IsLockedOut = u.LockoutEnd.HasValue && u.LockoutEnd > DateTimeOffset.Now
+                    IsLockedOut = isLocked
                 });
             }
 
             ViewBag.Search = search;
             ViewBag.SelectedRole = role;
+            ViewBag.SelectedStatus = status;
             ViewBag.AllRoles = new List<string> { "Admin", "ReceptionStaff", "WarehouseStaff", "DeliveryStaff", "Customer" };
 
+            ViewBag.TotalUsersCount = allUsers.Count;
+            ViewBag.AdminCount = countAdmin;
+            ViewBag.StaffCount = countStaff;
+            ViewBag.CustomerCount = countCustomer;
+            ViewBag.LockedCount = countLocked;
+
             return View(userList);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> UserDetails(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var mainRole = roles.FirstOrDefault() ?? "Customer";
+
+            var addresses = await _context.SenderAddresses
+                .Where(a => a.UserId == user.Id)
+                .OrderByDescending(a => a.IsDefault)
+                .ToListAsync();
+
+            var relatedOrders = await _context.DeliveryOrders
+                .Where(o => o.CustomerId == user.Id || o.DeliveryStaffId == user.Id)
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(25)
+                .ToListAsync();
+
+            var vm = new UserDetailsViewModel
+            {
+                Id = user.Id,
+                Email = user.Email ?? string.Empty,
+                FullName = user.FullName,
+                PhoneNumber = user.PhoneNumber ?? string.Empty,
+                Role = mainRole,
+                IsLockedOut = user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.Now,
+                LockoutEnd = user.LockoutEnd,
+                DefaultSenderAddress = user.DefaultSenderAddress,
+                EmailConfirmed = user.EmailConfirmed,
+                SavedAddresses = addresses,
+                RelatedOrders = relatedOrders,
+                TotalOrders = relatedOrders.Count,
+                CompletedOrders = relatedOrders.Count(o => o.CurrentStatus == "Đã giao" || o.CurrentStatus == "Giao thành công"),
+                TotalAmount = relatedOrders.Where(o => o.CurrentStatus != "Đã hủy").Sum(o => o.TotalAmount)
+            };
+
+            return View(vm);
         }
 
         [HttpGet]
@@ -251,6 +329,93 @@ namespace DeliveryManagement.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(string userId, string newPassword)
+        {
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 6)
+            {
+                TempData["ErrorMessage"] = "Mật khẩu mới phải từ 6 ký tự trở lên.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy người dùng.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var result = await _userManager.ResetPasswordAsync(user, token, newPassword);
+
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = $"Đã đặt lại mật khẩu cho tài khoản {user.Email} thành công!";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = string.Join("; ", result.Errors.Select(e => e.Description));
+            }
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteUser(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy tài khoản cần xóa.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            if (user.Email == "admin@delivery.com")
+            {
+                TempData["ErrorMessage"] = "Không thể xóa tài khoản Quản trị viên tối cao hệ thống!";
+                return RedirectToAction(nameof(Users));
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser != null && currentUser.Id == user.Id)
+            {
+                TempData["ErrorMessage"] = "Bạn không thể xóa tài khoản hiện đang đăng nhập của chính mình!";
+                return RedirectToAction(nameof(Users));
+            }
+
+            // Kiểm tra ràng buộc đơn hàng
+            bool hasOrders = await _context.DeliveryOrders.AnyAsync(o => o.CustomerId == id || o.DeliveryStaffId == id);
+            if (hasOrders)
+            {
+                // Khóa vĩnh viễn thay vì xóa cứng
+                await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.Now.AddYears(100));
+                TempData["ErrorMessage"] = $"Tài khoản {user.Email} đã phát sinh lịch sử đơn hàng trong hệ thống logistics nên không thể xóa cứng (để đảm bảo tính toàn vẹn dữ liệu). Hệ thống đã tự động khóa vĩnh viễn tài khoản này.";
+                return RedirectToAction(nameof(Users));
+            }
+
+            // Xóa địa chỉ người gửi nếu có
+            var addresses = await _context.SenderAddresses.Where(a => a.UserId == id).ToListAsync();
+            if (addresses.Any())
+            {
+                _context.SenderAddresses.RemoveRange(addresses);
+                await _context.SaveChangesAsync();
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (result.Succeeded)
+            {
+                TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn tài khoản {user.Email} khỏi hệ thống.";
+            }
+            else
+            {
+                TempData["ErrorMessage"] = string.Join("; ", result.Errors.Select(e => e.Description));
+            }
+
+            return RedirectToAction(nameof(Users));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> ToggleLock(string id)
         {
             var user = await _userManager.FindByIdAsync(id);
@@ -277,6 +442,95 @@ namespace DeliveryManagement.Controllers
             }
 
             return RedirectToAction(nameof(Users));
+        }
+
+        // ==========================================
+        // 2.1. MA TRẬN PHÂN QUYỀN & QUẢN LÝ VAI TRÒ
+        // ==========================================
+        [HttpGet]
+        public async Task<IActionResult> Roles()
+        {
+            var allUsers = await _userManager.Users.ToListAsync();
+
+            var roleSummaries = new List<RoleSummaryViewModel>
+            {
+                new RoleSummaryViewModel
+                {
+                    RoleName = "Admin",
+                    DisplayName = "Quản trị viên (Admin)",
+                    Description = "Toàn quyền quản trị toàn bộ hệ thống, phân quyền, cấu hình bảng giá, quản lý tài khoản và giám sát mọi vận đơn.",
+                    BadgeClass = "bg-danger",
+                    KeyPermissions = new List<string> { "Quản lý tài khoản & Phân quyền", "Quản lý Bảng giá & Loại hàng", "Can thiệp mọi đơn hàng", "Dashboard KPI toàn diện" }
+                },
+                new RoleSummaryViewModel
+                {
+                    RoleName = "ReceptionStaff",
+                    DisplayName = "Nhân viên tiếp nhận (Reception)",
+                    Description = "Bộ phận bưu cục tiếp nhận đơn từ khách hàng, kiểm tra hàng hóa thực tế, cân đo lại khối lượng và tính phí giao nhận.",
+                    BadgeClass = "bg-info text-dark",
+                    KeyPermissions = new List<string> { "Tiếp nhận đơn hàng mới", "Cân đo lại bưu kiện thực tế", "Ghi nhận ghi chú tiếp nhận", "Cập nhật bảng cước phí" }
+                },
+                new RoleSummaryViewModel
+                {
+                    RoleName = "WarehouseStaff",
+                    DisplayName = "Nhân viên kho bãi (Warehouse)",
+                    Description = "Quản lý kho trung chuyển, phân loại kiện hàng theo quy cách đóng gói, nhập kho lưu trữ và điều phối xuất kho cho Shipper.",
+                    BadgeClass = "bg-primary",
+                    KeyPermissions = new List<string> { "Kiểm kê đơn hàng lưu kho", "Phân loại quy cách hàng hóa", "Điều phối đơn cho Shipper", "Cập nhật trạng thái 'Trong kho'" }
+                },
+                new RoleSummaryViewModel
+                {
+                    RoleName = "DeliveryStaff",
+                    DisplayName = "Nhân viên giao hàng (Shipper)",
+                    Description = "Đội ngũ giao nhận trực tiếp, xem phiếu giao hàng, check-in định vị tự động và chụp ảnh bằng chứng giao thành công/thất bại.",
+                    BadgeClass = "bg-warning text-dark",
+                    KeyPermissions = new List<string> { "Xem và in phiếu giao hàng", "Check-in tọa độ giao hàng", "Cập nhật kết quả giao hàng", "Tải ảnh chứng từ hoàn tất" }
+                },
+                new RoleSummaryViewModel
+                {
+                    RoleName = "Customer",
+                    DisplayName = "Khách hàng (Customer)",
+                    Description = "Người gửi hoặc người nhận hàng, tạo yêu cầu giao hàng, quản lý sổ địa chỉ lấy hàng, tra cứu lộ trình vận đơn và đánh giá chất lượng dịch vụ.",
+                    BadgeClass = "bg-success",
+                    KeyPermissions = new List<string> { "Tạo yêu cầu giao hàng", "Quản lý thông tin người gửi", "Sổ địa chỉ kho lấy hàng", "Tra cứu lộ trình & Đánh giá" }
+                }
+            };
+
+            foreach (var r in roleSummaries)
+            {
+                int count = 0;
+                foreach (var u in allUsers)
+                {
+                    var roles = await _userManager.GetRolesAsync(u);
+                    if (roles.Contains(r.RoleName))
+                    {
+                        count++;
+                    }
+                }
+                r.UserCount = count;
+            }
+
+            var permissionsMatrix = new List<PermissionMatrixItem>
+            {
+                new PermissionMatrixItem { FeatureName = "Xem Dashboard & Thống kê KPI", Category = "Tổng quan", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Quản lý tài khoản & Phân quyền", Category = "Hệ thống", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Cấu hình Danh mục loại hàng", Category = "Cấu hình", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Cấu hình Bảng giá cước vận chuyển", Category = "Cấu hình", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Quản lý tất cả đơn hàng (CRUD)", Category = "Vận đơn", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Tiếp nhận đơn & Cân đo bưu kiện", Category = "Nghiệp vụ", Admin = true, ReceptionStaff = true, WarehouseStaff = false, DeliveryStaff = false, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Phân loại hàng & Điều phối xuất kho", Category = "Nghiệp vụ", Admin = true, ReceptionStaff = false, WarehouseStaff = true, DeliveryStaff = false, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Nhận đơn giao & Check-in tọa độ", Category = "Giao hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = true, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Xem/In phiếu giao hàng", Category = "Giao hàng", Admin = true, ReceptionStaff = true, WarehouseStaff = true, DeliveryStaff = true, Customer = false },
+                new PermissionMatrixItem { FeatureName = "Tạo yêu cầu gửi hàng mới", Category = "Khách hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = true },
+                new PermissionMatrixItem { FeatureName = "Quản lý thông tin & Sổ địa chỉ người gửi", Category = "Khách hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = true },
+                new PermissionMatrixItem { FeatureName = "Theo dõi hành trình bưu phẩm", Category = "Công khai", Admin = true, ReceptionStaff = true, WarehouseStaff = true, DeliveryStaff = true, Customer = true },
+                new PermissionMatrixItem { FeatureName = "Đánh giá chất lượng phục vụ", Category = "Khách hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = true }
+            };
+
+            ViewBag.RoleSummaries = roleSummaries;
+            ViewBag.PermissionsMatrix = permissionsMatrix;
+
+            return View();
         }
 
         // ==========================================
