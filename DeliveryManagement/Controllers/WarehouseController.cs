@@ -1,4 +1,8 @@
-﻿using DeliveryManagement.Data;
+﻿
+using System;
+using System.Linq;
+using System.Threading.Tasks;
+using DeliveryManagement.Data;
 using DeliveryManagement.Models;
 using DeliveryManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +15,10 @@ namespace DeliveryManagement.Controllers
     [Authorize(Roles = "WarehouseStaff")]
     public class WarehouseController : Controller
     {
+        private const string ReadyStatus = "Đã nhận - Chưa giao";
+        private const string FailedStatus = "Giao thất bại - Chờ xử lý";
+        private const string ReturnStatus = "Chờ hoàn hàng";
+
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -37,6 +45,7 @@ namespace DeliveryManagement.Controllers
 
             return View(orders);
         }
+
         // ==========================================
         // ĐIỀU PHỐI ĐƠN GIAO NHANH (US03)
         // ==========================================
@@ -44,23 +53,21 @@ namespace DeliveryManagement.Controllers
         [HttpGet]
         public async Task<IActionResult> Dispatch()
         {
-            // Lấy đơn giao nhanh đã sẵn sàng
-            // nhưng chưa có nhân viên giao hàng.
             var orders = await _context.DeliveryOrders
                 .Include(o => o.OrderItems)
                 .Where(o =>
                     o.DeliveryMethod == "Nhanh" &&
-                    o.CurrentStatus == "Đã nhận - Chưa giao" &&
+                    o.CurrentStatus == ReadyStatus &&
                     o.DeliveryStaffId == null)
                 .OrderBy(o => o.CreatedAt)
                 .ToListAsync();
 
-            // Danh sách nhân viên có vai trò DeliveryStaff.
             ViewBag.DeliveryStaffs =
                 await _userManager.GetUsersInRoleAsync("DeliveryStaff");
 
             return View(orders);
         }
+
         // ==========================================
         // PHÂN CÔNG ĐƠN GIAO NHANH
         // ==========================================
@@ -80,8 +87,6 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Dispatch));
             }
 
-            // Kiểm tra tài khoản được chọn có tồn tại
-            // và thật sự thuộc vai trò nhân viên giao hàng.
             var staff = await _userManager.FindByIdAsync(deliveryStaffId);
 
             if (staff == null ||
@@ -93,20 +98,16 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Dispatch));
             }
 
-            // Cập nhật có điều kiện để tránh hai người
-            // cùng phân công một đơn chưa có người phụ trách.
             var affectedRows = await _context.DeliveryOrders
                 .Where(o =>
                     o.OrderCode == id &&
                     o.DeliveryMethod == "Nhanh" &&
-                    o.CurrentStatus == "Đã nhận - Chưa giao" &&
+                    o.CurrentStatus == ReadyStatus &&
                     o.DeliveryStaffId == null)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(
-                        o => o.DeliveryStaffId,
-                        deliveryStaffId));
+                    .SetProperty(o => o.DeliveryStaffId, deliveryStaffId));
 
-            if (affectedRows == 0)
+            if (affectedRows != 1)
             {
                 TempData["ErrorMessage"] =
                     "Không thể phân công. Đơn hàng không còn khả dụng " +
@@ -120,6 +121,205 @@ namespace DeliveryManagement.Controllers
 
             return RedirectToAction(nameof(Dispatch));
         }
+
+        // ==========================================
+        // DANH SÁCH ĐƠN GIAO THẤT BẠI (US03 + US07)
+        // ==========================================
+
+        [HttpGet]
+        public async Task<IActionResult> FailedDeliveries()
+        {
+            var orders = await _context.DeliveryOrders
+                .Include(o => o.OrderItems)
+                .Where(o => o.CurrentStatus == FailedStatus)
+                .OrderBy(o => o.CreatedAt)
+                .ToListAsync();
+
+            return View(orders);
+        }
+
+        // ==========================================
+        // XỬ LÝ GIAO LẠI ĐƠN THẤT BẠI
+        // ==========================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RetryFailedDelivery(string id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                return RedirectToAction(nameof(FailedDeliveries));
+            }
+
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Chỉ xử lý nếu đơn vẫn đang chờ xử lý giao thất bại.
+                // Xóa người phụ trách cũ để phân công/nhận lại theo hình thức.
+                var affectedRows = await _context.DeliveryOrders
+                    .Where(o =>
+                        o.OrderCode == id &&
+                        o.CurrentStatus == FailedStatus)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.CurrentStatus, ReadyStatus)
+                        .SetProperty(o => o.DeliveryStaffId, (string?)null));
+
+                if (affectedRows != 1)
+                {
+                    await transaction.RollbackAsync();
+
+                    TempData["ErrorMessage"] =
+                        "Không thể giao lại. Đơn có thể đã được người khác xử lý.";
+
+                    return RedirectToAction(nameof(FailedDeliveries));
+                }
+
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderCode = id,
+                    Status = ReadyStatus,
+                    ChangedBy = user.Id,
+                    ChangedAt = DateTime.Now
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] =
+                    $"Đơn {id} đã được đưa về trạng thái chờ giao lại. " +
+                    "Đơn giao nhanh sẽ chờ kho phân công; đơn giao thường sẽ xuất hiện trong danh sách chờ nhận.";
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+
+                TempData["ErrorMessage"] =
+                    "Có lỗi khi xử lý giao lại đơn hàng.";
+            }
+
+            return RedirectToAction(nameof(FailedDeliveries));
+        }
+
+        // ==========================================
+        // CHUYỂN ĐƠN SANG CHỜ HOÀN HÀNG
+        // ==========================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> MarkReturn(
+            string id,
+            string? resolutionNote)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                return RedirectToAction(nameof(FailedDeliveries));
+            }
+
+            resolutionNote = resolutionNote?.Trim();
+
+            if (resolutionNote?.Length > 500)
+            {
+                TempData["ErrorMessage"] =
+                    "Ghi chú xử lý không được vượt quá 500 ký tự.";
+
+                return RedirectToAction(nameof(FailedDeliveries));
+            }
+
+            var order = await _context.DeliveryOrders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o =>
+                    o.OrderCode == id &&
+                    o.CurrentStatus == FailedStatus);
+
+            if (order == null)
+            {
+                TempData["ErrorMessage"] =
+                    "Đơn không còn ở trạng thái chờ xử lý giao thất bại.";
+
+                return RedirectToAction(nameof(FailedDeliveries));
+            }
+
+            var oldNote = order.DeliveryNote?.Trim();
+            var returnNote = "[Xử lý kho: Chuyển sang chờ hoàn hàng]";
+
+            if (!string.IsNullOrWhiteSpace(resolutionNote))
+            {
+                returnNote += $" {resolutionNote}";
+            }
+
+            var newNote = string.IsNullOrWhiteSpace(oldNote)
+                ? returnNote
+                : $"{oldNote}{Environment.NewLine}{returnNote}";
+
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                var affectedRows = await _context.DeliveryOrders
+                    .Where(o =>
+                        o.OrderCode == id &&
+                        o.CurrentStatus == FailedStatus)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.CurrentStatus, ReturnStatus)
+                        .SetProperty(
+                            o => o.DeliveryResult,
+                            "Giao thất bại - Chờ hoàn hàng")
+                        .SetProperty(o => o.DeliveryNote, newNote));
+
+                if (affectedRows != 1)
+                {
+                    await transaction.RollbackAsync();
+
+                    TempData["ErrorMessage"] =
+                        "Không thể chuyển hoàn hàng. Trạng thái đơn đã thay đổi.";
+
+                    return RedirectToAction(nameof(FailedDeliveries));
+                }
+
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderCode = id,
+                    Status = ReturnStatus,
+                    ChangedBy = user.Id,
+                    ChangedAt = DateTime.Now
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] =
+                    $"Đơn {id} đã chuyển sang trạng thái chờ hoàn hàng.";
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+
+                TempData["ErrorMessage"] =
+                    "Có lỗi khi chuyển đơn sang chờ hoàn hàng.";
+            }
+
+            return RedirectToAction(nameof(FailedDeliveries));
+        }
+
         // ==========================================
         // MỞ TRANG PHÂN LOẠI
         // ==========================================
@@ -155,9 +355,7 @@ namespace DeliveryManagement.Controllers
                 .ToListAsync();
 
             var packageTypeNames = packageTypes
-                .ToDictionary(
-                    p => p.PackageTypeId,
-                    p => p.TypeName);
+                .ToDictionary(p => p.PackageTypeId, p => p.TypeName);
 
             var model = new WarehouseOrderViewModel
             {
@@ -173,8 +371,7 @@ namespace DeliveryManagement.Controllers
                         OrderItemId = i.OrderItemId,
 
                         OriginalPackageTypeId =
-                            i.OriginalPackageTypeId
-                            ?? i.PackageTypeId,
+                            i.OriginalPackageTypeId ?? i.PackageTypeId,
 
                         OriginalPackageTypeName =
                             i.OriginalPackageTypeId.HasValue &&
@@ -198,9 +395,7 @@ namespace DeliveryManagement.Controllers
                         Weight = i.Weight,
                         IsFragile = i.IsFragile,
                         IsValuable = i.IsValuable,
-
-                        ClassificationNote =
-                            i.ClassificationNote
+                        ClassificationNote = i.ClassificationNote
                     })
                     .ToList()
             };
@@ -234,8 +429,7 @@ namespace DeliveryManagement.Controllers
 
             var order = await _context.DeliveryOrders
                 .Include(o => o.OrderItems)
-                .FirstOrDefaultAsync(o =>
-                    o.OrderCode == model.OrderCode);
+                .FirstOrDefaultAsync(o => o.OrderCode == model.OrderCode);
 
             if (order == null)
             {
@@ -255,13 +449,12 @@ namespace DeliveryManagement.Controllers
                 .Distinct()
                 .ToList();
 
-            var validPackageTypeIds =
-                await _context.PackageTypes
-                    .Where(p =>
-                        p.IsActive &&
-                        packageTypeIds.Contains(p.PackageTypeId))
-                    .Select(p => p.PackageTypeId)
-                    .ToListAsync();
+            var validPackageTypeIds = await _context.PackageTypes
+                .Where(p =>
+                    p.IsActive &&
+                    packageTypeIds.Contains(p.PackageTypeId))
+                .Select(p => p.PackageTypeId)
+                .ToListAsync();
 
             if (validPackageTypeIds.Count != packageTypeIds.Count)
             {
@@ -270,13 +463,8 @@ namespace DeliveryManagement.Controllers
                     "Có loại hàng hóa không hợp lệ.");
 
                 await LoadPackageTypesAsync();
-
                 return View(model);
             }
-
-            // ==========================================
-            // CẬP NHẬT PHÂN LOẠI
-            // ==========================================
 
             foreach (var itemModel in model.Items)
             {
@@ -289,25 +477,15 @@ namespace DeliveryManagement.Controllers
                     continue;
                 }
 
-                // Nếu đơn cũ chưa có OriginalPackageTypeId
-                // thì lưu lại loại ban đầu trước khi đổi.
                 if (!item.OriginalPackageTypeId.HasValue)
                 {
-                    item.OriginalPackageTypeId =
-                        item.PackageTypeId;
+                    item.OriginalPackageTypeId = item.PackageTypeId;
                 }
 
-                item.PackageTypeId =
-                    itemModel.PackageTypeId;
-
-                item.ClassifiedBy =
-                    user.Id;
-
-                item.ClassifiedAt =
-                    DateTime.Now;
-
-                item.ClassificationNote =
-                    itemModel.ClassificationNote;
+                item.PackageTypeId = itemModel.PackageTypeId;
+                item.ClassifiedBy = user.Id;
+                item.ClassifiedAt = DateTime.Now;
+                item.ClassificationNote = itemModel.ClassificationNote;
             }
 
             await _context.SaveChangesAsync();
@@ -339,21 +517,16 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] =
-                    "Không tìm thấy mã đơn hàng.";
-
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
                 return RedirectToAction(nameof(Index));
             }
 
             var order = await _context.DeliveryOrders
-                .FirstOrDefaultAsync(o =>
-                    o.OrderCode == id);
+                .FirstOrDefaultAsync(o => o.OrderCode == id);
 
             if (order == null)
             {
-                TempData["ErrorMessage"] =
-                    "Không tìm thấy đơn hàng.";
-
+                TempData["ErrorMessage"] = "Không tìm thấy đơn hàng.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -367,13 +540,10 @@ namespace DeliveryManagement.Controllers
                     new { id = order.OrderCode });
             }
 
-            // ==========================================
-            // KHO CHỈ ĐƯỢC ĐƯA ĐƠN SANG TRẠNG THÁI SẴN SÀNG
-            // ==========================================
-
+            // Kho chỉ đưa đơn từ Chưa nhận sang sẵn sàng giao.
             bool validTransition =
                 order.CurrentStatus == "Chưa nhận" &&
-                newStatus == "Đã nhận - Chưa giao";
+                newStatus == ReadyStatus;
 
             if (!validTransition)
             {
@@ -387,18 +557,15 @@ namespace DeliveryManagement.Controllers
                     new { id = order.OrderCode });
             }
 
-
             order.CurrentStatus = newStatus;
 
-            var history = new OrderStatusHistory
+            _context.OrderStatusHistories.Add(new OrderStatusHistory
             {
                 OrderCode = order.OrderCode,
                 Status = newStatus,
                 ChangedBy = user.Id,
                 ChangedAt = DateTime.Now
-            };
-
-            _context.OrderStatusHistories.Add(history);
+            });
 
             await _context.SaveChangesAsync();
 
@@ -416,11 +583,10 @@ namespace DeliveryManagement.Controllers
 
         private async Task LoadPackageTypesAsync()
         {
-            ViewBag.PackageTypes =
-                await _context.PackageTypes
-                    .Where(p => p.IsActive)
-                    .OrderBy(p => p.TypeName)
-                    .ToListAsync();
+            ViewBag.PackageTypes = await _context.PackageTypes
+                .Where(p => p.IsActive)
+                .OrderBy(p => p.TypeName)
+                .ToListAsync();
         }
     }
 }

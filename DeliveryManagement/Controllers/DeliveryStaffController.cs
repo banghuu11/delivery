@@ -1,5 +1,8 @@
 ﻿
+using System;
 using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
 using DeliveryManagement.Data;
 using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Authorization;
@@ -17,6 +20,12 @@ namespace DeliveryManagement.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
+
+        private const string ReadyStatus = "Đã nhận - Chưa giao";
+        private const string DeliveringStatus = "Đã nhận – Đang giao";
+        private const string DeliveredStatus = "Đã Giao";
+        private const string FailedStatus = "Giao thất bại - Chờ xử lý";
+        private const long MaxProofSize = 2 * 1024 * 1024;
 
         public DeliveryStaffController(
             ApplicationDbContext context,
@@ -47,7 +56,7 @@ namespace DeliveryManagement.Controllers
                 .Include(o => o.OrderItems)
                 .Where(o =>
                     o.DeliveryMethod == "Thường" &&
-                    o.CurrentStatus == "Đã nhận - Chưa giao" &&
+                    o.CurrentStatus == ReadyStatus &&
                     o.DeliveryStaffId == null)
                 .OrderBy(o => o.CreatedAt)
                 .ToListAsync();
@@ -82,9 +91,7 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] =
-                    "Không tìm thấy mã đơn hàng.";
-
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -94,14 +101,12 @@ namespace DeliveryManagement.Controllers
                 .Where(o =>
                     o.OrderCode == id &&
                     o.DeliveryMethod == "Thường" &&
-                    o.CurrentStatus == "Đã nhận - Chưa giao" &&
+                    o.CurrentStatus == ReadyStatus &&
                     o.DeliveryStaffId == null)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(
-                        o => o.DeliveryStaffId,
-                        user.Id));
+                    .SetProperty(o => o.DeliveryStaffId, user.Id));
 
-            if (affectedRows == 0)
+            if (affectedRows != 1)
             {
                 TempData["ErrorMessage"] =
                     "Đơn này không còn khả dụng hoặc đã được shipper khác nhận.";
@@ -129,17 +134,21 @@ namespace DeliveryManagement.Controllers
                 return Challenge();
             }
 
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                return RedirectToAction(nameof(Index));
+            }
+
             var affectedRows = await _context.DeliveryOrders
                 .Where(o =>
                     o.OrderCode == id &&
                     o.DeliveryStaffId == user.Id &&
-                    o.CurrentStatus == "Đã nhận - Chưa giao")
+                    o.CurrentStatus == ReadyStatus)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(
-                        o => o.CurrentStatus,
-                        "Đã nhận – Đang giao"));
+                    .SetProperty(o => o.CurrentStatus, DeliveringStatus));
 
-            if (affectedRows == 0)
+            if (affectedRows != 1)
             {
                 TempData["ErrorMessage"] =
                     "Không thể bắt đầu giao. Hãy kiểm tra đơn hàng của bạn.";
@@ -147,14 +156,13 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            _context.OrderStatusHistories.Add(
-                new OrderStatusHistory
-                {
-                    OrderCode = id,
-                    Status = "Đã nhận – Đang giao",
-                    ChangedBy = user.Id,
-                    ChangedAt = DateTime.Now
-                });
+            _context.OrderStatusHistories.Add(new OrderStatusHistory
+            {
+                OrderCode = id,
+                Status = DeliveringStatus,
+                ChangedBy = user.Id,
+                ChangedAt = DateTime.Now
+            });
 
             await _context.SaveChangesAsync();
 
@@ -165,10 +173,11 @@ namespace DeliveryManagement.Controllers
         }
 
         // ==========================================
-        // XÁC NHẬN GIAO HÀNG KÈM ẢNH MINH CHỨNG
+        // XÁC NHẬN GIAO HÀNG THÀNH CÔNG KÈM ẢNH
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
+        [RequestSizeLimit(3 * 1024 * 1024)]
         public async Task<IActionResult> CompleteDelivery(
             string id,
             IFormFile? proofImage,
@@ -181,13 +190,19 @@ namespace DeliveryManagement.Controllers
                 return Challenge();
             }
 
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                return RedirectToAction(nameof(Index));
+            }
+
             // Chỉ shipper đang phụ trách và đang giao
             // mới được xác nhận kết quả giao hàng.
             var orderExists = await _context.DeliveryOrders
                 .AnyAsync(o =>
                     o.OrderCode == id &&
                     o.DeliveryStaffId == user.Id &&
-                    o.CurrentStatus == "Đã nhận – Đang giao");
+                    o.CurrentStatus == DeliveringStatus);
 
             if (!orderExists)
             {
@@ -206,9 +221,7 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            const long maxFileSize = 2 * 1024 * 1024;
-
-            if (proofImage.Length > maxFileSize)
+            if (proofImage.Length > MaxProofSize)
             {
                 TempData["ErrorMessage"] =
                     "Ảnh minh chứng không được vượt quá 2 MB.";
@@ -219,11 +232,9 @@ namespace DeliveryManagement.Controllers
             var extension = Path.GetExtension(proofImage.FileName);
 
             if ((!extension.Equals(
-                    ".jpg",
-                    StringComparison.OrdinalIgnoreCase) &&
+                    ".jpg", StringComparison.OrdinalIgnoreCase) &&
                  !extension.Equals(
-                    ".jpeg",
-                    StringComparison.OrdinalIgnoreCase)) ||
+                    ".jpeg", StringComparison.OrdinalIgnoreCase)) ||
                 !string.Equals(
                     proofImage.ContentType,
                     "image/jpeg",
@@ -239,7 +250,6 @@ namespace DeliveryManagement.Controllers
             await using (var input = proofImage.OpenReadStream())
             {
                 var signature = new byte[3];
-
                 var bytesRead = await input.ReadAsync(
                     signature, 0, signature.Length);
 
@@ -265,60 +275,48 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var webRoot = _environment.WebRootPath;
+
+            if (string.IsNullOrWhiteSpace(webRoot))
+            {
+                webRoot = Path.Combine(
+                    _environment.ContentRootPath, "wwwroot");
+            }
+
             var uploadsFolder = Path.Combine(
-                _environment.WebRootPath,
-                "uploads",
-                "delivery-proofs");
+                webRoot, "uploads", "delivery-proofs");
 
             Directory.CreateDirectory(uploadsFolder);
 
             var fileName = $"{Guid.NewGuid():N}.jpg";
-            var physicalPath = Path.Combine(
-                uploadsFolder,
-                fileName);
-
-            var relativePath =
-                $"/uploads/delivery-proofs/{fileName}";
+            var physicalPath = Path.Combine(uploadsFolder, fileName);
+            var relativePath = $"/uploads/delivery-proofs/{fileName}";
 
             await using (var output = new FileStream(
-                physicalPath,
-                FileMode.CreateNew,
-                FileAccess.Write))
+                physicalPath, FileMode.CreateNew, FileAccess.Write))
             {
                 await proofImage.CopyToAsync(output);
             }
 
-            await using var transaction =
-                await _context.Database.BeginTransactionAsync();
-
             try
             {
-                // Kiểm tra lại trạng thái lúc cập nhật,
-                // tránh xác nhận hai lần cùng một đơn.
+                await using var transaction =
+                    await _context.Database.BeginTransactionAsync();
+
                 var affectedRows = await _context.DeliveryOrders
                     .Where(o =>
                         o.OrderCode == id &&
                         o.DeliveryStaffId == user.Id &&
-                        o.CurrentStatus == "Đã nhận – Đang giao")
+                        o.CurrentStatus == DeliveringStatus)
                     .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(
-                            o => o.CurrentStatus,
-                            "Đã Giao")
-                        .SetProperty(
-                            o => o.DeliveryResult,
-                            "Giao thành công")
-                        .SetProperty(
-                            o => o.ProofImage,
-                            relativePath)
-                        .SetProperty(
-                            o => o.DeliveryNote,
-                            deliveryNote));
+                        .SetProperty(o => o.CurrentStatus, DeliveredStatus)
+                        .SetProperty(o => o.DeliveryResult, "Giao thành công")
+                        .SetProperty(o => o.ProofImage, relativePath)
+                        .SetProperty(o => o.DeliveryNote, deliveryNote));
 
                 if (affectedRows != 1)
                 {
                     await transaction.RollbackAsync();
-
-                    System.IO.File.Delete(physicalPath);
 
                     TempData["ErrorMessage"] =
                         "Không thể xác nhận. Trạng thái đơn hàng đã thay đổi.";
@@ -326,22 +324,19 @@ namespace DeliveryManagement.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                _context.OrderStatusHistories.Add(
-                    new OrderStatusHistory
-                    {
-                        OrderCode = id,
-                        Status = "Đã Giao",
-                        ChangedBy = user.Id,
-                        ChangedAt = DateTime.Now
-                    });
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderCode = id,
+                    Status = DeliveredStatus,
+                    ChangedBy = user.Id,
+                    ChangedAt = DateTime.Now
+                });
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
             catch
             {
-                await transaction.RollbackAsync();
-
                 if (System.IO.File.Exists(physicalPath))
                 {
                     System.IO.File.Delete(physicalPath);
@@ -355,6 +350,147 @@ namespace DeliveryManagement.Controllers
 
             TempData["SuccessMessage"] =
                 $"Đã ghi nhận giao hàng thành công cho đơn {id}.";
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ==========================================
+        // GHI NHẬN GIAO HÀNG THẤT BẠI
+        // ==========================================
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> FailDelivery(
+            string id,
+            string failureReason,
+            string? deliveryNote)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var validReasons = new[]
+            {
+                "Không liên lạc được với người nhận",
+                "Sai địa chỉ",
+                "Khách từ chối nhận",
+                "Lý do khác"
+            };
+
+            if (!validReasons.Contains(failureReason))
+            {
+                TempData["ErrorMessage"] =
+                    "Vui lòng chọn lý do giao thất bại hợp lệ.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            deliveryNote = deliveryNote?.Trim();
+
+            if (deliveryNote?.Length > 500)
+            {
+                TempData["ErrorMessage"] =
+                    "Ghi chú không được vượt quá 500 ký tự.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (failureReason == "Lý do khác" &&
+                string.IsNullOrWhiteSpace(deliveryNote))
+            {
+                TempData["ErrorMessage"] =
+                    "Vui lòng nhập ghi chú khi chọn lý do khác.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Chỉ cho phép shipper được phân công xử lý đơn đang giao.
+            var order = await _context.DeliveryOrders
+                .AsNoTracking()
+                .FirstOrDefaultAsync(o =>
+                    o.OrderCode == id &&
+                    o.DeliveryStaffId == user.Id &&
+                    o.CurrentStatus == DeliveringStatus);
+
+            if (order == null)
+            {
+                TempData["ErrorMessage"] =
+                    "Đơn không tồn tại, không thuộc quyền xử lý của bạn hoặc không ở trạng thái đang giao.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            var failureDetail = $"Lý do giao thất bại: {failureReason}";
+
+            if (!string.IsNullOrWhiteSpace(deliveryNote))
+            {
+                failureDetail += $". Ghi chú: {deliveryNote}";
+            }
+
+            // Giữ lại ghi chú cũ (nếu có) rồi nối thêm lý do thất bại.
+            var previousNote = order.DeliveryNote?.Trim();
+
+            var noteToSave = string.IsNullOrWhiteSpace(previousNote)
+                ? failureDetail
+                : $"{previousNote}{Environment.NewLine}{failureDetail}";
+
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // Cập nhật có điều kiện để tránh xử lý đơn hai lần.
+                var affectedRows = await _context.DeliveryOrders
+                    .Where(o =>
+                        o.OrderCode == id &&
+                        o.DeliveryStaffId == user.Id &&
+                        o.CurrentStatus == DeliveringStatus)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.CurrentStatus, FailedStatus)
+                        .SetProperty(o => o.DeliveryResult, "Giao thất bại")
+                        .SetProperty(o => o.DeliveryNote, noteToSave));
+
+                if (affectedRows != 1)
+                {
+                    await transaction.RollbackAsync();
+
+                    TempData["ErrorMessage"] =
+                        "Không thể cập nhật. Trạng thái đơn hàng đã thay đổi.";
+
+                    return RedirectToAction(nameof(Index));
+                }
+
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderCode = order.OrderCode,
+                    Status = FailedStatus,
+                    ChangedBy = user.Id,
+                    ChangedAt = DateTime.Now
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+
+                TempData["ErrorMessage"] =
+                    "Có lỗi khi lưu kết quả giao thất bại. Vui lòng thử lại.";
+
+                return RedirectToAction(nameof(Index));
+            }
+
+            TempData["SuccessMessage"] =
+                $"Đã ghi nhận giao thất bại cho đơn {order.OrderCode}. Đơn đang chờ xử lý tiếp.";
 
             return RedirectToAction(nameof(Index));
         }
