@@ -13,7 +13,6 @@
 }
 
 <div class="order-create-page">
-
     <div class="order-create-header">
         <div>
             <h1>Tạo yêu cầu giao hàng</h1>
@@ -21,35 +20,22 @@
         </div>
     </div>
 
-
-    <form asp-controller="DeliveryOrder"
-          asp-action="Create"
-          method="post"
-          class="order-form">
-
+    <form asp-controller="DeliveryOrder" asp-action="Create" method="post" class="order-form">
+        @Html.AntiForgeryToken()
         <input type="hidden" asp-for="Latitude" id="senderLat" />
         <input type="hidden" asp-for="Longitude" id="senderLon" />
 
-        <div asp-validation-summary="All"
-             class="text-danger validation-summary"></div>
-
-
-        <!-- =========================
-             1. THÔNG TIN NGƯỜI GỬI
-             ========================= -->
-
+        <!-- 1. THÔNG TIN NGƯỜI GỬI -->
         <div class="order-section">
-
             <div class="order-section-header d-flex justify-content-between align-items-center flex-wrap gap-2">
                 <div>
                     <h2>1. Thông tin người gửi</h2>
                     <p class="text-muted small mb-0">Nhập địa chỉ lấy hàng hoặc chọn nhanh từ sổ địa chỉ đã lưu</p>
                 </div>
-                <div>
-                    <a asp-controller="Sender" asp-action="Index" target="_blank" class="btn btn-sm btn-outline-secondary rounded-pill">
-                        <i class="bi bi-journal-bookmark-fill me-1 text-primary"></i> Quản lý sổ địa chỉ
-                    </a>
-                </div>
+                <a asp-controller="Sender" asp-action="Index" target="_blank"
+                   class="btn btn-sm btn-outline-secondary rounded-pill">
+                    <i class="bi bi-journal-bookmark-fill me-1 text-primary"></i> Quản lý sổ địa chỉ
+                </a>
             </div>
 
             @if (savedAddresses.Any())
@@ -74,391 +60,181 @@
             }
 
             <div class="order-form-grid">
-
                 <div class="form-group">
-
-                    <label asp-for="SenderName"
-                           class="form-label">
-                        Họ và tên
-                    </label>
-
-                    <input asp-for="SenderName"
-                           id="SenderNameInput"
-                           class="form-control"
-                           placeholder="Nhập họ và tên người gửi" />
-
-                    <span asp-validation-for="SenderName"
-                          class="field-validation-error"></span>
-
+                    <label asp-for="SenderName" class="form-label">Họ và tên</label>
+                    <input asp-for="SenderName" id="SenderNameInput" class="form-control" placeholder="Nhập họ và tên người gửi" />
+                    <span asp-validation-for="SenderName" class="field-validation-error"></span>
                 </div>
 
-
                 <div class="form-group">
-
-                    <label asp-for="SenderPhone"
-                           class="form-label">
-                        Số điện thoại
-                    </label>
-
-                    <input asp-for="SenderPhone"
-                           id="SenderPhoneInput"
-                           class="form-control"
-                           placeholder="Nhập số điện thoại" />
-
-                    <span asp-validation-for="SenderPhone"
-                          class="field-validation-error"></span>
-
+                    <label asp-for="SenderPhone" class="form-label">Số điện thoại</label>
+                    <input asp-for="SenderPhone" id="SenderPhoneInput" class="form-control" placeholder="Nhập số điện thoại" />
+                    <span asp-validation-for="SenderPhone" class="field-validation-error"></span>
                 </div>
-
             </div>
 
-
             <div class="form-group">
-
                 <div class="d-flex justify-content-between align-items-center mb-1">
-                    <label asp-for="SenderAddress"
-                           class="form-label mb-0">
-                        Địa chỉ
-                    </label>
-
-                    <button type="button"
-                            class="btn btn-sm btn-link text-primary p-0 text-decoration-none"
-                            id="btnLocateAddress"
-                            title="Lấy vị trí GPS hiện tại">
+                    <label asp-for="SenderAddress" class="form-label mb-0">Địa chỉ gửi hàng</label>
+                    <button type="button" class="btn btn-sm btn-link text-primary p-0 text-decoration-none"
+                            id="btnLocateAddress" title="Lấy vị trí GPS hiện tại">
                         <i class="bi bi-crosshair"></i> Định vị vị trí của tôi
                     </button>
                 </div>
 
-                <input asp-for="SenderAddress"
-                       id="SenderAddressInput"
-                       class="form-control"
-                       placeholder="Nhập địa chỉ người gửi" />
-
+                <input asp-for="SenderAddress" id="SenderAddressInput" class="form-control" placeholder="Nhập địa chỉ người gửi" />
                 <div id="locationBadge" class="mt-1 small text-success" style="display:none;">
-                    <i class="bi bi-geo-alt-fill"></i> <span id="locationBadgeText">Đã xác định vị trí GPS</span>
+                    <i class="bi bi-geo-alt-fill"></i>
+                    <span id="locationBadgeText">Đã xác định vị trí GPS</span>
                 </div>
-
-                <span asp-validation-for="SenderAddress"
-                      class="field-validation-error"></span>
-
+                <span asp-validation-for="SenderAddress" class="field-validation-error"></span>
             </div>
 
             <div class="row mt-2 g-2 align-items-center">
                 <div class="col-md-6">
                     <div class="form-check">
-                        <input asp-for="SaveToAddressBook" class="form-check-input" type="checkbox" id="chkSaveAddress">
+                        <input asp-for="SaveToAddressBook" class="form-check-input" type="checkbox" id="chkSaveAddress" />
                         <label class="form-check-label small fw-semibold text-secondary" for="chkSaveAddress">
                             <i class="bi bi-plus-square me-1"></i> Lưu thông tin này vào sổ địa chỉ người gửi
                         </label>
                     </div>
                 </div>
-                <div class="col-md-6" id="divAddressTag" style="display: none;">
-                    <input asp-for="AddressTag" class="form-control form-control-sm" placeholder="Tên nhãn địa chỉ (VD: Kho hàng 2, Shop Bình Thạnh...)" />
+                <div class="col-md-6" id="divAddressTag" style="display:none;">
+                    <input asp-for="AddressTag" class="form-control form-control-sm"
+                           placeholder="Tên nhãn địa chỉ (VD: Kho hàng 2, Shop Bình Thạnh...)" />
                 </div>
             </div>
-
         </div>
 
-
-        <!-- =========================
-             2. THÔNG TIN NGƯỜI NHẬN
-             ========================= -->
-
+        <!-- 2. THÔNG TIN NGƯỜI NHẬN -->
         <div class="order-section">
-
             <div class="order-section-header">
                 <h2>2. Thông tin người nhận</h2>
                 <p>Nhập thông tin người sẽ nhận hàng</p>
             </div>
 
             <div class="order-form-grid">
-
                 <div class="form-group">
-
-                    <label asp-for="ReceiverName"
-                           class="form-label">
-                        Họ và tên
-                    </label>
-
-                    <input asp-for="ReceiverName"
-                           class="form-control"
-                           placeholder="Nhập họ và tên người nhận" />
-
-                    <span asp-validation-for="ReceiverName"
-                          class="field-validation-error"></span>
-
+                    <label asp-for="ReceiverName" class="form-label">Họ và tên</label>
+                    <input asp-for="ReceiverName" class="form-control" placeholder="Nhập họ và tên người nhận" />
+                    <span asp-validation-for="ReceiverName" class="field-validation-error"></span>
                 </div>
 
-
                 <div class="form-group">
-
-                    <label asp-for="ReceiverPhone"
-                           class="form-label">
-                        Số điện thoại
-                    </label>
-
-                    <input asp-for="ReceiverPhone"
-                           class="form-control"
-                           placeholder="Nhập số điện thoại" />
-
-                    <span asp-validation-for="ReceiverPhone"
-                          class="field-validation-error"></span>
-
+                    <label asp-for="ReceiverPhone" class="form-label">Số điện thoại</label>
+                    <input asp-for="ReceiverPhone" class="form-control" placeholder="Nhập số điện thoại" />
+                    <span asp-validation-for="ReceiverPhone" class="field-validation-error"></span>
                 </div>
-
             </div>
-
 
             <div class="form-group">
-
-                <label asp-for="ReceiverAddress"
-                       class="form-label">
-                    Địa chỉ nhận hàng
-                </label>
-
-                <input asp-for="ReceiverAddress"
-                       class="form-control"
-                       placeholder="Nhập địa chỉ người nhận" />
-
-                <span asp-validation-for="ReceiverAddress"
-                      class="field-validation-error"></span>
-
+                <label asp-for="ReceiverAddress" class="form-label">Địa chỉ nhận hàng</label>
+                <input asp-for="ReceiverAddress" id="ReceiverAddressInput" class="form-control" placeholder="Nhập địa chỉ người nhận" />
+                <span asp-validation-for="ReceiverAddress" class="field-validation-error"></span>
             </div>
-
         </div>
 
-
-        <!-- =========================
-             3. HÌNH THỨC GIAO HÀNG
-             ========================= -->
-
+        <!-- 3. HÌNH THỨC GIAO HÀNG -->
         <div class="order-section">
-
             <div class="order-section-header">
                 <h2>3. Hình thức giao hàng</h2>
-                <p>Chọn hình thức giao hàng và nhập khoảng cách dự kiến.</p>
+                <p>Chọn hình thức giao hàng. Hệ thống sẽ tự tính khoảng cách theo tuyến đường.</p>
             </div>
-
 
             <div class="delivery-method-list">
-
-                <!-- GIAO THƯỜNG -->
-
                 <label class="delivery-method-option">
-
-                    <input asp-for="DeliveryMethod"
-                           type="radio"
-                           value="Thường" />
-
+                    <input asp-for="DeliveryMethod" type="radio" value="Thường" />
                     <span>
-
                         <strong>Giao thường</strong>
-
-                        <small>
-                            Giao theo tuyến, chi phí thấp hơn
-                        </small>
-
+                        <small>Giao theo tuyến, chi phí thấp hơn</small>
                     </span>
-
                 </label>
-
-
-                <!-- GIAO NHANH -->
 
                 <label class="delivery-method-option">
-
-                    <input asp-for="DeliveryMethod"
-                           type="radio"
-                           value="Nhanh" />
-
+                    <input asp-for="DeliveryMethod" type="radio" value="Nhanh" />
                     <span>
-
                         <strong>Giao nhanh</strong>
-
-                        <small>
-                            Giao riêng, thời gian nhanh hơn
-                        </small>
-
+                        <small>Giao riêng, thời gian nhanh hơn</small>
                     </span>
-
                 </label>
-
             </div>
 
-
-            <span asp-validation-for="DeliveryMethod"
-                  class="field-validation-error"></span>
-
-
-            <!-- KHOẢNG CÁCH -->
+            <span asp-validation-for="DeliveryMethod" class="field-validation-error"></span>
 
             <div class="form-group mt-3">
-
-                <label asp-for="DistanceKm"
-                       class="form-label">
-                    Khoảng cách dự kiến (km)
-                </label>
-
-                <input asp-for="DistanceKm"
-                       id="distanceKm"
-                       type="number"
-                       class="form-control"
-                       min="0.01"
-                       max="100000"
-                       step="0.01"
-                       placeholder="Ví dụ: 7.5" />
-
-                <small class="text-muted">
-                    Khoảng cách tạm thời nhập thủ công để tính giá.
-                </small>
-
-                <span asp-validation-for="DistanceKm"
-                      class="field-validation-error"></span>
-
+                <label class="form-label" for="distanceDisplay">Khoảng cách giao hàng</label>
+                <input type="text" id="distanceDisplay" class="form-control"
+                       value="Chờ nhập địa chỉ gửi và địa chỉ nhận..." readonly />
+                <small class="text-muted">Khoảng cách được hệ thống tự động tính; không cần nhập thủ công.</small>
+                <div id="distanceError" class="text-danger small mt-1" role="status"></div>
+                <input asp-for="DistanceKm" type="hidden" id="distanceKm" value="0" />
             </div>
-
         </div>
 
-
-        <!-- =========================
-             4. THANH TOÁN
-             ========================= -->
-
+        <!-- 4. THANH TOÁN -->
         <div class="order-section">
-
             <div class="order-section-header">
-
                 <h2>4. Thanh toán</h2>
-
-                <p>
-                    Chọn phương thức thanh toán cho đơn hàng.
-                </p>
-
+                <p>Chọn phương thức thanh toán cho đơn hàng.</p>
             </div>
-
 
             <div class="payment-method-list">
-
-                <!-- THANH TOÁN KHI GIAO -->
-
                 <label class="payment-method-option">
-
-                    <input asp-for="PaymentMethod"
-                           type="radio"
-                           value="Thanh toán khi giao hàng" />
-
+                    <input asp-for="PaymentMethod" type="radio" value="Thanh toán khi giao hàng" />
                     <span>
-
-                        <strong>
-                            Thanh toán khi giao hàng
-                        </strong>
-
-                        <small>
-                            Thanh toán khi hàng được giao
-                        </small>
-
+                        <strong>Thanh toán khi giao hàng</strong>
+                        <small>Thanh toán khi hàng được giao</small>
                     </span>
-
                 </label>
 
-
-                <!-- THANH TOÁN TRỰC TUYẾN -->
-
                 <label class="payment-method-option">
-
-                    <input asp-for="PaymentMethod"
-                           type="radio"
-                           value="Thanh toán trực tuyến" />
-
+                    <input asp-for="PaymentMethod" type="radio" value="Thanh toán trực tuyến" />
                     <span>
-
-                        <strong>
-                            Thanh toán trực tuyến
-                        </strong>
-
-                        <small>
-                            Thanh toán trước khi hàng được giao
-                        </small>
-
+                        <strong>Thanh toán trực tuyến</strong>
+                        <small>Thanh toán trước khi hàng được giao</small>
                     </span>
-
                 </label>
-
             </div>
 
-
-            <span asp-validation-for="PaymentMethod"
-                  class="field-validation-error"></span>
-
+            <span asp-validation-for="PaymentMethod" class="field-validation-error"></span>
         </div>
 
-
-        <!-- =========================
-             5. THÔNG TIN HÀNG HÓA
-             ========================= -->
-
+        <!-- 5. THÔNG TIN HÀNG HÓA -->
         <div class="order-section">
-
             <div class="order-section-header d-flex justify-content-between align-items-start">
-
                 <div>
-
                     <h2>5. Thông tin hàng hóa</h2>
-
-                    <p>
-                        Có thể thêm nhiều loại hàng trong cùng một đơn
-                    </p>
-
+                    <p>Có thể thêm nhiều loại hàng trong cùng một đơn</p>
                 </div>
-
-
-                <button type="button"
-                        id="btnAddItem"
-                        class="btn btn-outline-primary btn-sm">
+                <button type="button" id="btnAddItem" class="btn btn-outline-primary btn-sm">
                     Thêm hàng hóa
                 </button>
-
             </div>
-
 
             <div id="itemList"></div>
-
         </div>
 
-
-        <!-- =========================
-             6. TỔNG TIỀN
-             ========================= -->
-
+        <!-- 6. TỔNG TIỀN -->
         <div class="order-section order-total-section">
-
             <div class="order-total-content">
-
                 <div>
-
                     <h2>Tổng tiền</h2>
-
-                    <p id="priceDescription">
-                        Chọn hình thức giao hàng, nhập khoảng cách
-                        và khối lượng để tính giá.
-                    </p>
-
+                    <p id="priceDescription">Nhập địa chỉ gửi, địa chỉ nhận và khối lượng hàng hóa để tính giá.</p>
                 </div>
-
-
-                <div class="order-total-value"
-                     id="totalPrice">
-                    0 VNĐ
-                </div>
-
+                <div class="order-total-value" id="totalPrice">0 VNĐ</div>
             </div>
 
-            <!-- BẢNG CHI TIẾT CƯỚC PHÍ LINH HOẠT -->
-            <div id="fareBreakdownCard" class="fare-breakdown-card" style="display: none;">
+            <div id="fareBreakdownCard" class="fare-breakdown-card" style="display:none;">
                 <div class="fare-breakdown-header">
-                    <span><i class="bi bi-receipt-cutoff me-1 text-primary"></i> Chi tiết bảng tính cước:</span>
-                    <span class="fare-live-badge"><i class="bi bi-broadcast"></i> Cập nhật Realtime</span>
+                    <span>
+                        <i class="bi bi-receipt-cutoff me-1 text-primary"></i>
+                        Chi tiết bảng tính cước:
+                    </span>
+                    <span class="fare-live-badge">
+                        <i class="bi bi-broadcast"></i> Cập nhật Realtime
+                    </span>
                 </div>
+
                 <div class="fare-breakdown-body">
                     <div class="fare-row">
                         <div class="fare-label">
@@ -493,43 +269,24 @@
                     </div>
                 </div>
             </div>
-
         </div>
 
-
-        <!-- =========================
-             ACTION
-             ========================= -->
-
+        <!-- NÚT HÀNH ĐỘNG -->
         <div class="order-form-actions">
-
-            <a asp-controller="Home"
-               asp-action="Index"
-               class="btn-cancel">
-                Hủy
-            </a>
-
-
-            <button type="submit"
-                    class="btn-submit-order">
+            <a asp-controller="Home" asp-action="Index" class="btn-cancel">Hủy</a>
+            <button type="submit" id="btnSubmitOrder" class="btn-submit-order">
                 Tạo yêu cầu giao hàng
             </button>
-
         </div>
-
     </form>
 
-    <!-- =========================
-         POPUP XIN QUYỀN TRUY CẬP VỊ TRÍ
-         ========================= -->
-    <div id="geoConsentToast" class="geo-consent-toast" style="display: none;">
+    <!-- POPUP XIN QUYỀN TRUY CẬP VỊ TRÍ -->
+    <div id="geoConsentToast" class="geo-consent-toast" style="display:none;">
         <div class="geo-toast-content">
-            <div class="geo-toast-icon">
-                <i class="bi bi-geo-alt-fill"></i>
-            </div>
+            <div class="geo-toast-icon"><i class="bi bi-geo-alt-fill"></i></div>
             <div class="geo-toast-text">
-                <strong>Cập nhật vị trí thời gian thực</strong>
-                <p>Hệ thống dùng tọa độ để cập nhật thời tiết và mật độ giao thông tại chỗ, áp dụng biểu phí chính xác và điều phối nhanh nhất.</p>
+                <strong>Cập nhật vị trí</strong>
+                <p>Cho phép định vị để điền tọa độ người gửi và hỗ trợ tính phí.</p>
             </div>
         </div>
         <div class="geo-toast-actions">
@@ -539,940 +296,704 @@
             </button>
         </div>
     </div>
-
 </div>
 
-
 @section Scripts {
-
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
     }
 
-
     <script>
-
         (function () {
-
-            /* ==========================================
-               DỮ LIỆU
-               ========================================== */
-
-            const packageTypes =
-                @Html.Raw(
-                    Json.Serialize(
-                            packageTypes.Select(p => new
-                            {
-                                    id = p.PackageTypeId,
-                                    name = p.TypeName
-                            })
-                    )
-                        );
-
-
-        const initialItems =
-            @Html.Raw(
-                                Json.Serialize(Model.Items)
-                        );
-
-
-        const list =
-            document.getElementById('itemList');
-
-
-        const distanceInput =
-            document.getElementById('distanceKm');
-
-
-        const totalPriceElement =
-            document.getElementById('totalPrice');
-
-
-        const priceDescriptionElement =
-            document.getElementById('priceDescription');
-
-
-        const btnAddItem =
-            document.getElementById('btnAddItem');
-
-
-        const senderLatInput =
-            document.getElementById('senderLat');
-
-        const senderLonInput =
-            document.getElementById('senderLon');
-
-        const senderAddressInput =
-            document.getElementById('senderAddressInput');
-
-        const locationBadge =
-            document.getElementById('locationBadge');
-
-        const locationBadgeText =
-            document.getElementById('locationBadgeText');
-
-        const btnLocateAddress =
-            document.getElementById('btnLocateAddress');
-
-        const geoToast =
-            document.getElementById('geoConsentToast');
-
-        const btnGrantGeo =
-            document.getElementById('btnGrantGeo');
-
-        const btnDismissGeo =
-            document.getElementById('btnDismissGeo');
-
-        const breakdownCard =
-            document.getElementById('fareBreakdownCard');
-
-
-        /* ==========================================
-           ESC HTML
-           ========================================== */
-
-        function esc(value) {
-
-            return String(value ?? '')
-                .replace(/&/g, '&amp;')
-                .replace(/"/g, '&quot;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
-
-        }
-
-
-        /* ==========================================
-           TÍNH TỔNG KHỐI LƯỢNG
-           ========================================== */
-
-        function calculateTotalWeight() {
-
-            const rows =
-                list.querySelectorAll('.item-row');
-
-
-            let totalWeight = 0;
-
-
-            rows.forEach(function (row) {
-
-                const quantityInput =
-                    row.querySelector('[name$=".Quantity"]');
-
-
-                const weightInput =
-                    row.querySelector('[name$=".Weight"]');
-
-
-                const quantity =
-                    parseFloat(
-                        quantityInput?.value || '0'
-                    );
-
-
-                const weight =
-                    parseFloat(
-                        weightInput?.value || '0'
-                    );
-
-
-                if (
-                    Number.isFinite(quantity) &&
-                    Number.isFinite(weight) &&
-                    quantity > 0 &&
-                    weight > 0
-                ) {
-
-                    totalWeight +=
-                        quantity * weight;
-
-                }
-
-            });
-
-
-            return totalWeight;
-
-        }
-
-
-        /* ==========================================
-           LẤY GIÁ TỪ DATABASE
-           ========================================== */
-
-        async function updatePrice() {
-
-            const deliveryMethodInput =
-                document.querySelector(
-                    'input[name="DeliveryMethod"]:checked'
-                );
-
-
-            const deliveryMethod =
-                deliveryMethodInput?.value || '';
-
-
-            const distanceKm =
-                parseFloat(
-                    distanceInput?.value || '0'
-                );
-
-
-            const totalWeight =
-                calculateTotalWeight();
-
-
-            /* Chưa chọn hình thức */
-
-            if (!deliveryMethod) {
-
-                totalPriceElement.textContent =
-                    '0 VNĐ';
-
-                priceDescriptionElement.textContent =
-                    'Vui lòng chọn hình thức giao hàng.';
-
-                if (breakdownCard) {
-                    breakdownCard.style.display = 'none';
-                }
-
-                return;
-
+            "use strict";
+
+            const packageTypes = @Html.Raw(Json.Serialize(
+                            packageTypes.Select(p => new { id = p.PackageTypeId, name = p.TypeName })
+                    ));
+
+        const initialItems = @Html.Raw(Json.Serialize(Model.Items ?? new()));
+
+            const form = document.querySelector('.order-form');
+            const list = document.getElementById('itemList');
+
+            const distanceInput = document.getElementById('distanceKm');
+            const distanceDisplay = document.getElementById('distanceDisplay');
+            const distanceError = document.getElementById('distanceError');
+
+            const senderAddressInput = document.getElementById('SenderAddressInput');
+            const receiverAddressInput = document.getElementById('ReceiverAddressInput');
+
+            const senderLatInput = document.getElementById('senderLat');
+            const senderLonInput = document.getElementById('senderLon');
+
+            const totalPriceElement = document.getElementById('totalPrice');
+            const priceDescriptionElement = document.getElementById('priceDescription');
+            const breakdownCard = document.getElementById('fareBreakdownCard');
+            const btnAddItem = document.getElementById('btnAddItem');
+
+            const locationBadge = document.getElementById('locationBadge');
+            const locationBadgeText = document.getElementById('locationBadgeText');
+            const geoToast = document.getElementById('geoConsentToast');
+
+            let routeRequestId = 0;
+            let priceRequestId = 0;
+            let routeTimer = null;
+            let lastRouteKey = '';
+
+            // Escape nội dung trước khi đưa vào HTML.
+            function esc(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/'/g, '&#39;');
             }
 
-
-            /* Chưa có khoảng cách */
-
-            if (
-                !Number.isFinite(distanceKm) ||
-                distanceKm <= 0
-            ) {
-
-                totalPriceElement.textContent =
-                    '0 VNĐ';
-
-                priceDescriptionElement.textContent =
-                    'Vui lòng nhập khoảng cách dự kiến.';
-
-                if (breakdownCard) {
-                    breakdownCard.style.display = 'none';
-                }
-
-                return;
-
+            function formatNumber(value, digits = 2) {
+                return Number(value).toLocaleString('vi-VN', {
+                    maximumFractionDigits: digits
+                });
             }
 
+            // Tính tổng khối lượng = số lượng x khối lượng mỗi món.
+            function getTotalWeight() {
+                let total = 0;
 
-            /* Chưa có khối lượng */
+                list.querySelectorAll('.item-row').forEach(row => {
+                    const quantity = Number(
+                        row.querySelector('[name$=".Quantity"]')?.value || 0
+                    );
 
-            if (
-                !Number.isFinite(totalWeight) ||
-                totalWeight <= 0
-            ) {
+                    const weight = Number(
+                        row.querySelector('[name$=".Weight"]')?.value || 0
+                    );
 
-                totalPriceElement.textContent =
-                    '0 VNĐ';
+                    if (
+                        Number.isFinite(quantity) &&
+                        Number.isFinite(weight) &&
+                        quantity > 0 &&
+                        weight > 0
+                    ) {
+                        total += quantity * weight;
+                    }
+                });
 
-                priceDescriptionElement.textContent =
-                    'Vui lòng nhập khối lượng hàng hóa.';
-
-                if (breakdownCard) {
-                    breakdownCard.style.display = 'none';
-                }
-
-                return;
-
+                return total;
             }
 
+            function setDistanceError(message) {
+                distanceError.textContent = message || '';
+            }
 
-            /* Đang lấy giá */
+            function setDistance(km) {
+                const value = Number(km);
 
-            totalPriceElement.textContent =
-                'Đang tính...';
-
-
-            priceDescriptionElement.textContent =
-                `Tổng khối lượng: ${totalWeight.toLocaleString('vi-VN')} kg | Khoảng cách: ${distanceKm.toLocaleString('vi-VN')} km`;
-
-
-            try {
-
-                const lat = senderLatInput ? senderLatInput.value : '';
-                const lon = senderLonInput ? senderLonInput.value : '';
-
-                let url =
-                    '@Url.Action("CalculatePrice", "DeliveryOrder")' +
-                    `?deliveryMethod=${encodeURIComponent(deliveryMethod)}` +
-                    `&totalWeight=${encodeURIComponent(totalWeight)}` +
-                    `&distanceKm=${encodeURIComponent(distanceKm)}`;
-
-                if (lat && lon) {
-                    url += `&lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}`;
+                if (!Number.isFinite(value) || value <= 0) {
+                    distanceInput.value = '0';
+                    distanceDisplay.value = 'Chưa xác định được khoảng cách';
+                    return false;
                 }
 
+                const rounded = Math.round(value * 100) / 100;
 
-                const response =
-                    await fetch(
-                        url,
-                        {
-                            method: 'GET',
-                            headers: {
-                                'Accept': 'application/json'
-                            }
-                        }
-                    );
+                distanceInput.value = String(rounded);
+                distanceDisplay.value = `${formatNumber(rounded)} km`;
 
+                return true;
+            }
 
-                if (!response.ok) {
+            // Gọi API của website để server tính quãng đường.
+            async function calculateRouteDistance() {
+                const senderAddress = senderAddressInput.value.trim();
+                const receiverAddress = receiverAddressInput.value.trim();
 
-                    throw new Error(
-                        'Không thể lấy dữ liệu bảng giá.'
-                    );
+                if (!senderAddress || !receiverAddress) {
+                    ++routeRequestId;
 
-                }
+                    setDistance(0);
+                    setDistanceError('');
 
-
-                const data =
-                    await response.json();
-
-
-                if (data.success) {
-
-                    const price =
-                        Number(data.price);
-
-
-                    totalPriceElement.textContent =
-                        price.toLocaleString('vi-VN') +
-                        ' VNĐ';
-
-
+                    totalPriceElement.textContent = '0 VNĐ';
                     priceDescriptionElement.textContent =
-                        `Tổng khối lượng: ${totalWeight.toLocaleString('vi-VN')} kg | Khoảng cách: ${distanceKm.toLocaleString('vi-VN')} km`;
+                        'Nhập đầy đủ địa chỉ gửi và địa chỉ nhận để tính khoảng cách và giá.';
 
-
-                    if (breakdownCard) {
-                        breakdownCard.style.display = 'block';
-
-                        const bdDist = document.getElementById('bdDistanceText');
-                        if (bdDist) bdDist.textContent = `${distanceKm.toLocaleString('vi-VN')} km`;
-
-                        const bdBase = document.getElementById('bdBaseFee');
-                        if (bdBase) bdBase.textContent = (data.baseShippingFee || 0).toLocaleString('vi-VN') + ' VNĐ';
-
-                        const bdWeight = document.getElementById('bdWeightText');
-                        if (bdWeight) bdWeight.textContent = `${totalWeight.toLocaleString('vi-VN')} kg`;
-
-                        const bdWeightFee = document.getElementById('bdWeightFee');
-                        if (bdWeightFee) bdWeightFee.textContent = (data.weightFee || 0).toLocaleString('vi-VN') + ' VNĐ';
-
-                        const weatherFee = data.weatherFee || 0;
-                        const rowWeather = document.getElementById('rowWeatherFee');
-                        const bdWeatherFee = document.getElementById('bdWeatherFee');
-                        const bdWeatherDesc = document.getElementById('bdWeatherDesc');
-                        const bdWeatherIcon = document.getElementById('bdWeatherIcon');
-
-                        if (bdWeatherFee) {
-                            bdWeatherFee.textContent = (weatherFee > 0 ? '+' : '') + weatherFee.toLocaleString('vi-VN') + ' VNĐ';
-                        }
-                        if (bdWeatherDesc) {
-                            bdWeatherDesc.textContent = data.weatherDescription || 'Bình thường';
-                        }
-                        if (bdWeatherIcon) {
-                            bdWeatherIcon.innerHTML = '<i class="' + (data.weatherIcon || 'bi bi-sun-fill text-warning') + '"></i>';
-                        }
-                        if (rowWeather) {
-                            if (data.isWeatherSurchargeApplied) {
-                                rowWeather.classList.add('surcharge-active');
-                            } else {
-                                rowWeather.classList.remove('surcharge-active');
-                            }
-                        }
-
-                        const trafficFee = data.trafficFee || 0;
-                        const rowTraffic = document.getElementById('rowTrafficFee');
-                        const bdTrafficFee = document.getElementById('bdTrafficFee');
-                        const bdTrafficDesc = document.getElementById('bdTrafficDesc');
-                        const bdTrafficIcon = document.getElementById('bdTrafficIcon');
-
-                        if (bdTrafficFee) {
-                            bdTrafficFee.textContent = (trafficFee > 0 ? '+' : '') + trafficFee.toLocaleString('vi-VN') + ' VNĐ';
-                        }
-                        if (bdTrafficDesc) {
-                            bdTrafficDesc.textContent = data.trafficDescription || 'Bình thường';
-                        }
-                        if (bdTrafficIcon) {
-                            bdTrafficIcon.innerHTML = '<i class="' + (data.trafficIcon || 'bi bi-car-front-fill text-primary') + '"></i>';
-                        }
-                        if (rowTraffic) {
-                            if (data.isTrafficSurchargeApplied) {
-                                rowTraffic.classList.add('surcharge-active');
-                            } else {
-                                rowTraffic.classList.remove('surcharge-active');
-                            }
-                        }
-                    }
-
-                }
-                else {
-
-                    totalPriceElement.textContent =
-                        'Chưa xác định';
-
-
-                    priceDescriptionElement.textContent =
-                        data.message ||
-                        `Không có mức giá phù hợp cho ${totalWeight.toLocaleString('vi-VN')} kg và ${distanceKm.toLocaleString('vi-VN')} km trong bảng giá.`;
-
-                    if (breakdownCard) {
-                        breakdownCard.style.display = 'none';
-                    }
-
-                }
-
-            }
-            catch (error) {
-
-                console.error(error);
-
-
-                totalPriceElement.textContent =
-                    'Không thể tính';
-
-
-                priceDescriptionElement.textContent =
-                    'Không thể lấy dữ liệu bảng giá.';
-
-                if (breakdownCard) {
                     breakdownCard.style.display = 'none';
-                }
-
-            }
-
-        }
-
-
-        /* ==========================================
-           THÊM DÒNG HÀNG HÓA
-           ========================================== */
-
-        function addRow(item) {
-
-            item = item || {};
-
-
-            const options =
-                packageTypes
-                    .map(function (p) {
-
-                        const selected =
-                            Number(p.id) ===
-                            Number(item.packageTypeId)
-                                ? 'selected'
-                                : '';
-
-
-                        return `
-                            <option value="${p.id}" ${selected}>
-                                ${esc(p.name)}
-                            </option>
-                        `;
-
-                    })
-                    .join('');
-
-
-            const row =
-                document.createElement('div');
-
-
-            row.className =
-                'item-row border rounded p-3 mb-3';
-
-
-            row.innerHTML = `
-
-                <!-- HEADER -->
-
-                <div class="d-flex justify-content-between align-items-center mb-2">
-
-                    <strong class="item-title">
-                        Hàng hóa
-                    </strong>
-
-                    <button type="button"
-                            class="btn btn-link text-danger p-0 btn-remove">
-                        Xóa
-                    </button>
-
-                </div>
-
-
-                <!-- LOẠI ĐÓNG GÓI + KÍCH THƯỚC -->
-
-                <div class="order-form-grid">
-
-                    <div class="form-group">
-
-                        <label class="form-label">
-                            Loại đóng gói
-                        </label>
-
-                        <select name="Items[0].PackageTypeId"
-                                class="form-control"
-                                required>
-
-                            <option value="">
-                                Chọn loại đóng gói
-                            </option>
-
-                            ${options}
-
-                        </select>
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label class="form-label">
-                            Kích thước
-                        </label>
-
-                        <input type="text"
-                               name="Items[0].Size"
-                               class="form-control"
-                               placeholder="Ví dụ: 30x20x15 cm"
-                               value="${esc(item.size)}" />
-
-                    </div>
-
-                </div>
-
-
-                <!-- MÔ TẢ -->
-
-                <div class="form-group">
-
-                    <label class="form-label">
-                        Mô tả hàng hóa
-                    </label>
-
-                    <textarea name="Items[0].Description"
-                              class="form-control"
-                              rows="2"
-                              placeholder="Mô tả hàng hóa cần giao">${esc(item.description)}</textarea>
-
-                </div>
-
-
-                <!-- SỐ LƯỢNG + KHỐI LƯỢNG -->
-
-                <div class="order-form-grid">
-
-                    <div class="form-group">
-
-                        <label class="form-label">
-                            Số lượng
-                        </label>
-
-                        <input type="number"
-                               name="Items[0].Quantity"
-                               min="1"
-                               max="1000"
-                               class="form-control"
-                               required
-                               value="${item.quantity || 1}" />
-
-                    </div>
-
-
-                    <div class="form-group">
-
-                        <label class="form-label">
-                            Khối lượng mỗi món (kg)
-                        </label>
-
-                        <input type="number"
-                               name="Items[0].Weight"
-                               min="0.01"
-                               max="10000"
-                               step="0.01"
-                               class="form-control"
-                               required
-                               placeholder="Ví dụ: 2.5"
-                               value="${item.weight || ''}" />
-
-                    </div>
-
-                </div>
-
-
-                <!-- THUỘC TÍNH HÀNG -->
-
-                <div class="order-checkbox-list">
-
-                    <label class="order-checkbox">
-
-                        <input type="checkbox"
-                               name="Items[0].IsFragile"
-                               value="true"
-                               ${item.isFragile ? 'checked' : ''} />
-
-                        <input type="hidden"
-                               name="Items[0].IsFragile"
-                               value="false" />
-
-                        <span>
-                            Hàng dễ vỡ
-                        </span>
-
-                    </label>
-
-
-                    <label class="order-checkbox">
-
-                        <input type="checkbox"
-                               name="Items[0].IsValuable"
-                               value="true"
-                               ${item.isValuable ? 'checked' : ''} />
-
-                        <input type="hidden"
-                               name="Items[0].IsValuable"
-                               value="false" />
-
-                        <span>
-                            Hàng có giá trị
-                        </span>
-
-                    </label>
-
-                </div>
-
-            `;
-
-
-            /* ==========================================
-               NÚT XÓA
-               ========================================== */
-
-            row.querySelector('.btn-remove')
-                .addEventListener(
-                    'click',
-                    function () {
-
-                        row.remove();
-
-                        renumber();
-
-                        updatePrice();
-
-                    }
-                );
-
-
-            /* ==========================================
-               INPUT THAY ĐỔI
-               ========================================== */
-
-            row.querySelectorAll(
-                'input, select, textarea'
-            ).forEach(
-                function (input) {
-
-                    input.addEventListener(
-                        'input',
-                        updatePrice
-                    );
-
-
-                    input.addEventListener(
-                        'change',
-                        updatePrice
-                    );
-
-                }
-            );
-
-
-            list.appendChild(row);
-
-        }
-
-
-        /* ==========================================
-           ĐÁNH LẠI INDEX
-           ========================================== */
-
-        function renumber() {
-
-            const rows =
-                list.querySelectorAll('.item-row');
-
-
-            rows.forEach(
-                function (row, index) {
-
-                    row.querySelector(
-                        '.item-title'
-                    ).textContent =
-                        'Hàng hóa ' +
-                        (index + 1);
-
-
-                    row.querySelectorAll(
-                        '[name]'
-                    ).forEach(
-                        function (element) {
-
-                            element.name =
-                                element.name.replace(
-                                    /Items\[\d+\]/,
-                                    'Items[' +
-                                    index +
-                                    ']'
-                                );
-
-                        }
-                    );
-
-
-                    const removeButton =
-                        row.querySelector(
-                            '.btn-remove'
-                        );
-
-
-                    if (rows.length > 1) {
-
-                        removeButton.style.display =
-                            '';
-
-                    }
-                    else {
-
-                        removeButton.style.display =
-                            'none';
-
-                    }
-
-                }
-            );
-
-        }
-
-
-        /* ==========================================
-           THÊM HÀNG
-           ========================================== */
-
-        btnAddItem.addEventListener(
-            'click',
-            function () {
-
-                if (
-                    list.children.length >= 20
-                ) {
+                    lastRouteKey = '';
 
                     return;
-
                 }
 
+                const key = senderAddress + '|' + receiverAddress;
+
+                if (key === lastRouteKey && Number(distanceInput.value) > 0) {
+                    await updatePrice();
+                    return;
+                }
+
+                const requestId = ++routeRequestId;
+
+                setDistance(0);
+                setDistanceError('');
+
+                distanceDisplay.value = 'Đang tính khoảng cách...';
+                totalPriceElement.textContent = 'Đang tính...';
+                breakdownCard.style.display = 'none';
+
+                try {
+                    const url =
+                        '@Url.Action("CalculateRouteDistance", "DeliveryOrder")'
+                        + `?senderAddress=${encodeURIComponent(senderAddress)}`
+                        + `&receiverAddress=${encodeURIComponent(receiverAddress)}`
+                        + `&lat=${encodeURIComponent(senderLatInput.value || '')}`
+                        + `&lon=${encodeURIComponent(senderLonInput.value || '')}`;
+
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `Máy chủ trả về lỗi HTTP ${response.status}.`
+                        );
+                    }
+
+                    const data = await response.json();
+
+                    if (requestId !== routeRequestId)
+                        return;
+
+                    if (!data.success) {
+                        throw new Error(
+                            data.message || 'Không thể tính khoảng cách.'
+                        );
+                    }
+
+                    if (!setDistance(data.distanceKm)) {
+                        throw new Error('Khoảng cách trả về không hợp lệ.');
+                    }
+
+                    if (data.senderLat !== null && data.senderLat !== undefined) {
+                        senderLatInput.value = data.senderLat;
+                    }
+
+                    if (data.senderLon !== null && data.senderLon !== undefined) {
+                        senderLonInput.value = data.senderLon;
+                    }
+
+                    lastRouteKey = key;
+                    setDistanceError('');
+
+                    await updatePrice();
+                } catch (error) {
+                    if (requestId !== routeRequestId)
+                        return;
+
+                    console.error('Route distance error:', error);
+
+                    setDistance(0);
+                    lastRouteKey = '';
+
+                    setDistanceError(
+                        error.message || 'Không thể tính khoảng cách.'
+                    );
+
+                    totalPriceElement.textContent = 'Chưa xác định';
+                    priceDescriptionElement.textContent =
+                        'Không thể tính giá khi chưa xác định được khoảng cách.';
+
+                    breakdownCard.style.display = 'none';
+                }
+            }
+
+            function scheduleRouteCalculation() {
+                clearTimeout(routeTimer);
+                lastRouteKey = '';
+
+                routeTimer = setTimeout(
+                    calculateRouteDistance,
+                    900
+                );
+            }
+
+            // Gọi API tính giá sau khi đã có khoảng cách.
+            async function updatePrice() {
+                const requestId = ++priceRequestId;
+
+                const deliveryMethod =
+                    document.querySelector(
+                        'input[name="DeliveryMethod"]:checked'
+                    )?.value || '';
+
+                const distanceKm = Number(distanceInput.value);
+                const totalWeight = getTotalWeight();
+
+                if (!deliveryMethod) {
+                    totalPriceElement.textContent = '0 VNĐ';
+                    priceDescriptionElement.textContent =
+                        'Vui lòng chọn hình thức giao hàng.';
+
+                    breakdownCard.style.display = 'none';
+
+                    return;
+                }
+
+                if (!Number.isFinite(distanceKm) || distanceKm <= 0) {
+                    totalPriceElement.textContent = '0 VNĐ';
+                    priceDescriptionElement.textContent =
+                        'Đang chờ hệ thống xác định khoảng cách giao hàng.';
+
+                    breakdownCard.style.display = 'none';
+
+                    return;
+                }
+
+                if (!Number.isFinite(totalWeight) || totalWeight <= 0) {
+                    totalPriceElement.textContent = '0 VNĐ';
+                    priceDescriptionElement.textContent =
+                        'Vui lòng nhập khối lượng hàng hóa.';
+
+                    breakdownCard.style.display = 'none';
+
+                    return;
+                }
+
+                totalPriceElement.textContent = 'Đang tính...';
+
+                priceDescriptionElement.textContent =
+                    `Tổng khối lượng: ${formatNumber(totalWeight)} kg | Khoảng cách: ${formatNumber(distanceKm)} km`;
+
+                try {
+                    const url =
+                        '@Url.Action("CalculatePrice", "DeliveryOrder")'
+                        + `?deliveryMethod=${encodeURIComponent(deliveryMethod)}`
+                        + `&totalWeight=${encodeURIComponent(totalWeight)}`
+                        + `&distanceKm=${encodeURIComponent(distanceKm)}`
+                        + `&lat=${encodeURIComponent(senderLatInput.value || '')}`
+                        + `&lon=${encodeURIComponent(senderLonInput.value || '')}`;
+
+                    const response = await fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(
+                            `Không thể lấy dữ liệu bảng giá (HTTP ${response.status}).`
+                        );
+                    }
+
+                    const data = await response.json();
+
+                    if (requestId !== priceRequestId)
+                        return;
+
+                    if (!data.success) {
+                        totalPriceElement.textContent = 'Chưa xác định';
+
+                        priceDescriptionElement.textContent =
+                            data.message || 'Không có mức giá phù hợp với đơn hàng.';
+
+                        breakdownCard.style.display = 'none';
+
+                        return;
+                    }
+
+                    totalPriceElement.textContent =
+                        formatNumber(Number(data.price || 0), 0) + ' VNĐ';
+
+                    priceDescriptionElement.textContent =
+                        `Tổng khối lượng: ${formatNumber(totalWeight)} kg | Khoảng cách: ${formatNumber(distanceKm)} km`;
+
+                    breakdownCard.style.display = 'block';
+
+                    document.getElementById('bdDistanceText').textContent =
+                        `${formatNumber(distanceKm)} km`;
+
+                    document.getElementById('bdBaseFee').textContent =
+                        formatNumber(data.baseShippingFee || 0, 0) + ' VNĐ';
+
+                    document.getElementById('bdWeightText').textContent =
+                        `${formatNumber(totalWeight)} kg`;
+
+                    document.getElementById('bdWeightFee').textContent =
+                        formatNumber(data.weightFee || 0, 0) + ' VNĐ';
+
+                    // Phụ phí thời tiết.
+                    const weatherFee = Number(data.weatherFee || 0);
+
+                    document.getElementById('bdWeatherFee').textContent =
+                        (weatherFee > 0 ? '+' : '')
+                        + formatNumber(weatherFee, 0)
+                        + ' VNĐ';
+
+                    document.getElementById('bdWeatherDesc').textContent =
+                        data.weatherDescription || 'Bình thường';
+
+                    document.getElementById('bdWeatherIcon').innerHTML =
+                        '<i class="' +
+                        esc(data.weatherIcon || 'bi bi-sun-fill text-warning') +
+                        '"></i>';
+
+                    document.getElementById('rowWeatherFee').classList.toggle(
+                        'surcharge-active',
+                        !!data.isWeatherSurchargeApplied
+                    );
+
+                    // Phụ phí giao thông.
+                    const trafficFee = Number(data.trafficFee || 0);
+
+                    document.getElementById('bdTrafficFee').textContent =
+                        (trafficFee > 0 ? '+' : '')
+                        + formatNumber(trafficFee, 0)
+                        + ' VNĐ';
+
+                    document.getElementById('bdTrafficDesc').textContent =
+                        data.trafficDescription || 'Bình thường';
+
+                    document.getElementById('bdTrafficIcon').innerHTML =
+                        '<i class="' +
+                        esc(data.trafficIcon || 'bi bi-car-front-fill text-primary') +
+                        '"></i>';
+
+                    document.getElementById('rowTrafficFee').classList.toggle(
+                        'surcharge-active',
+                        !!data.isTrafficSurchargeApplied
+                    );
+                } catch (error) {
+                    if (requestId !== priceRequestId)
+                        return;
+
+                    console.error('Calculate price error:', error);
+
+                    totalPriceElement.textContent = 'Không thể tính';
+                    priceDescriptionElement.textContent =
+                        error.message || 'Không thể lấy dữ liệu bảng giá.';
+
+                    breakdownCard.style.display = 'none';
+                }
+            }
+
+            // Thêm một dòng hàng hóa.
+            function addRow(item = {}) {
+                const options = packageTypes.map(p => {
+                    const selected =
+                        Number(p.id) === Number(item.packageTypeId)
+                            ? 'selected'
+                            : '';
+
+                    return `<option value="${p.id}" ${selected}>${esc(p.name)}</option>`;
+                }).join('');
+
+                const row = document.createElement('div');
+                row.className = 'item-row border rounded p-3 mb-3';
+
+                row.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong class="item-title">Hàng hóa</strong>
+                        <button type="button" class="btn btn-link text-danger p-0 btn-remove">Xóa</button>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">Loại đóng gói</label>
+                        <select name="Items[0].PackageTypeId" class="form-control" required>
+                            <option value="">Chọn loại đóng gói</option>
+                            ${options}
+                        </select>
+                    </div>
+
+                    <div class="form-group mb-3">
+                        <label class="form-label">Mô tả hàng hóa</label>
+                        <textarea name="Items[0].Description"
+                                  class="form-control"
+                                  rows="2"
+                                  placeholder="Mô tả hàng hóa cần giao">${esc(item.description)}</textarea>
+                    </div>
+
+                    <div class="order-form-grid">
+                        <div class="form-group">
+                            <label class="form-label">Số lượng</label>
+                            <input type="number"
+                                   name="Items[0].Quantity"
+                                   min="1"
+                                   max="1000"
+                                   class="form-control"
+                                   required
+                                   value="${Number(item.quantity) || 1}" />
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Khối lượng mỗi món (kg)</label>
+                            <input type="number"
+                                   name="Items[0].Weight"
+                                   min="0.01"
+                                   max="10000"
+                                   step="0.01"
+                                   class="form-control"
+                                   required
+                                   placeholder="Ví dụ: 2.5"
+                                   value="${item.weight ?? ''}" />
+                        </div>
+                    </div>
+
+                    <div class="order-checkbox-list mt-2">
+                        <label class="order-checkbox">
+                            <input type="checkbox"
+                                   name="Items[0].IsFragile"
+                                   value="true"
+                                   ${item.isFragile ? 'checked' : ''} />
+                            <input type="hidden"
+                                   name="Items[0].IsFragile"
+                                   value="false" />
+                            <span>Hàng dễ vỡ</span>
+                        </label>
+
+                        <label class="order-checkbox">
+                            <input type="checkbox"
+                                   name="Items[0].IsValuable"
+                                   value="true"
+                                   ${item.isValuable ? 'checked' : ''} />
+                            <input type="hidden"
+                                   name="Items[0].IsValuable"
+                                   value="false" />
+                            <span>Hàng có giá trị</span>
+                        </label>
+                    </div>`;
+
+                row.querySelector('.btn-remove').addEventListener('click', () => {
+                    row.remove();
+                    renumber();
+                    updatePrice();
+                });
+
+                row.querySelectorAll('input, select, textarea').forEach(input => {
+                    input.addEventListener('input', updatePrice);
+                    input.addEventListener('change', updatePrice);
+                });
+
+                list.appendChild(row);
+            }
+
+            // Đánh lại chỉ số Items[0], Items[1]...
+            function renumber() {
+                const rows = list.querySelectorAll('.item-row');
+
+                rows.forEach((row, index) => {
+                    row.querySelector('.item-title').textContent =
+                        `Hàng hóa ${index + 1}`;
+
+                    row.querySelectorAll('[name]').forEach(element => {
+                        element.name = element.name.replace(
+                            /Items\[\d+\]/,
+                            `Items[${index}]`
+                        );
+                    });
+
+                    row.querySelector('.btn-remove').style.display =
+                        rows.length > 1 ? '' : 'none';
+                });
+            }
+
+            // Nút thêm hàng hóa.
+            btnAddItem.addEventListener('click', () => {
+                if (list.children.length >= 20) {
+                    alert('Mỗi đơn hàng chỉ được thêm tối đa 20 dòng hàng hóa.');
+                    return;
+                }
 
                 addRow();
-
                 renumber();
-
                 updatePrice();
+            });
 
+            // Cập nhật giá khi đổi hình thức giao hàng.
+            document.querySelectorAll('input[name="DeliveryMethod"]').forEach(input => {
+                input.addEventListener('change', updatePrice);
+            });
+
+            // Tính lại khoảng cách khi địa chỉ thay đổi.
+                    senderAddressInput.addEventListener('input', () => {
+            // Địa chỉ đã được sửa thủ công thì không dùng GPS cũ nữa.
+            senderLatInput.value = '';
+            senderLonInput.value = '';
+
+            if (locationBadge) {
+                locationBadge.style.display = 'none';
             }
-        );
 
+            scheduleRouteCalculation();
+        });
 
-        /* ==========================================
-           KHI ĐỔI HÌNH THỨC GIAO
-           ========================================== */
+        senderAddressInput.addEventListener('blur', scheduleRouteCalculation);
+            receiverAddressInput.addEventListener('change', scheduleRouteCalculation);
+            receiverAddressInput.addEventListener('blur', scheduleRouteCalculation);
 
-        document.querySelectorAll(
-            'input[name="DeliveryMethod"]'
-        ).forEach(
-            function (input) {
-
-                input.addEventListener(
-                    'change',
-                    updatePrice
-                );
-
+            // Khởi tạo danh sách hàng hóa.
+            if (Array.isArray(initialItems) && initialItems.length > 0) {
+                initialItems.forEach(addRow);
+            } else {
+                addRow();
             }
-        );
 
+            renumber();
 
-        /* ==========================================
-           KHI ĐỔI KHOẢNG CÁCH
-           ========================================== */
+            // Tính lại quãng đường nếu form đã có đủ hai địa chỉ.
+            if (
+                senderAddressInput.value.trim() &&
+                receiverAddressInput.value.trim()
+            ) {
+                calculateRouteDistance();
+            }
 
-        distanceInput.addEventListener(
-            'input',
-            updatePrice
-        );
-
-
-        distanceInput.addEventListener(
-            'change',
-            updatePrice
-        );
-
-
-        /* ==========================================
-           KHỞI TẠO
-           ========================================== */
-
-        if (
-            initialItems &&
-            initialItems.length > 0
-        ) {
-
-            initialItems.forEach(
-                function (item) {
-
-                    addRow(item);
-
+            // Định vị GPS người gửi.
+            function requestUserLocation() {
+                if (!navigator.geolocation) {
+                    alert('Trình duyệt không hỗ trợ định vị.');
+                    return;
                 }
-            );
 
-        }
-        else {
-
-            addRow();
-
-        }
-
-
-        renumber();
-
-
-        updatePrice();
-
-
-        /* ==========================================
-           QUẢN LÝ VỊ TRÍ & POPUP XIN QUYỀN
-           ========================================== */
-
-        function requestUserLocation() {
-            if (!navigator.geolocation) {
-                alert('Trình duyệt của bạn không hỗ trợ định vị.');
-                return;
-            }
-
-            if (locationBadge && locationBadgeText) {
                 locationBadge.style.display = 'block';
                 locationBadgeText.textContent = 'Đang lấy vị trí GPS...';
+
+                navigator.geolocation.getCurrentPosition(
+                    async pos => {
+                        senderLatInput.value = pos.coords.latitude;
+                        senderLonInput.value = pos.coords.longitude;
+
+                        geoToast.style.display = 'none';
+
+                        locationBadgeText.textContent =
+                            `Tọa độ GPS: ${pos.coords.latitude.toFixed(5)}, ${pos.coords.longitude.toFixed(5)}`;
+
+                        // Nếu chưa nhập địa chỉ, lấy địa chỉ gần vị trí GPS.
+                        if (!senderAddressInput.value.trim()) {
+                            try {
+                                const url =
+                                    'https://nominatim.openstreetmap.org/reverse?format=jsonv2'
+                                    + `&lat=${pos.coords.latitude}`
+                                    + `&lon=${pos.coords.longitude}`;
+
+                                const response = await fetch(url, {
+                                    headers: {
+                                        'Accept': 'application/json'
+                                    }
+                                });
+
+                                if (response.ok) {
+                                    const data = await response.json();
+
+                                    if (data.display_name) {
+                                        senderAddressInput.value = data.display_name;
+                                        scheduleRouteCalculation();
+                                    }
+                                }
+                            } catch (error) {
+                                console.warn(
+                                    'Không thể đổi tọa độ thành địa chỉ:',
+                                    error
+                                );
+
+                                locationBadgeText.textContent =
+                                    'Đã lấy GPS nhưng không lấy được địa chỉ; vui lòng nhập địa chỉ gửi.';
+                            }
+                        } else {
+                            scheduleRouteCalculation();
+                        }
+                    },
+                    error => {
+                        console.warn('Geolocation error:', error);
+
+                        locationBadgeText.textContent =
+                            'Không lấy được GPS. Hãy nhập địa chỉ gửi hàng thủ công.';
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
             }
 
-            navigator.geolocation.getCurrentPosition(
-                async function (pos) {
-                    const lat = pos.coords.latitude;
-                    const lon = pos.coords.longitude;
+            document.getElementById('btnLocateAddress')
+                .addEventListener('click', requestUserLocation);
 
-                    if (senderLatInput) senderLatInput.value = lat;
-                    if (senderLonInput) senderLonInput.value = lon;
-                    if (geoToast) geoToast.style.display = 'none';
+            document.getElementById('btnGrantGeo')
+                .addEventListener('click', requestUserLocation);
 
-                    if (locationBadge && locationBadgeText) {
-                        locationBadge.style.display = 'block';
-                        locationBadgeText.textContent = `Tọa độ: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            document.getElementById('btnDismissGeo')
+                .addEventListener('click', () => {
+                    geoToast.style.display = 'none';
+                    sessionStorage.setItem('geo_consent_dismissed', 'true');
+                });
+
+            if (
+                !sessionStorage.getItem('geo_consent_dismissed') &&
+                navigator.geolocation
+            ) {
+                setTimeout(() => {
+                    if (geoToast && !senderLatInput.value) {
+                        geoToast.style.display = 'block';
                     }
+                }, 800);
+            }
 
-                    // Tự động điền địa chỉ nếu đang trống (sử dụng OpenStreetMap Nominatim miễn phí)
-                    if (senderAddressInput && !senderAddressInput.value.trim()) {
-                        try {
-                            const revRes = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-                            if (revRes.ok) {
-                                const revData = await revRes.json();
-                                if (revData && revData.display_name) {
-                                    senderAddressInput.value = revData.display_name;
-                                }
-                            }
-                        } catch (e) {
-                            console.warn('Reverse geocoding error:', e);
-                        }
-                    }
+            // Sổ địa chỉ người gửi.
+            const selectSavedAddress =
+                document.getElementById('selectSavedAddress');
 
-                    // Tính lại giá với tọa độ thực tế
-                    updatePrice();
-                },
-                function (err) {
-                    console.warn('Geolocation error:', err);
-                    if (geoToast) geoToast.style.display = 'none';
-                    if (locationBadge && locationBadgeText) {
-                        locationBadge.style.display = 'none';
-                    }
-                },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 }
-            );
-        }
+            if (selectSavedAddress) {
+                selectSavedAddress.addEventListener('change', () => {
+                    const selected =
+                        selectSavedAddress.options[selectSavedAddress.selectedIndex];
 
-        if (btnGrantGeo) {
-            btnGrantGeo.addEventListener('click', function () {
-                requestUserLocation();
+                    if (!selected || !selected.value)
+                        return;
+
+                    document.getElementById('SenderNameInput').value =
+                        selected.getAttribute('data-name') || '';
+
+                    document.getElementById('SenderPhoneInput').value =
+                        selected.getAttribute('data-phone') || '';
+
+                    senderAddressInput.value =
+                        selected.getAttribute('data-address') || '';
+
+                    scheduleRouteCalculation();
+                });
+            }
+
+            // Hiện/ẩn trường tên nhãn của sổ địa chỉ.
+            const chkSaveAddress =
+                document.getElementById('chkSaveAddress');
+
+            const divAddressTag =
+                document.getElementById('divAddressTag');
+
+            chkSaveAddress.addEventListener('change', () => {
+                divAddressTag.style.display =
+                    chkSaveAddress.checked ? 'block' : 'none';
             });
-        }
 
-        if (btnDismissGeo) {
-            btnDismissGeo.addEventListener('click', function () {
-                if (geoToast) geoToast.style.display = 'none';
-                sessionStorage.setItem('geo_consent_dismissed', 'true');
-            });
-        }
+            // Chặn gửi form nếu chưa xác định được khoảng cách.
+            // Controller vẫn tự tính lại khoảng cách ở server trước khi lưu.
+            form.addEventListener('submit', event => {
+                const distance = Number(distanceInput.value);
 
-        if (btnLocateAddress) {
-            btnLocateAddress.addEventListener('click', function () {
-                requestUserLocation();
-            });
-        }
+                if (!Number.isFinite(distance) || distance <= 0) {
+                    event.preventDefault();
 
-        // Tự động hiện popup hỏi sau 800ms nếu chưa từ chối
-        if (!sessionStorage.getItem('geo_consent_dismissed') && navigator.geolocation) {
-            setTimeout(function () {
-                if (geoToast && !senderLatInput?.value) {
-                    geoToast.style.display = 'block';
-                }
-            }, 800);
-        }
+                    setDistanceError(
+                        'Hãy nhập địa chỉ gửi và địa chỉ nhận hợp lệ, rồi chờ tính khoảng cách.'
+                    );
 
-        /* ==========================================
-           SỔ ĐỊA CHỈ NGƯỜI GỬI
-           ========================================== */
-        var selectSavedAddress = document.getElementById('selectSavedAddress');
-        if (selectSavedAddress) {
-            selectSavedAddress.addEventListener('change', function () {
-                var selected = selectSavedAddress.options[selectSavedAddress.selectedIndex];
-                if (selected && selected.value) {
-                    var name = selected.getAttribute('data-name');
-                    var phone = selected.getAttribute('data-phone');
-                    var address = selected.getAttribute('data-address');
-
-                    var nameInput = document.getElementById('SenderNameInput');
-                    var phoneInput = document.getElementById('SenderPhoneInput');
-                    var addressInput = document.getElementById('SenderAddressInput');
-
-                    if (nameInput && name) nameInput.value = name;
-                    if (phoneInput && phone) phoneInput.value = phone;
-                    if (addressInput && address) addressInput.value = address;
+                    distanceDisplay.focus();
                 }
             });
-        }
-
-        var chkSaveAddress = document.getElementById('chkSaveAddress');
-        var divAddressTag = document.getElementById('divAddressTag');
-        if (chkSaveAddress && divAddressTag) {
-            chkSaveAddress.addEventListener('change', function () {
-                divAddressTag.style.display = chkSaveAddress.checked ? 'block' : 'none';
-            });
-        }
-
-    })();
-
-</script>
+        })();
+    </script>
 }

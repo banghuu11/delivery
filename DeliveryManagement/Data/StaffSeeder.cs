@@ -1,3 +1,4 @@
+
 using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Identity;
 
@@ -72,17 +73,43 @@ namespace DeliveryManagement.Data
             }
             else
             {
-                // Ensure password matches expected demo password
+                // Đảm bảo mật khẩu tài khoản mẫu đúng cấu hình.
                 if (!await userManager.CheckPasswordAsync(user, password))
                 {
-                    var token = await userManager.GeneratePasswordResetTokenAsync(user);
-                    await userManager.ResetPasswordAsync(user, token, password);
+                    var token =
+                        await userManager.GeneratePasswordResetTokenAsync(user);
+
+                    var resetResult =
+                        await userManager.ResetPasswordAsync(
+                            user,
+                            token,
+                            password);
+
+                    if (!resetResult.Succeeded)
+                    {
+                        throw new Exception(
+                            string.Join(
+                                "; ",
+                                resetResult.Errors.Select(e => e.Description)
+                            )
+                        );
+                    }
                 }
             }
 
             if (!await userManager.IsInRoleAsync(user, role))
             {
-                await userManager.AddToRoleAsync(user, role);
+                var result = await userManager.AddToRoleAsync(user, role);
+
+                if (!result.Succeeded)
+                {
+                    throw new Exception(
+                        string.Join(
+                            "; ",
+                            result.Errors.Select(e => e.Description)
+                        )
+                    );
+                }
             }
         }
     }

@@ -1,4 +1,4 @@
-@model DeliveryManagement.Models.DeliveryOrder?
+@* @model DeliveryManagement.Models.DeliveryOrder?
 @{
     ViewData["Title"] = "Tra cứu hành trình đơn hàng";
     string searchCode = ViewBag.SearchCode as string ?? "";
@@ -156,7 +156,6 @@
                                                 <td><span class="badge bg-secondary">@(item.PackageType?.TypeName ?? "Mặc định")</span></td>
                                                 <td>@item.Quantity</td>
                                                 <td>@item.Weight kg</td>
-                                                <td>@(string.IsNullOrWhiteSpace(item.Size) ? "-" : item.Size)</td>
                                                 <td>
                                                     @if (item.IsFragile) { <span class="badge bg-warning text-dark me-1">Dễ vỡ</span> }
                                                     @if (item.IsValuable) { <span class="badge bg-danger">Giá trị cao</span> }
@@ -235,3 +234,4 @@
         </div>
     </div>
 </div>
+ *@

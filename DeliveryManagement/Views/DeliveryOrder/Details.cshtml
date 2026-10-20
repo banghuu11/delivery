@@ -1,12 +1,35 @@
 @model DeliveryManagement.Models.DeliveryOrder
+@using Microsoft.AspNetCore.Identity
 
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
+
+    var isReceptionist = User.IsInRole("ReceptionStaff")
+        || User.IsInRole("Admin");
 }
 
 <div class="container mt-4">
-    <h2 class="mb-1">Chi tiết đơn hàng</h2>
-    <p class="text-muted mb-4">Mã đơn: <strong>@Model.OrderCode</strong></p>
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+        <div>
+            <h2 class="mb-1">Chi tiết đơn hàng</h2>
+            <p class="text-muted mb-0">Mã đơn: <strong>@Model.OrderCode</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+            @if (isReceptionist)
+            {
+                <a asp-action="PrintWaybill"
+                   asp-route-id="@Model.OrderCode"
+                   target="_blank"
+                   class="btn btn-outline-dark fw-bold rounded-pill px-3 shadow-sm">
+                    <i class="bi bi-printer-fill me-1"></i>
+                    In phiếu gửi hàng
+                </a>
+            }
+            <a asp-action="Index" class="btn btn-light border rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Danh sách đơn
+            </a>
+        </div>
+    </div>
 
     <div class="card mb-4 shadow-sm border-0">
         <div class="card-body d-flex justify-content-between align-items-center bg-light rounded">
@@ -56,7 +79,6 @@
                             <div class="@(index > 1 ? "border-top pt-3 mt-3" : "")">
                                 <h6 class="fw-bold text-secondary">Hàng hóa @index</h6>
                                 <p class="mb-1"><strong>Loại đóng gói:</strong> @(item.PackageType?.TypeName ?? "Chưa phân loại")</p>
-                                <p class="mb-1"><strong>Kích thước:</strong> @item.Size</p>
                                 <p class="mb-1"><strong>Khối lượng:</strong> @item.Weight kg</p>
                                 <p class="mb-1"><strong>Số lượng:</strong> @item.Quantity</p>
                                 <p class="mb-2"><strong>Mô tả:</strong> @item.Description</p>
@@ -108,21 +130,7 @@
                     }
                 </div>
             </div>
-            <div class="card shadow-sm border-info">
-                <div class="card-header bg-info text-white fw-bold">3. Cập nhật trạng thái</div>
-                <div class="card-body">
-                    <form asp-action="UpdateStatus" method="post" class="d-flex">
-                        <input type="hidden" name="id" value="@Model.OrderCode" />
-                        <select name="newStatus" class="form-select me-2">
-                            <option value="Chưa nhận" selected="@(Model.CurrentStatus == "Chưa nhận")">Chưa nhận</option>
-                            <option value="Đã nhận - Chưa giao" selected="@(Model.CurrentStatus == "Đã nhận - Chưa giao")">Đã nhận - Chưa giao</option>
-                            <option value="Đã nhận – Đang giao" selected="@(Model.CurrentStatus == "Đã nhận – Đang giao")">Đã nhận – Đang giao</option>
-                            <option value="Đã Giao" selected="@(Model.CurrentStatus == "Đã Giao")">Đã Giao</option>
-                        </select>
-                        <button type="submit" class="btn btn-primary text-nowrap">Lưu thay đổi</button>
-                    </form>
-                </div>
-            </div>
+            
 
         </div>
     </div>

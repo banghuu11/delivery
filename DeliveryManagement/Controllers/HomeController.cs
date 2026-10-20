@@ -110,6 +110,34 @@ namespace DeliveryManagement.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> Stations()
+        {
+            var stations = await _context.MapStations
+                .Where(s => s.IsActive)
+                .ToListAsync();
+            return View(stations);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetStationsJson()
+        {
+            var stations = await _context.MapStations
+                .Where(s => s.IsActive)
+                .Select(s => new
+                {
+                    s.StationId,
+                    s.StationName,
+                    s.Address,
+                    latitude = (double)s.Latitude,
+                    longitude = (double)s.Longitude,
+                    s.IsActive
+                })
+                .ToListAsync();
+
+            return Json(new { success = true, stations });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> GetLiveConditions(double? lat, double? lon)
         {
             var calc = await _pricingService.CalculatePriceAsync("Thường", 1, 1, lat, lon);

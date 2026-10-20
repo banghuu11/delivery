@@ -1,0 +1,495 @@
+@model List<DeliveryManagement.Models.MapStation>
+@{
+    ViewData["Title"] = "Mạng Lưới Bưu Cục & Bản Đồ Điểm Gửi Hàng";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        .station-page-wrapper {
+            background-color: #f8fafc;
+            min-height: calc(100vh - 120px);
+        }
+        .full-map-card {
+            border-radius: 1.25rem;
+            border: 1px solid #e2e8f0;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.06);
+            background: #ffffff;
+        }
+        #fullStationMap {
+            height: 680px;
+            width: 100%;
+            background: #e2e8f0;
+        }
+        .stations-sidebar {
+            height: 680px;
+            display: flex;
+            flex-direction: column;
+        }
+        .stations-scrollable-list {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding-right: 6px;
+        }
+        .stations-scrollable-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .stations-scrollable-list::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 6px;
+        }
+        .stations-scrollable-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+        }
+        .stations-scrollable-list::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .city-filter-btn.active {
+            background-color: var(--orange-main);
+            color: #ffffff !important;
+            border-color: var(--orange-main);
+        }
+    </style>
+}
+
+<div class="station-page-wrapper py-4">
+    <div class="container-fluid px-lg-5">
+        <!-- HEADER & BREADCRUMB -->
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1 small">
+                        <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Trang chủ</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Bưu cục & Bản đồ</li>
+                    </ol>
+                </nav>
+                <h2 class="fw-bold text-dark mb-1">
+                    <i class="bi bi-geo-alt-fill text-orange me-2"></i>Mạng Lưới Bưu Cục Toàn Quốc
+                </h2>
+                <p class="text-muted mb-0">Tìm điểm tiếp nhận, trạm trung chuyển gần bạn nhất với khoảng cách và hướng dẫn đường đi chi tiết.</p>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="bg-white border rounded-4 px-3 py-2 shadow-sm text-center">
+                    <span class="text-muted small d-block">Tổng điểm phục vụ</span>
+                    <strong class="text-orange fs-5">@Model.Count()</strong> <span class="small text-muted">bưu cục</span>
+                </div>
+                <button type="button" class="btn btn-outline-primary rounded-pill px-3 py-2 fw-semibold shadow-sm" id="btnPageRelocateUser">
+                    <i class="bi bi-crosshair me-1"></i> Định vị vị trí của tôi
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN LAYOUT: SIDEBAR + MAP -->
+        <div class="row g-4">
+            <!-- CỘT TRÁI: TÌM KIẾM & DANH SÁCH BƯU CỤC -->
+            <div class="col-lg-4 col-md-5">
+                <div class="full-map-card p-3 stations-sidebar">
+                    <!-- Vị trí của bạn -->
+                    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 user-location-box">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="user-pulse-dot"></span>
+                                <span class="fw-bold text-dark small text-uppercase">Vị trí của bạn</span>
+                            </div>
+                            <span class="badge bg-primary-subtle text-primary small" id="pageUserGpsBadge">GPS thiết bị</span>
+                        </div>
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-geo-alt-fill text-primary fs-5 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold text-dark small" id="pageUserAddressText">Đang xác định vị trí...</div>
+                                <div class="text-muted" style="font-size: 0.75rem;" id="pageUserCoordsText">Tọa độ: --</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-light border rounded-circle p-2 text-primary shadow-sm" id="btnPageFocusUser" title="Xem vị trí của tôi">
+                                <i class="bi bi-crosshair2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="input-group mb-2 shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="pageStationSearch" class="form-control border-start-0 ps-0" placeholder="Tìm theo tên hoặc địa chỉ...">
+                        <button class="btn btn-light border" type="button" id="btnPageClearSearch" title="Xóa"><i class="bi bi-x"></i></button>
+                    </div>
+
+                    <!-- Filter khu vực nhanh -->
+                    <div class="d-flex gap-1 mb-3 overflow-auto pb-1" id="cityFilterContainer">
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap city-filter-btn active" data-city="">Tất cả</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap city-filter-btn" data-city="TP.HCM">TP.HCM</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap city-filter-btn" data-city="Hà Nội">Hà Nội</button>
+                        <button type="button" class="btn btn-sm btn-light border rounded-pill px-3 text-nowrap city-filter-btn" data-city="Đà Nẵng">Đà Nẵng</button>
+                    </div>
+
+                    <!-- Danh sách có cuộn -->
+                    <div class="stations-scrollable-list" id="pageStationListContainer">
+                        @foreach (var station in Model)
+                        {
+                            <div class="card border-0 shadow-sm rounded-4 p-3 mb-2 station-item-card"
+                                 data-station-id="@station.StationId"
+                                 data-name="@station.StationName"
+                                 data-address="@station.Address"
+                                 data-lat="@station.Latitude"
+                                 data-lon="@station.Longitude">
+                                <div class="d-flex align-items-start gap-2">
+                                    <div class="station-card-icon bg-orange-soft text-orange rounded-3 p-2 text-center mt-1 flex-shrink-0">
+                                        <i class="bi bi-box-seam-fill fs-5"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold mb-1 text-dark station-name-text">@station.StationName</h6>
+                                        <p class="text-muted small mb-2 station-address-text">
+                                            <i class="bi bi-geo-alt text-secondary me-1"></i>@station.Address
+                                        </p>
+                                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                                            <span class="badge bg-success-subtle text-success border border-success-subtle small">
+                                                <i class="bi bi-check-circle-fill me-1"></i>Đang hoạt động
+                                            </span>
+                                            <span class="badge bg-light text-secondary border station-distance-badge" style="display: none;">
+                                                <i class="bi bi-signpost-2 me-1"></i><span class="dist-val">--</span> km
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 mt-3 pt-2 border-top">
+                                    <button type="button" class="btn btn-sm btn-outline-orange flex-fill rounded-pill btn-page-focus-station">
+                                        <i class="bi bi-geo-alt-fill me-1"></i> Xem trên bản đồ
+                                    </button>
+                                    <a href="https://www.google.com/maps/dir/?api=1&destination=@station.Latitude,@station.Longitude" 
+                                       target="_blank" 
+                                       class="btn btn-sm btn-light border flex-fill rounded-pill text-dark text-nowrap">
+                                        <i class="bi bi-sign-turn-right-fill text-primary me-1"></i> Chỉ đường
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: BẢN ĐỒ LEAFLET ĐẦY ĐỦ -->
+            <div class="col-lg-8 col-md-7">
+                <div class="full-map-card position-relative">
+                    <div id="fullStationMap"></div>
+                    <!-- Controls nổi trên bản đồ -->
+                    <div class="map-floating-controls">
+                        <button type="button" class="btn btn-white btn-sm shadow-sm rounded-circle p-2 map-ctrl-btn" id="btnPageFitAll" title="Xem tất cả bưu cục">
+                            <i class="bi bi-aspect-ratio text-dark"></i>
+                        </button>
+                        <button type="button" class="btn btn-white btn-sm shadow-sm rounded-circle p-2 map-ctrl-btn" id="btnPageLocateCenter" title="Đến vị trí của tôi">
+                            <i class="bi bi-crosshair2 text-primary"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        $(document).ready(function () {
+            let currentLat = sessionStorage.getItem('user_lat') ? parseFloat(sessionStorage.getItem('user_lat')) : null;
+            let currentLon = sessionStorage.getItem('user_lon') ? parseFloat(sessionStorage.getItem('user_lon')) : null;
+            let currentUserAddress = sessionStorage.getItem('user_address') || '';
+
+            function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
+                const R = 6371;
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            let fullMap = null;
+            let userMarker = null;
+            const stationMarkers = {};
+            const allBounds = [];
+
+            function getStationIcon() {
+                return L.divIcon({
+                    className: 'custom-station-icon',
+                    html: '<div class="leaflet-station-marker"><div class="pin-body"><i class="bi bi-box-seam-fill"></i></div></div>',
+                    iconSize: [36, 46],
+                    iconAnchor: [18, 42],
+                    popupAnchor: [0, -38]
+                });
+            }
+
+            function getUserIcon() {
+                return L.divIcon({
+                    className: 'custom-user-icon',
+                    html: '<div class="leaflet-user-marker"><div class="pulse-ring"></div><div class="center-dot"><i class="bi bi-person-fill"></i></div></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                    popupAnchor: [0, -14]
+                });
+            }
+
+            const defaultCenter = [10.776889, 106.695444];
+            fullMap = L.map('fullStationMap', {
+                zoomControl: true,
+                scrollWheelZoom: true
+            }).setView(defaultCenter, 12);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(fullMap);
+
+            $('#pageStationListContainer .station-item-card').each(function () {
+                const $card = $(this);
+                const id = $card.data('station-id');
+                const name = $card.data('name');
+                const addr = $card.data('address');
+                const lat = parseFloat($card.data('lat'));
+                const lon = parseFloat($card.data('lon'));
+
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    allBounds.push([lat, lon]);
+                    const marker = L.marker([lat, lon], { icon: getStationIcon() }).addTo(fullMap);
+
+                    const popupHtml = `
+                        <div style="min-width: 230px;">
+                            <div class="d-flex align-items-center gap-1 mb-1">
+                                <span class="badge bg-orange text-white"><i class="bi bi-box-seam-fill me-1"></i> Bưu cục</span>
+                                <span class="badge bg-success-subtle text-success small">Đang hoạt động</span>
+                            </div>
+                            <h6 class="fw-bold mb-1 text-dark">${name}</h6>
+                            <p class="text-muted small mb-2"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${addr}</p>
+                            <div class="popup-dist-text small mb-2 text-primary fw-semibold" id="pagePopupDist_${id}"></div>
+                            <div class="d-flex gap-1">
+                                <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" class="btn btn-sm btn-primary rounded-pill flex-fill text-white py-1" style="font-size: 0.8rem;">
+                                    <i class="bi bi-sign-turn-right-fill me-1"></i> Chỉ đường Google Maps
+                                </a>
+                            </div>
+                        </div>`;
+                    marker.bindPopup(popupHtml);
+
+                    marker.on('click', function () {
+                        $('.station-item-card').removeClass('active');
+                        $card.addClass('active');
+                        const container = $('#pageStationListContainer');
+                        const scrollTo = $card.position().top + container.scrollTop() - container.position().top;
+                        container.animate({ scrollTop: scrollTo }, 300);
+                    });
+
+                    stationMarkers[id] = { marker, lat, lon, name, addr, $card };
+                }
+            });
+
+            if (allBounds.length > 1) {
+                fullMap.fitBounds(allBounds, { padding: [50, 50] });
+            }
+
+            function updateUserOnFullMap(lat, lon, addressName) {
+                if (!fullMap) return;
+
+                if (!userMarker) {
+                    userMarker = L.marker([lat, lon], { icon: getUserIcon(), zIndexOffset: 1000 }).addTo(fullMap);
+                } else {
+                    userMarker.setLatLng([lat, lon]);
+                }
+
+                const userPopupContent = `
+                    <div style="min-width: 200px;">
+                        <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="user-pulse-dot"></span>
+                            <strong class="text-primary">Vị trí hiện tại của bạn</strong>
+                        </div>
+                        <p class="small mb-1 text-dark">${addressName || 'Đang cập nhật địa chỉ...'}</p>
+                        <span class="text-muted" style="font-size: 0.75rem;">GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                    </div>`;
+                userMarker.bindPopup(userPopupContent);
+
+                $('#pageUserAddressText').text(addressName || `Tọa độ GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+                $('#pageUserCoordsText').text(`Kinh độ: ${lon.toFixed(5)} | Vĩ độ: ${lat.toFixed(5)}`);
+                $('#pageUserGpsBadge').removeClass('bg-secondary-subtle text-secondary').addClass('bg-primary-subtle text-primary').text('GPS Đã kích hoạt');
+
+                const cardsArray = [];
+                $('#pageStationListContainer .station-item-card').each(function () {
+                    const $card = $(this);
+                    const id = $card.data('station-id');
+                    const stLat = parseFloat($card.data('lat'));
+                    const stLon = parseFloat($card.data('lon'));
+
+                    if (!isNaN(stLat) && !isNaN(stLon)) {
+                        const dist = calculateHaversineDistanceKm(lat, lon, stLat, stLon);
+                        $card.data('dist', dist);
+                        $card.find('.station-distance-badge').show().find('.dist-val').text(dist.toFixed(1));
+                        $(`#pagePopupDist_${id}`).html(`<i class="bi bi-signpost-2 me-1"></i> Cách bạn: <strong>${dist.toFixed(1)} km</strong>`);
+                        cardsArray.push({ element: $card, dist: dist });
+                    }
+                });
+
+                cardsArray.sort((a, b) => a.dist - b.dist);
+                const $container = $('#pageStationListContainer');
+                $.each(cardsArray, function (i, item) {
+                    $container.append(item.element);
+                });
+            }
+
+            function reverseGeocode(lat, lon, panMapAfter) {
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        let fullDisplay = '';
+                        if (data && data.address) {
+                            const addr = data.address;
+                            const road = addr.road || '';
+                            const quarter = addr.quarter || addr.suburb || '';
+                            const district = addr.district || addr.city_district || addr.suburb || '';
+                            const city = addr.city || addr.state || 'Việt Nam';
+                            fullDisplay = [road, quarter, district, city].filter(Boolean).join(', ') || data.display_name;
+                        } else {
+                            fullDisplay = `Tọa độ GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                        }
+
+                        currentUserAddress = fullDisplay;
+                        sessionStorage.setItem('user_address', fullDisplay);
+                        updateUserOnFullMap(lat, lon, fullDisplay);
+
+                        if (panMapAfter && fullMap) {
+                            fullMap.flyTo([lat, lon], 14, { duration: 1.2 });
+                        }
+                    })
+                    .catch(() => {
+                        const fallbackText = `GPS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                        updateUserOnFullMap(lat, lon, fallbackText);
+                    });
+            }
+
+            function requestUserLocation(panMapAfter) {
+                if (!navigator.geolocation) {
+                    alert('Trình duyệt của bạn không hỗ trợ định vị.');
+                    return;
+                }
+
+                $('#pageUserAddressText').text('Đang lấy tọa độ GPS từ thiết bị...');
+
+                navigator.geolocation.getCurrentPosition(
+                    function (pos) {
+                        currentLat = pos.coords.latitude;
+                        currentLon = pos.coords.longitude;
+                        sessionStorage.setItem('user_lat', currentLat);
+                        sessionStorage.setItem('user_lon', currentLon);
+                        reverseGeocode(currentLat, currentLon, panMapAfter);
+                    },
+                    function (err) {
+                        console.warn('Geolocation error:', err);
+                        $('#pageUserAddressText').text('Không thể lấy vị trí GPS từ thiết bị.');
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
+                );
+            }
+
+            // Events
+            $(document).on('click', '#pageStationListContainer .station-item-card', function (e) {
+                if ($(e.target).closest('a').length) return;
+                const $card = $(this);
+                const id = $card.data('station-id');
+                const st = stationMarkers[id];
+                if (st && fullMap) {
+                    $('.station-item-card').removeClass('active');
+                    $card.addClass('active');
+                    fullMap.flyTo([st.lat, st.lon], 15, { duration: 1.2 });
+                    st.marker.openPopup();
+                }
+            });
+
+            $(document).on('click', '.btn-page-focus-station', function (e) {
+                e.stopPropagation();
+                const $card = $(this).closest('.station-item-card');
+                const id = $card.data('station-id');
+                const st = stationMarkers[id];
+                if (st && fullMap) {
+                    $('.station-item-card').removeClass('active');
+                    $card.addClass('active');
+                    fullMap.flyTo([st.lat, st.lon], 15, { duration: 1.2 });
+                    st.marker.openPopup();
+                }
+            });
+
+            $('#btnPageFitAll').click(function () {
+                if (!fullMap) return;
+                const bounds = [...allBounds];
+                if (currentLat && currentLon) {
+                    bounds.push([currentLat, currentLon]);
+                }
+                if (bounds.length > 0) {
+                    fullMap.fitBounds(bounds, { padding: [50, 50] });
+                }
+            });
+
+            $('#btnPageFocusUser, #btnPageLocateCenter').click(function () {
+                if (currentLat && currentLon && fullMap) {
+                    fullMap.flyTo([currentLat, currentLon], 15, { duration: 1.2 });
+                    if (userMarker) userMarker.openPopup();
+                } else {
+                    requestUserLocation(true);
+                }
+            });
+
+            $('#btnPageRelocateUser').click(function () {
+                requestUserLocation(true);
+            });
+
+            // Lọc theo từ khóa
+            function applyFilter() {
+                const keyword = $('#pageStationSearch').val().toLowerCase().trim();
+                const selectedCity = $('.city-filter-btn.active').data('city') ? $('.city-filter-btn.active').data('city').toLowerCase().trim() : '';
+
+                $('#pageStationListContainer .station-item-card').each(function () {
+                    const $card = $(this);
+                    const name = ($card.data('name') || '').toLowerCase();
+                    const addr = ($card.data('address') || '').toLowerCase();
+                    const id = $card.data('station-id');
+
+                    const matchKeyword = !keyword || name.includes(keyword) || addr.includes(keyword);
+                    const matchCity = !selectedCity || addr.includes(selectedCity);
+
+                    if (matchKeyword && matchCity) {
+                        $card.show();
+                        if (stationMarkers[id] && fullMap && !fullMap.hasLayer(stationMarkers[id].marker)) {
+                            stationMarkers[id].marker.addTo(fullMap);
+                        }
+                    } else {
+                        $card.hide();
+                        if (stationMarkers[id] && fullMap && fullMap.hasLayer(stationMarkers[id].marker)) {
+                            fullMap.removeLayer(stationMarkers[id].marker);
+                        }
+                    }
+                });
+            }
+
+            $('#pageStationSearch').on('input', applyFilter);
+            $('#btnPageClearSearch').click(function () {
+                $('#pageStationSearch').val('');
+                applyFilter();
+            });
+
+            $('.city-filter-btn').click(function () {
+                $('.city-filter-btn').removeClass('active');
+                $(this).addClass('active');
+                applyFilter();
+            });
+
+            // Khởi tạo vị trí
+            if (currentLat && currentLon) {
+                if (currentUserAddress) {
+                    updateUserOnFullMap(currentLat, currentLon, currentUserAddress);
+                } else {
+                    reverseGeocode(currentLat, currentLon, false);
+                }
+            } else {
+                $('#pageUserAddressText').text('Chưa có vị trí GPS. Nhấn "Định vị vị trí của tôi" để kích hoạt.');
+                requestUserLocation(false);
+            }
+        });
+    </script>
+}
