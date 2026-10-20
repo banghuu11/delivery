@@ -289,7 +289,7 @@
                                     <strong>@(string.IsNullOrWhiteSpace(item.Description) ? "Bưu phẩm / Bưu kiện" : item.Description)</strong>
                                 </td>
                                 <td class="text-center">@(item.PackageType?.TypeName ?? "Gói tiêu chuẩn")</td>
-                                <td class="text-center font-monospace small">@item.Size</td>
+                                <td class="text-center font-monospace small">@item.Description</td>
                                 <td class="text-center fw-bold">@item.Quantity</td>
                                 <td class="text-center font-monospace">@item.Weight.ToString("0.##") kg</td>
                                 <td class="text-center">

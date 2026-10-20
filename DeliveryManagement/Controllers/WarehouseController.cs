@@ -542,10 +542,12 @@ namespace DeliveryManagement.Controllers
 
             // Kho chỉ đưa đơn từ Chưa nhận sang sẵn sàng giao.
             bool validTransition =
-                order.CurrentStatus == "Chưa nhận" &&
-                newStatus == ReadyStatus;
+    order.CurrentStatus == "Chưa nhận" &&
+    newStatus == ReadyStatus;
 
             if (!validTransition)
+
+                if (!validTransition)
             {
                 TempData["ErrorMessage"] =
                     "Nhân viên kho chỉ được chuyển đơn từ " +

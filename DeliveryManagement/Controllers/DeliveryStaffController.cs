@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DeliveryManagement.Data;
+using DeliveryManagement.Services;
 using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
@@ -19,7 +20,8 @@ namespace DeliveryManagement.Controllers
     {
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IWebHostEnvironment _environment;
+        private readonly IWebHostEnvironment _environment; 
+        private readonly IPaymentService _paymentService;
 
         private const string ReadyStatus = "Đã nhận - Chưa giao";
         private const string DeliveringStatus = "Đã nhận – Đang giao";
@@ -28,18 +30,21 @@ namespace DeliveryManagement.Controllers
         private const long MaxProofSize = 2 * 1024 * 1024;
 
         public DeliveryStaffController(
-            ApplicationDbContext context,
-            UserManager<ApplicationUser> userManager,
-            IWebHostEnvironment environment)
+    ApplicationDbContext context,
+    UserManager<ApplicationUser> userManager,
+    IWebHostEnvironment environment,
+    IPaymentService paymentService)
         {
             _context = context;
             _userManager = userManager;
             _environment = environment;
+            _paymentService = paymentService;
         }
 
         // ==========================================
         // DANH SÁCH ĐƠN CHỜ NHẬN VÀ ĐƠN CỦA TÔI
         // ==========================================
+
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -50,18 +55,16 @@ namespace DeliveryManagement.Controllers
                 return Challenge();
             }
 
-            // Chỉ đơn giao thường chưa có người phụ trách
-            // mới được shipper tự nhận.
+
             var availableOrders = await _context.DeliveryOrders
                 .Include(o => o.OrderItems)
                 .Where(o =>
-                    o.DeliveryMethod == "Thường" &&
                     o.CurrentStatus == ReadyStatus &&
                     o.DeliveryStaffId == null)
                 .OrderBy(o => o.CreatedAt)
                 .ToListAsync();
 
-            // Hiển thị các đơn được giao cho tài khoản hiện tại.
+
             var myOrders = await _context.DeliveryOrders
                 .Include(o => o.OrderItems)
                 .Where(o =>
@@ -74,6 +77,7 @@ namespace DeliveryManagement.Controllers
 
             return View(availableOrders);
         }
+
 
         // ==========================================
         // SHIPPER TỰ NHẬN ĐƠN GIAO THƯỜNG
@@ -97,14 +101,15 @@ namespace DeliveryManagement.Controllers
 
             // Cập nhật có điều kiện để chỉ một shipper
             // có thể nhận thành công cùng một đơn.
+
             var affectedRows = await _context.DeliveryOrders
                 .Where(o =>
                     o.OrderCode == id &&
-                    o.DeliveryMethod == "Thường" &&
                     o.CurrentStatus == ReadyStatus &&
                     o.DeliveryStaffId == null)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(o => o.DeliveryStaffId, user.Id));
+
 
             if (affectedRows != 1)
             {
@@ -304,15 +309,26 @@ namespace DeliveryManagement.Controllers
                     await _context.Database.BeginTransactionAsync();
 
                 var affectedRows = await _context.DeliveryOrders
-                    .Where(o =>
-                        o.OrderCode == id &&
-                        o.DeliveryStaffId == user.Id &&
-                        o.CurrentStatus == DeliveringStatus)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(o => o.CurrentStatus, DeliveredStatus)
-                        .SetProperty(o => o.DeliveryResult, "Giao thành công")
-                        .SetProperty(o => o.ProofImage, relativePath)
-                        .SetProperty(o => o.DeliveryNote, deliveryNote));
+    .Where(o =>
+        o.OrderCode == id &&
+        o.DeliveryStaffId == user.Id &&
+        o.CurrentStatus == DeliveringStatus)
+    .ExecuteUpdateAsync(setters => setters
+        .SetProperty(o => o.CurrentStatus, DeliveredStatus)
+        .SetProperty(o => o.DeliveryResult, "Giao thành công")
+        .SetProperty(o => o.ProofImage, relativePath)
+        .SetProperty(o => o.DeliveryNote, deliveryNote)
+        //.SetProperty(
+        //    o => o.PaymentStatus,
+        //    o => o.PaymentMethod == "COD"
+        //        ? "Đã thanh toán"
+        //        : o.PaymentStatus)
+        //.SetProperty(
+        //    o => o.PaymentTime,
+        //    o => o.PaymentMethod == "COD"
+        //        ? DateTime.Now
+        //        : o.PaymentTime)
+        );
 
                 if (affectedRows != 1)
                 {
@@ -347,6 +363,7 @@ namespace DeliveryManagement.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
+            await _paymentService.CollectCodAsync(id);
 
             TempData["SuccessMessage"] =
                 $"Đã ghi nhận giao hàng thành công cho đơn {id}.";

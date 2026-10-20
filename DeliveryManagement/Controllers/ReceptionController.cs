@@ -174,12 +174,14 @@ namespace DeliveryManagement.Controllers
             // =========================
             // THÔNG TIN TIẾP NHẬN
             // =========================
-
             order.ReceivedBy = user.Id;
             order.ReceivedAt = DateTime.Now;
             order.ReceptionNote = model.ReceptionNote;
 
+            order.CurrentStatus = "Đã nhận - Chưa giao";
+
             await _context.SaveChangesAsync();
+
 
             TempData["SuccessMessage"] =
                 $"Đã ghi nhận thông tin đơn {order.OrderCode}.";

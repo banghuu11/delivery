@@ -14,7 +14,7 @@
     <div class="mb-4">
         <h2 class="mb-1">Quản lý đơn giao hàng</h2>
         <p class="text-muted mb-0">
-            Nhận đơn giao thường và cập nhật kết quả giao hàng.
+            Shipper tự nhận đơn Giao Nhanh hoặc Giao Thường và cập nhật kết quả giao hàng.
         </p>
     </div>
 
@@ -35,7 +35,7 @@
     <!-- ĐƠN GIAO THƯỜNG CHỜ NHẬN -->
     <section class="mb-5">
 
-        <h4 class="mb-3">Đơn giao thường chờ nhận</h4>
+        <h4 class="mb-3">Đơn hàng chờ nhận</h4>
 
         <p class="text-muted">
             Chọn đơn phù hợp để nhận giao. Mỗi đơn chỉ có một
@@ -45,7 +45,7 @@
         @if (Model == null || !Model.Any())
         {
             <div class="alert alert-light border">
-                Hiện không có đơn giao thường nào đang chờ nhận.
+                Hiện không có đơn hàng nào đang chờ nhận.
             </div>
         }
         else
@@ -63,8 +63,8 @@
                                         <h5 class="mb-1">
                                             Đơn @order.OrderCode
                                         </h5>
-                                        <span class="badge bg-secondary">
-                                            Giao thường
+                                        <span class="badge @(order.DeliveryMethod == "Nhanh" ? "bg-danger" : "bg-secondary")">
+                                            @(order.DeliveryMethod == "Nhanh" ? "Giao nhanh" : "Giao thường")
                                         </span>
                                     </div>
 
