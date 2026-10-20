@@ -184,62 +184,8 @@
                                 </a>
                             </li>
 
-                            <!-- DÀNH CHO ADMIN KHI Ở TRANG USER -->
-                            @if (User.IsInRole("Admin"))
-                            {
-                                <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-orange fw-bold text-nowrap" asp-controller="Admin" asp-action="Index">
-                                        <i class="bi bi-speedometer2 me-1"></i> Vào Trang Quản Trị
-                                    </a>
-                                </li>
-                            }
-
-                            <!-- DÀNH CHO TIẾP NHẬN -->
-                            @if (User.IsInRole("ReceptionStaff"))
-                            {
-                                <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold text-nowrap" asp-controller="Reception" asp-action="Index">
-                                        <i class="bi bi-inboxes me-1"></i> Tiếp nhận đơn
-                                    </a>
-                                </li>
-                            }
-
-                            <!-- DÀNH CHO NHÂN VIÊN KHO -->
-                            @if (User.IsInRole("WarehouseStaff"))
-                            {
-                                <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold text-nowrap" asp-controller="Warehouse" asp-action="Index">
-                                        <i class="bi bi-building me-1"></i> Quản lý kho
-                                    </a>
-                                </li>
-                            }
-                            <!-- DÀNH CHO NHÂN VIÊN GIAO HÀNG -->
-                            @if (User.IsInRole("DeliveryStaff"))
-                            {
-                                <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold text-nowrap
-                          @(currentController == "DeliveryStaff"
-                                                           ? "active text-orange" : "")"
-                               asp-controller="DeliveryStaff"
-                               asp-action="Index">
-                                <i class="bi bi-truck me-1"></i> Đơn giao hàng
-                            </a>
-                        </li>
-                                                }
-                            <!-- DÀNH CHO KHÁCH HÀNG -->
-                            @if (User.IsInRole("Customer"))
-                            {
-                                <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold text-nowrap @(currentController == "DeliveryOrder" ? "active text-orange" : "")" asp-controller="DeliveryOrder" asp-action="Index">
-                                        <i class="bi bi-box-seam me-1"></i> Đơn của tôi
-                                    </a>
-                                </li>
-                                <li class="nav-item ms-lg-2">
-                                    <a class="nav-link text-primary fw-bold text-nowrap @(currentController == "Sender" ? "active text-orange" : "")" asp-controller="Sender" asp-action="Index">
-                                        <i class="bi bi-person-vcard me-1"></i> Thông tin người gửi
-                                    </a>
-                                </li>
-                            }
+                            
+                            
                         </ul>
                     }
 
@@ -301,7 +247,6 @@
                                     </div>
                                     <div class="text-start d-none d-sm-block">
                                         <div class="user-name">@(string.IsNullOrWhiteSpace(currentUser?.FullName) ? User.Identity?.Name : currentUser.FullName)</div>
-                                        <small class="user-role-badge badge-@primaryRole.ToLower()">@primaryRole</small>
                                     </div>
                                 </a>
 
@@ -325,7 +270,7 @@
                                     }
                                     else
                                     {
-                                        <li><a class="dropdown-item py-2" asp-controller="Sender" asp-action="Index"><i class="bi bi-person-vcard me-2"></i>Thông tin tài khoản/người gửi</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Sender" asp-action="Index"><i class="bi bi-person-vcard me-2"></i>Thông tin tài khoản</a></li>
                                     }
 
                                     <li><hr class="dropdown-divider"></li>

@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -17,15 +16,17 @@ namespace DeliveryManagement.Controllers
     [Authorize(Roles = "DeliveryStaff")]
     public class DeliveryStaffController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly UserManager<ApplicationUser> _userManager;
-        private readonly IWebHostEnvironment _environment;
-
         private const string ReadyStatus = "Đã nhận - Chưa giao";
         private const string DeliveringStatus = "Đã nhận – Đang giao";
         private const string DeliveredStatus = "Đã Giao";
         private const string FailedStatus = "Giao thất bại - Chờ xử lý";
+        private const string CanceledStatus = "Đã hủy";
+
         private const long MaxProofSize = 2 * 1024 * 1024;
+
+        private readonly ApplicationDbContext _context;
+        private readonly UserManager<ApplicationUser> _userManager;
+        private readonly IWebHostEnvironment _environment;
 
         public DeliveryStaffController(
             ApplicationDbContext context,
@@ -38,8 +39,10 @@ namespace DeliveryManagement.Controllers
         }
 
         // ==========================================
-        // DANH SÁCH ĐƠN CHỜ NHẬN VÀ ĐƠN CỦA TÔI
+        // DANH SÁCH ĐƠN ĐƯỢC PHÂN CÔNG CHO SHIPPER
+        // Chỉ hiển thị các đơn được gán cho tài khoản hiện tại.
         // ==========================================
+
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -50,37 +53,28 @@ namespace DeliveryManagement.Controllers
                 return Challenge();
             }
 
-            // Chỉ đơn giao thường chưa có người phụ trách
-            // mới được shipper tự nhận.
-            var availableOrders = await _context.DeliveryOrders
-                .Include(o => o.OrderItems)
-                .Where(o =>
-                    o.DeliveryMethod == "Thường" &&
-                    o.CurrentStatus == ReadyStatus &&
-                    o.DeliveryStaffId == null)
-                .OrderBy(o => o.CreatedAt)
-                .ToListAsync();
-
-            // Hiển thị các đơn được giao cho tài khoản hiện tại.
             var myOrders = await _context.DeliveryOrders
+                .AsNoTracking()
                 .Include(o => o.OrderItems)
                 .Where(o =>
                     o.DeliveryStaffId == user.Id &&
-                    o.CurrentStatus != "Đã hủy")
+                    o.CurrentStatus != CanceledStatus)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
+            // Truyền danh sách trực tiếp cho View.
+            // View có thể dùng Model hoặc ViewBag.MyOrders.
             ViewBag.MyOrders = myOrders;
 
-            return View(availableOrders);
+            return View(myOrders);
         }
 
         // ==========================================
-        // SHIPPER TỰ NHẬN ĐƠN GIAO THƯỜNG
+        // CHI TIẾT ĐƠN GIAO HÀNG
+        // Chỉ shipper được phân công mới được xem.
         // ==========================================
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AcceptOrder(string id)
+        [HttpGet]
+        public async Task<IActionResult> Details(string id)
         {
             var user = await _userManager.GetUserAsync(User);
 
@@ -91,38 +85,46 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
-                return RedirectToAction(nameof(Index));
+                return NotFound();
             }
 
-            // Cập nhật có điều kiện để chỉ một shipper
-            // có thể nhận thành công cùng một đơn.
-            var affectedRows = await _context.DeliveryOrders
-                .Where(o =>
+            var order = await _context.DeliveryOrders
+                .AsNoTracking()
+                .Include(o => o.OrderItems)
+                    .ThenInclude(i => i.PackageType)
+                .FirstOrDefaultAsync(o =>
                     o.OrderCode == id &&
-                    o.DeliveryMethod == "Thường" &&
-                    o.CurrentStatus == ReadyStatus &&
-                    o.DeliveryStaffId == null)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(o => o.DeliveryStaffId, user.Id));
+                    o.DeliveryStaffId == user.Id);
 
-            if (affectedRows != 1)
+            // Không cho shipper xem đơn được phân công cho người khác.
+            if (order == null)
             {
-                TempData["ErrorMessage"] =
-                    "Đơn này không còn khả dụng hoặc đã được shipper khác nhận.";
-
-                return RedirectToAction(nameof(Index));
+                return NotFound();
             }
 
-            TempData["SuccessMessage"] =
-                $"Bạn đã nhận đơn {id} thành công.";
+            return View(order);
+        }
+
+        // ==========================================
+        // ACTION CŨ: SHIPPER TỰ NHẬN ĐƠN
+        // Không cho phép tự nhận; kho phải phân công.
+        // ==========================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult AcceptOrder(string id)
+        {
+            TempData["ErrorMessage"] =
+                "Shipper không được tự nhận đơn. Vui lòng chờ kho phân công đơn hàng.";
 
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
-        // BẮT ĐẦU GIAO HÀNG
+        // ACTION CŨ: BẮT ĐẦU GIAO HÀNG
+        // Kho đã chuyển trạng thái khi phân công.
         // ==========================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> StartDelivery(string id)
@@ -136,45 +138,37 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                TempData["ErrorMessage"] =
+                    "Không tìm thấy mã đơn hàng.";
+
                 return RedirectToAction(nameof(Index));
             }
 
-            var affectedRows = await _context.DeliveryOrders
-                .Where(o =>
+            var orderExists = await _context.DeliveryOrders
+                .AnyAsync(o =>
                     o.OrderCode == id &&
                     o.DeliveryStaffId == user.Id &&
-                    o.CurrentStatus == ReadyStatus)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(o => o.CurrentStatus, DeliveringStatus));
+                    o.CurrentStatus == DeliveringStatus);
 
-            if (affectedRows != 1)
+            if (!orderExists)
             {
                 TempData["ErrorMessage"] =
-                    "Không thể bắt đầu giao. Hãy kiểm tra đơn hàng của bạn.";
+                    "Đơn không thuộc quyền xử lý của bạn hoặc chưa được kho phân công.";
 
                 return RedirectToAction(nameof(Index));
             }
 
-            _context.OrderStatusHistories.Add(new OrderStatusHistory
-            {
-                OrderCode = id,
-                Status = DeliveringStatus,
-                ChangedBy = user.Id,
-                ChangedAt = DateTime.Now
-            });
-
-            await _context.SaveChangesAsync();
-
             TempData["SuccessMessage"] =
-                $"Đơn {id} đã chuyển sang trạng thái đang giao.";
+                $"Đơn {id} đã ở trạng thái đang giao. Bạn có thể cập nhật kết quả giao hàng.";
 
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
         // XÁC NHẬN GIAO HÀNG THÀNH CÔNG KÈM ẢNH
+        // Chỉ shipper được phân công và đơn đang giao mới được xác nhận.
         // ==========================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(3 * 1024 * 1024)]
@@ -192,12 +186,12 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                TempData["ErrorMessage"] =
+                    "Không tìm thấy mã đơn hàng.";
+
                 return RedirectToAction(nameof(Index));
             }
 
-            // Chỉ shipper đang phụ trách và đang giao
-            // mới được xác nhận kết quả giao hàng.
             var orderExists = await _context.DeliveryOrders
                 .AnyAsync(o =>
                     o.OrderCode == id &&
@@ -207,7 +201,7 @@ namespace DeliveryManagement.Controllers
             if (!orderExists)
             {
                 TempData["ErrorMessage"] =
-                    "Đơn hàng không tồn tại hoặc không thuộc quyền xử lý của bạn.";
+                    "Đơn không tồn tại, không thuộc quyền xử lý của bạn hoặc không ở trạng thái đang giao.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -231,10 +225,8 @@ namespace DeliveryManagement.Controllers
 
             var extension = Path.GetExtension(proofImage.FileName);
 
-            if ((!extension.Equals(
-                    ".jpg", StringComparison.OrdinalIgnoreCase) &&
-                 !extension.Equals(
-                    ".jpeg", StringComparison.OrdinalIgnoreCase)) ||
+            if ((!extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) &&
+                 !extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase)) ||
                 !string.Equals(
                     proofImage.ContentType,
                     "image/jpeg",
@@ -246,10 +238,11 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Kiểm tra chữ ký JPEG cơ bản của file.
+            // Kiểm tra chữ ký JPEG cơ bản trước khi lưu file.
             await using (var input = proofImage.OpenReadStream())
             {
                 var signature = new byte[3];
+
                 var bytesRead = await input.ReadAsync(
                     signature, 0, signature.Length);
 
@@ -280,11 +273,14 @@ namespace DeliveryManagement.Controllers
             if (string.IsNullOrWhiteSpace(webRoot))
             {
                 webRoot = Path.Combine(
-                    _environment.ContentRootPath, "wwwroot");
+                    _environment.ContentRootPath,
+                    "wwwroot");
             }
 
             var uploadsFolder = Path.Combine(
-                webRoot, "uploads", "delivery-proofs");
+                webRoot,
+                "uploads",
+                "delivery-proofs");
 
             Directory.CreateDirectory(uploadsFolder);
 
@@ -292,31 +288,47 @@ namespace DeliveryManagement.Controllers
             var physicalPath = Path.Combine(uploadsFolder, fileName);
             var relativePath = $"/uploads/delivery-proofs/{fileName}";
 
-            await using (var output = new FileStream(
-                physicalPath, FileMode.CreateNew, FileAccess.Write))
-            {
-                await proofImage.CopyToAsync(output);
-            }
-
             try
             {
+                // Lưu ảnh minh chứng.
+                await using (var output = new FileStream(
+                    physicalPath,
+                    FileMode.CreateNew,
+                    FileAccess.Write,
+                    FileShare.None))
+                {
+                    await proofImage.CopyToAsync(output);
+                }
+
                 await using var transaction =
                     await _context.Database.BeginTransactionAsync();
 
+                // Cập nhật có điều kiện lần cuối:
+                // phải đúng shipper và đơn vẫn đang giao.
                 var affectedRows = await _context.DeliveryOrders
                     .Where(o =>
                         o.OrderCode == id &&
                         o.DeliveryStaffId == user.Id &&
                         o.CurrentStatus == DeliveringStatus)
                     .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(o => o.CurrentStatus, DeliveredStatus)
-                        .SetProperty(o => o.DeliveryResult, "Giao thành công")
-                        .SetProperty(o => o.ProofImage, relativePath)
-                        .SetProperty(o => o.DeliveryNote, deliveryNote));
+                        .SetProperty(
+                            o => o.CurrentStatus,
+                            DeliveredStatus)
+                        .SetProperty(
+                            o => o.DeliveryResult,
+                            "Giao thành công")
+                        .SetProperty(
+                            o => o.ProofImage,
+                            relativePath)
+                        .SetProperty(
+                            o => o.DeliveryNote,
+                            deliveryNote));
 
                 if (affectedRows != 1)
                 {
                     await transaction.RollbackAsync();
+
+                    TryDeleteFile(physicalPath);
 
                     TempData["ErrorMessage"] =
                         "Không thể xác nhận. Trạng thái đơn hàng đã thay đổi.";
@@ -324,23 +336,21 @@ namespace DeliveryManagement.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                _context.OrderStatusHistories.Add(new OrderStatusHistory
-                {
-                    OrderCode = id,
-                    Status = DeliveredStatus,
-                    ChangedBy = user.Id,
-                    ChangedAt = DateTime.Now
-                });
+                _context.OrderStatusHistories.Add(
+                    new OrderStatusHistory
+                    {
+                        OrderCode = id,
+                        Status = DeliveredStatus,
+                        ChangedBy = user.Id,
+                        ChangedAt = DateTime.Now
+                    });
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
             catch
             {
-                if (System.IO.File.Exists(physicalPath))
-                {
-                    System.IO.File.Delete(physicalPath);
-                }
+                TryDeleteFile(physicalPath);
 
                 TempData["ErrorMessage"] =
                     "Có lỗi khi lưu kết quả giao hàng. Vui lòng thử lại.";
@@ -356,7 +366,9 @@ namespace DeliveryManagement.Controllers
 
         // ==========================================
         // GHI NHẬN GIAO HÀNG THẤT BẠI
+        // Sau khi thất bại, kho xử lý giao lại hoặc hoàn hàng.
         // ==========================================
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FailDelivery(
@@ -373,7 +385,9 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                TempData["ErrorMessage"] =
+                    "Không tìm thấy mã đơn hàng.";
+
                 return RedirectToAction(nameof(Index));
             }
 
@@ -412,7 +426,6 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            // Chỉ cho phép shipper được phân công xử lý đơn đang giao.
             var order = await _context.DeliveryOrders
                 .AsNoTracking()
                 .FirstOrDefaultAsync(o =>
@@ -428,14 +441,14 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var failureDetail = $"Lý do giao thất bại: {failureReason}";
+            var failureDetail =
+                $"Lý do giao thất bại: {failureReason}";
 
             if (!string.IsNullOrWhiteSpace(deliveryNote))
             {
                 failureDetail += $". Ghi chú: {deliveryNote}";
             }
 
-            // Giữ lại ghi chú cũ (nếu có) rồi nối thêm lý do thất bại.
             var previousNote = order.DeliveryNote?.Trim();
 
             var noteToSave = string.IsNullOrWhiteSpace(previousNote)
@@ -447,16 +460,21 @@ namespace DeliveryManagement.Controllers
 
             try
             {
-                // Cập nhật có điều kiện để tránh xử lý đơn hai lần.
                 var affectedRows = await _context.DeliveryOrders
                     .Where(o =>
                         o.OrderCode == id &&
                         o.DeliveryStaffId == user.Id &&
                         o.CurrentStatus == DeliveringStatus)
                     .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(o => o.CurrentStatus, FailedStatus)
-                        .SetProperty(o => o.DeliveryResult, "Giao thất bại")
-                        .SetProperty(o => o.DeliveryNote, noteToSave));
+                        .SetProperty(
+                            o => o.CurrentStatus,
+                            FailedStatus)
+                        .SetProperty(
+                            o => o.DeliveryResult,
+                            "Giao thất bại")
+                        .SetProperty(
+                            o => o.DeliveryNote,
+                            noteToSave));
 
                 if (affectedRows != 1)
                 {
@@ -468,13 +486,14 @@ namespace DeliveryManagement.Controllers
                     return RedirectToAction(nameof(Index));
                 }
 
-                _context.OrderStatusHistories.Add(new OrderStatusHistory
-                {
-                    OrderCode = order.OrderCode,
-                    Status = FailedStatus,
-                    ChangedBy = user.Id,
-                    ChangedAt = DateTime.Now
-                });
+                _context.OrderStatusHistories.Add(
+                    new OrderStatusHistory
+                    {
+                        OrderCode = order.OrderCode,
+                        Status = FailedStatus,
+                        ChangedBy = user.Id,
+                        ChangedAt = DateTime.Now
+                    });
 
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
@@ -490,9 +509,28 @@ namespace DeliveryManagement.Controllers
             }
 
             TempData["SuccessMessage"] =
-                $"Đã ghi nhận giao thất bại cho đơn {order.OrderCode}. Đơn đang chờ xử lý tiếp.";
+                $"Đã ghi nhận giao thất bại cho đơn {order.OrderCode}. Đơn đang chờ kho xử lý tiếp.";
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // ==========================================
+        // XÓA FILE MINH CHỨNG NẾU CẬP NHẬT CSDL THẤT BẠI
+        // ==========================================
+
+        private static void TryDeleteFile(string physicalPath)
+        {
+            try
+            {
+                if (System.IO.File.Exists(physicalPath))
+                {
+                    System.IO.File.Delete(physicalPath);
+                }
+            }
+            catch
+            {
+                // Giữ nguyên lỗi chính nếu xóa file thất bại.
+            }
         }
     }
 }
