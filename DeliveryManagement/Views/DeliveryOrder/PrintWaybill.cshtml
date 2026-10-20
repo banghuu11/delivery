@@ -375,6 +375,12 @@
                                 <i class="bi bi-check2-circle me-1"></i> ĐÃ THANH TOÁN
                             </span>
                         }
+                        else if (Model.PaymentMethod == DeliveryManagement.Models.PaymentConstants.Online)
+                        {
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1 fw-bold">
+                                <i class="bi bi-hourglass-split me-1"></i> CHỜ THANH TOÁN ONLINE
+                            </span>
+                        }
                         else
                         {
                             <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fw-bold">
