@@ -1,0 +1,186 @@
+@model List<DeliveryManagement.Models.MapStation>
+@{
+    ViewData["Title"] = "Quản lý Bưu cục & Trạm Trung Chuyển";
+    string search = ViewBag.Search as string ?? "";
+    int totalActive = ViewBag.TotalActive ?? 0;
+    int totalInactive = ViewBag.TotalInactive ?? 0;
+}
+
+<div class="order-create-page">
+    <div class="order-create-header d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h1><i class="bi bi-geo-alt-fill text-orange me-2"></i>Quản lý Bưu cục & Trạm Trung Chuyển</h1>
+            <p>Quản lý các điểm tiếp nhận, kho phân loại và tọa độ GPS hiển thị trên bản đồ số</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a asp-controller="Home" asp-action="Stations" target="_blank" class="btn btn-outline-secondary d-inline-flex align-items-center">
+                <i class="bi bi-map me-1"></i> Xem giao diện khách hàng
+            </a>
+            <a asp-action="Create" class="btn-submit-order d-inline-flex align-items-center text-decoration-none">
+                <i class="bi bi-plus-lg me-1"></i> Thêm bưu cục mới
+            </a>
+        </div>
+    </div>
+
+    <!-- THÔNG KÊ NHANH -->
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+                <div class="bg-primary-subtle text-primary p-3 rounded-circle fs-4">
+                    <i class="bi bi-building"></i>
+                </div>
+                <div>
+                    <span class="text-muted small">Tổng số bưu cục</span>
+                    <h3 class="fw-bold mb-0">@Model.Count</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+                <div class="bg-success-subtle text-success p-3 rounded-circle fs-4">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div>
+                    <span class="text-muted small">Đang hoạt động</span>
+                    <h3 class="fw-bold mb-0 text-success">@totalActive</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 p-3 bg-white d-flex flex-row align-items-center gap-3">
+                <div class="bg-danger-subtle text-danger p-3 rounded-circle fs-4">
+                    <i class="bi bi-pause-circle-fill"></i>
+                </div>
+                <div>
+                    <span class="text-muted small">Tạm ngưng</span>
+                    <h3 class="fw-bold mb-0 text-danger">@totalInactive</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show rounded-3" role="alert">
+            <i class="bi bi-check-circle-fill me-1"></i> @TempData["SuccessMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i> @TempData["ErrorMessage"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <!-- THANH TÌM KIẾM -->
+    <div class="card border-0 shadow-sm rounded-4 p-3 mb-4 bg-white">
+        <form method="get" class="row g-2">
+            <div class="col-md-10">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" value="@search" class="form-control border-start-0" placeholder="Tìm theo tên bưu cục hoặc địa chỉ...">
+                </div>
+            </div>
+            <div class="col-md-2 d-flex gap-2">
+                <button type="submit" class="btn btn-primary w-100 fw-semibold">
+                    <i class="bi bi-funnel me-1"></i> Lọc
+                </button>
+                @if (!string.IsNullOrWhiteSpace(search))
+                {
+                    <a asp-action="Index" class="btn btn-light border" title="Hủy lọc"><i class="bi bi-x-lg"></i></a>
+                }
+            </div>
+        </form>
+    </div>
+
+    <!-- BẢNG DANH SÁCH -->
+    <div class="order-section p-0 overflow-hidden shadow-sm rounded-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th class="ps-4">Tên bưu cục</th>
+                        <th>Địa chỉ</th>
+                        <th>Tọa độ GPS</th>
+                        <th class="text-center">Lượt Check-in</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-end pe-4">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="badge bg-orange-soft text-orange p-2 rounded-3">
+                                        <i class="bi bi-box-seam-fill fs-6"></i>
+                                    </div>
+                                    <div>
+                                        <strong class="text-dark">@s.StationName</strong>
+                                        <div class="text-muted small">Mã: ST-@s.StationId.ToString("D3")</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <i class="bi bi-geo-alt text-muted me-1"></i>@s.Address
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-secondary border font-monospace">
+                                    @s.Latitude.ToString("F5"), @s.Longitude.ToString("F5")
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill px-3">
+                                    @(s.CheckIns?.Count ?? 0)
+                                </span>
+                            </td>
+                            <td class="text-center">
+                                @if (s.IsActive)
+                                {
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1 rounded-pill">
+                                        <i class="bi bi-check-circle-fill me-1"></i>Hoạt động
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 rounded-pill">
+                                        <i class="bi bi-pause-circle-fill me-1"></i>Tạm ngưng
+                                    </span>
+                                }
+                            </td>
+                            <td class="text-end pe-4 text-nowrap">
+                                <a href="https://www.google.com/maps?q=@s.Latitude,@s.Longitude" target="_blank" class="btn btn-sm btn-outline-info me-1" title="Xem trên Google Maps">
+                                    <i class="bi bi-map"></i>
+                                </a>
+                                <a asp-action="Edit" asp-route-id="@s.StationId" class="btn btn-sm btn-outline-primary me-1">
+                                    <i class="bi bi-pencil-square me-1"></i>Sửa
+                                </a>
+                                <form asp-action="Delete" asp-route-id="@s.StationId" method="post" class="d-inline"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa bưu cục này?');">
+                                    @Html.AntiForgeryToken()
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-inbox fs-1 d-block mb-2"></i>
+                                Không tìm thấy bưu cục nào phù hợp.
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

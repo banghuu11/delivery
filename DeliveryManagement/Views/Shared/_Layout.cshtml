@@ -18,7 +18,7 @@
 
     string currentController = ViewContext.RouteData.Values["Controller"]?.ToString() ?? "";
     string currentAction = ViewContext.RouteData.Values["Action"]?.ToString() ?? "";
-    bool isAdminArea = (currentController == "Admin" || currentController == "PriceTable") && User.IsInRole("Admin");
+    bool isAdminArea = (currentController == "Admin" || currentController == "PriceTable" || currentController == "Station") && User.IsInRole("Admin");
 }
 
 <!DOCTYPE html>
@@ -34,6 +34,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
 </head>
 
 <body class="d-flex flex-column min-vh-100">
@@ -105,6 +106,13 @@
                                 </a>
                             </li>
 
+                            <li class="nav-item">
+                                <a class="nav-link px-2 px-xl-3 text-nowrap @(currentController == "Station" ? "active text-orange fw-bold" : "")" 
+                                   asp-controller="Station" asp-action="Index">
+                                    <i class="bi bi-geo-alt-fill me-1"></i> Bưu cục
+                                </a>
+                            </li>
+
                             <li class="nav-item dropdown">
                                 <a class="nav-link dropdown-toggle px-2 px-xl-3 text-nowrap @(currentController == "PriceTable" ? "active text-orange fw-bold" : "")" href="#" role="button" data-bs-toggle="dropdown">
                                     <i class="bi bi-currency-dollar me-1"></i> Quản lý giá
@@ -161,6 +169,12 @@
                             <li class="nav-item">
                                 <a class="nav-link px-3 text-nowrap" asp-controller="Home" asp-action="Track">
                                     Theo dõi
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
+                                <a class="nav-link px-3 text-nowrap @(currentController == "Home" && currentAction == "Stations" ? "active text-orange fw-bold" : "")" asp-controller="Home" asp-action="Stations">
+                                    <i class="bi bi-geo-alt-fill text-orange me-1"></i> Bưu cục & Bản đồ
                                 </a>
                             </li>
 

@@ -2237,5 +2237,209 @@ body {
     flex-shrink: 0;
 }
 
+/* =========================================
+   US08: INTERACTIVE MAP & STATION NETWORK UI
+   ========================================= */
+
+.station-map-container {
+    height: 540px;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    position: relative;
+    background: #e2e8f0;
+}
+
+.station-map-full {
+    height: 620px;
+    border-radius: 1.25rem;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    border: 1px solid #e2e8f0;
+    background: #e2e8f0;
+    position: relative;
+}
+
+.station-list-scrollable {
+    max-height: 540px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.station-list-scrollable::-webkit-scrollbar {
+    width: 6px;
+}
+
+.station-list-scrollable::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 8px;
+}
+
+.station-list-scrollable::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 8px;
+}
+
+.station-list-scrollable::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.station-item-card {
+    transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    background: #ffffff;
+}
+
+.station-item-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--orange-main);
+    box-shadow: 0 8px 24px rgba(255, 84, 0, 0.12) !important;
+}
+
+.station-item-card.active {
+    border: 2px solid var(--orange-main);
+    background: #fffaf5;
+    box-shadow: 0 8px 24px rgba(255, 84, 0, 0.16) !important;
+}
+
+.user-location-box {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+    border: 1px solid #bfdbfe;
+    transition: all 0.2s ease;
+}
+
+.user-pulse-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #2563eb;
+    box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7);
+    animation: userPulseAnim 1.8s infinite;
+}
+
+@keyframes userPulseAnim {
+    0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+    70% { transform: scale(1.15); box-shadow: 0 0 0 10px rgba(37, 99, 235, 0); }
+    100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+}
+
+/* Leaflet Custom HTML Markers */
+.leaflet-user-marker {
+    position: relative;
+    width: 24px;
+    height: 24px;
+}
+
+.leaflet-user-marker .pulse-ring {
+    position: absolute;
+    width: 44px;
+    height: 44px;
+    top: -10px;
+    left: -10px;
+    border-radius: 50%;
+    background: rgba(37, 99, 235, 0.28);
+    animation: leafletUserRadar 2s infinite ease-out;
+}
+
+.leaflet-user-marker .center-dot {
+    position: absolute;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #2563eb;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 11px;
+}
+
+@keyframes leafletUserRadar {
+    0% { transform: scale(0.5); opacity: 1; }
+    100% { transform: scale(2.4); opacity: 0; }
+}
+
+.leaflet-station-marker {
+    width: 36px;
+    height: 46px;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.leaflet-station-marker:hover {
+    transform: scale(1.2) translateY(-4px);
+    z-index: 9999 !important;
+}
+
+.leaflet-station-marker .pin-body {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, #ff5400 0%, #ea580c 100%);
+    border: 2.5px solid #ffffff;
+    border-radius: 50% 50% 50% 0;
+    transform: rotate(-45deg);
+    box-shadow: 0 4px 14px rgba(255, 84, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.leaflet-station-marker .pin-body i {
+    transform: rotate(45deg);
+    color: #ffffff;
+    font-size: 15px;
+}
+
+.leaflet-station-marker.highlighted .pin-body {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    box-shadow: 0 0 0 6px rgba(37, 99, 235, 0.35), 0 6px 18px rgba(0, 0, 0, 0.35);
+}
+
+.map-floating-controls {
+    position: absolute;
+    top: 14px;
+    right: 14px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.map-ctrl-btn {
+    width: 40px;
+    height: 40px;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    cursor: pointer;
+}
+
+.map-ctrl-btn:hover {
+    background: #f8fafc;
+    transform: scale(1.08);
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 14px !important;
+    padding: 2px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15) !important;
+}
+
+.leaflet-popup-content {
+    margin: 12px 14px !important;
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+
 
 

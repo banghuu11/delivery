@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryManagement.Controllers
 {
-    [Authorize(Roles = "Customer")]
+    [Authorize]
     public class DeliveryOrderController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -492,12 +492,18 @@ namespace DeliveryManagement.Controllers
                 return NotFound();
             }
 
-            var order = await _context.DeliveryOrders
+            var query = _context.DeliveryOrders
                 .Include(o => o.OrderItems)
                     .ThenInclude(i => i.PackageType)
-                .FirstOrDefaultAsync(o =>
-                    o.OrderCode == id &&
-                    o.CustomerId == user.Id);
+                .AsQueryable();
+
+            bool isStaffOrAdmin = User.IsInRole("Admin") || User.IsInRole("ReceptionStaff") || User.IsInRole("WarehouseStaff") || User.IsInRole("DeliveryStaff");
+            if (!isStaffOrAdmin)
+            {
+                query = query.Where(o => o.CustomerId == user.Id);
+            }
+
+            var order = await query.FirstOrDefaultAsync(o => o.OrderCode == id);
 
             if (order == null)
             {
@@ -511,6 +517,56 @@ namespace DeliveryManagement.Controllers
             }
 
             return View(order);
+        }
+
+        // ==========================================
+        // IN PHIẾU GIAO HÀNG & HÓA ĐƠN DỊCH VỤ (US04)
+        // ==========================================
+
+        [HttpGet]
+        public async Task<IActionResult> PrintWaybill(string id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return NotFound();
+            }
+
+            var query = _context.DeliveryOrders
+                .Include(o => o.OrderItems)
+                    .ThenInclude(i => i.PackageType)
+                .Include(o => o.Customer)
+                .AsQueryable();
+
+            bool isStaffOrAdmin = User.IsInRole("Admin") || User.IsInRole("ReceptionStaff") || User.IsInRole("WarehouseStaff") || User.IsInRole("DeliveryStaff");
+            if (!isStaffOrAdmin)
+            {
+                query = query.Where(o => o.CustomerId == user.Id);
+            }
+
+            var order = await query.FirstOrDefaultAsync(o => o.OrderCode == id);
+
+            if (order == null)
+            {
+                TempData["ErrorMessage"] =
+                    "Không tìm thấy đơn hàng hoặc bạn không có quyền in phiếu giao hàng/hóa đơn này.";
+
+                return RedirectToAction("Index", "Home");
+            }
+
+            return View("PrintWaybill", order);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Invoice(string id)
+        {
+            return await PrintWaybill(id);
         }
 
         // ==========================================
