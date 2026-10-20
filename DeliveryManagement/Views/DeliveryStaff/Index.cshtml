@@ -1,0 +1,432 @@
+﻿@model List<DeliveryManagement.Models.DeliveryOrder>
+@using DeliveryManagement.Models
+
+@{
+    ViewData["Title"] = "Đơn giao hàng";
+
+    var myOrders =
+        ViewBag.MyOrders as List<DeliveryOrder>
+        ?? new List<DeliveryOrder>();
+}
+
+<div class="container py-4">
+
+    <div class="mb-4">
+        <h2 class="mb-1">Quản lý đơn giao hàng</h2>
+        <p class="text-muted mb-0">
+            Nhận đơn giao thường và cập nhật kết quả giao hàng.
+        </p>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    <!-- ĐƠN GIAO THƯỜNG CHỜ NHẬN -->
+    <section class="mb-5">
+
+        <h4 class="mb-3">Đơn giao thường chờ nhận</h4>
+
+        <p class="text-muted">
+            Chọn đơn phù hợp để nhận giao. Mỗi đơn chỉ có một
+            nhân viên giao hàng được nhận thành công.
+        </p>
+
+        @if (Model == null || !Model.Any())
+        {
+            <div class="alert alert-light border">
+                Hiện không có đơn giao thường nào đang chờ nhận.
+            </div>
+        }
+        else
+        {
+            <div class="row g-3">
+
+                @foreach (var order in Model)
+                {
+                    <div class="col-12 col-lg-6">
+                        <div class="card h-100 shadow-sm">
+                            <div class="card-body">
+
+                                <div class="d-flex justify-content-between align-items-start mb-3">
+                                    <div>
+                                        <h5 class="mb-1">
+                                            Đơn @order.OrderCode
+                                        </h5>
+                                        <span class="badge bg-secondary">
+                                            Giao thường
+                                        </span>
+                                    </div>
+
+                                    <span class="badge bg-warning text-dark">
+                                        Chờ nhận
+                                    </span>
+                                </div>
+
+                                <p class="mb-1">
+                                    <strong>Người nhận:</strong>
+                                    @order.ReceiverName
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Số điện thoại:</strong>
+                                    @order.ReceiverPhone
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Địa chỉ:</strong>
+                                    @order.ReceiverAddress
+                                </p>
+
+                                <p class="mb-1">
+                                    <strong>Khoảng cách:</strong>
+                                    @order.DistanceKm.ToString("0.##") km
+                                </p>
+
+                                <p class="mb-3">
+                                    <strong>Cước phí:</strong>
+                                    @order.TotalAmount.ToString("N0") đ
+                                </p>
+
+                                <form asp-action="AcceptOrder" method="post">
+                                    @Html.AntiForgeryToken()
+
+                                    <input type="hidden"
+                                           name="id"
+                                           value="@order.OrderCode" />
+
+                                    <button type="submit"
+                                            class="btn btn-primary w-100"
+                                            onclick="return confirm('Bạn chắc chắn muốn nhận đơn này?');">
+                                        <i class="bi bi-hand-index-thumb me-1"></i>
+                                        Nhận đơn
+                                    </button>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                }
+
+            </div>
+        }
+
+    </section>
+
+    <hr class="my-4" />
+
+    <!-- ĐƠN HÀNG CỦA SHIPPER -->
+    <section>
+
+        <h4 class="mb-3">Đơn hàng của tôi</h4>
+
+        @if (!myOrders.Any())
+        {
+            <div class="alert alert-light border">
+                Bạn chưa nhận hoặc chưa được phân công đơn hàng nào.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Người nhận</th>
+                            <th>Địa chỉ</th>
+                            <th>Hình thức</th>
+                            <th>Trạng thái</th>
+                            <th style="min-width: 320px">Thao tác / Kết quả</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var order in myOrders)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>@order.OrderCode</strong>
+                                </td>
+
+                                <td>
+                                    @order.ReceiverName
+                                    <div class="small text-muted">
+                                        @order.ReceiverPhone
+                                    </div>
+                                </td>
+
+                                <td>@order.ReceiverAddress</td>
+
+                                <td>@order.DeliveryMethod</td>
+
+                                <td>
+                                    @if (order.CurrentStatus == "Đã nhận - Chưa giao")
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            Chưa giao
+                                        </span>
+                                    }
+                                    else if (order.CurrentStatus == "Đã nhận – Đang giao")
+                                    {
+                                        <span class="badge bg-primary">
+                                            Đang giao
+                                        </span>
+                                    }
+                                    else if (order.CurrentStatus == "Đã Giao")
+                                    {
+                                        <span class="badge bg-success">
+                                            Đã giao
+                                        </span>
+                                    }
+                                    else if (order.CurrentStatus == "Giao thất bại - Chờ xử lý")
+                                    {
+                                        <span class="badge bg-danger">
+                                            Giao thất bại
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">
+                                            @order.CurrentStatus
+                                        </span>
+                                    }
+                                </td>
+
+                                <td>
+                                    @if (order.CurrentStatus == "Đã nhận - Chưa giao")
+                                    {
+                                        <form asp-action="StartDelivery"
+                                              method="post"
+                                              class="mb-2">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@order.OrderCode" />
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-primary btn-sm w-100">
+                                                Bắt đầu giao hàng
+                                            </button>
+                                        </form>
+                                    }
+                                    else if (order.CurrentStatus == "Đã nhận – Đang giao")
+                                    {
+                                        <!-- GIAO THÀNH CÔNG -->
+                                        <form asp-action="CompleteDelivery"
+                                              method="post"
+                                              enctype="multipart/form-data"
+                                              class="border rounded p-3 mb-3">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@order.OrderCode" />
+
+                                            <h6 class="text-success">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Ghi nhận giao thành công
+                                            </h6>
+
+                                            <div class="mb-2">
+                                                <label class="form-label">
+                                                    Ảnh minh chứng <span class="text-danger">*</span>
+                                                </label>
+
+                                                <input type="file"
+                                                       name="proofImage"
+                                                       class="form-control form-control-sm"
+                                                       accept=".jpg,.jpeg,image/jpeg"
+                                                       required />
+
+                                                <div class="form-text">
+                                                    Chỉ nhận JPG/JPEG, tối đa 2 MB.
+                                                </div>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label">
+                                                    Ghi chú giao hàng
+                                                </label>
+
+                                                <textarea name="deliveryNote"
+                                              class="form-control form-control-sm"
+                                              rows="2"
+                                              maxlength="500"
+                                              placeholder="Nhập ghi chú nếu có..."></textarea>
+                                            </div>
+
+                                            <button type="submit"
+                                                    class="btn btn-success btn-sm w-100"
+                                                    onclick="return confirm('Xác nhận đơn hàng đã được giao thành công?');">
+                                                Xác nhận đã giao
+                                            </button>
+
+                                        </form>
+
+                                        <!-- GIAO THẤT BẠI -->
+                                        <form asp-action="FailDelivery"
+                                              method="post"
+                                              class="border border-danger rounded p-3">
+
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@order.OrderCode" />
+
+                                            <h6 class="text-danger">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                Ghi nhận giao thất bại
+                                            </h6>
+
+                                            <div class="mb-2">
+                                                <label class="form-label">
+                                                    Lý do thất bại <span class="text-danger">*</span>
+                                                </label>
+
+                                                <select name="failureReason"
+                                                        class="form-select form-select-sm failure-reason"
+                                                        required>
+                                                    <option value="">-- Chọn lý do --</option>
+                                                    <option value="Không liên lạc được với người nhận">
+                                                        Không liên lạc được với người nhận
+                                                    </option>
+                                                    <option value="Sai địa chỉ">
+                                                        Sai địa chỉ
+                                                    </option>
+                                                    <option value="Khách từ chối nhận">
+                                                        Khách từ chối nhận hàng
+                                                    </option>
+                                                    <option value="Lý do khác">
+                                                        Lý do khác
+                                                    </option>
+                                                </select>
+                                            </div>
+
+                                            <div class="mb-2">
+                                                <label class="form-label">
+                                                    Ghi chú / mô tả
+                                                </label>
+
+                                                <textarea name="deliveryNote"
+                                              class="form-control form-control-sm failure-note"
+                                              rows="2"
+                                              maxlength="500"
+                                              placeholder="Mô tả tình huống giao hàng..."></textarea>
+
+                                                <div class="form-text failure-note-help">
+                                                    Nếu chọn "Lý do khác", bắt buộc nhập ghi chú.
+                                                </div>
+                                            </div>
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger btn-sm w-100"
+                                                    onclick="return confirm('Xác nhận ghi nhận giao thất bại? Đơn sẽ chuyển sang chờ xử lý.');">
+                                                Ghi nhận giao thất bại
+                                            </button>
+
+                                        </form>
+                                    }
+                                    else if (order.CurrentStatus == "Đã Giao")
+                                    {
+                                        <div class="text-success fw-semibold mb-2">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Đã hoàn tất giao hàng
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(order.ProofImage))
+                                        {
+                                            <a href="@order.ProofImage"
+                                               target="_blank"
+                                               rel="noopener noreferrer">
+                                                Xem ảnh minh chứng
+                                            </a>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(order.DeliveryNote))
+                                        {
+                                            <div class="small text-muted mt-2">
+                                                Ghi chú: @order.DeliveryNote
+                                            </div>
+                                        }
+                                    }
+                                    else if (order.CurrentStatus == "Giao thất bại - Chờ xử lý")
+                                    {
+                                        <div class="alert alert-danger py-2 mb-2">
+                                            <strong>Đơn giao thất bại.</strong>
+                                            <div class="small">
+                                                Đơn đang chờ nhân viên có trách nhiệm xử lý tiếp.
+                                            </div>
+                                        </div>
+
+                                        @if (!string.IsNullOrWhiteSpace(order.DeliveryResult))
+                                        {
+                                            <div class="small">
+                                                <strong>Kết quả:</strong>
+                                                @order.DeliveryResult
+                                            </div>
+                                        }
+
+                                        @if (!string.IsNullOrWhiteSpace(order.DeliveryNote))
+                                        {
+                                            <div class="small mt-2">
+                                                <strong>Ghi chú:</strong>
+                                                <div style="white-space: pre-line">@order.DeliveryNote</div>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">
+                                            Không có thao tác cho trạng thái này.
+                                        </span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+
+    </section>
+
+</div>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.failure-reason').forEach(function (select) {
+            function updateFailureNote() {
+                const form = select.closest('form');
+                const note = form.querySelector('.failure-note');
+                const help = form.querySelector('.failure-note-help');
+
+                const needsNote = select.value === 'Lý do khác';
+
+                note.required = needsNote;
+
+                if (help) {
+                    help.textContent = needsNote
+                        ? 'Bắt buộc nhập ghi chú khi chọn "Lý do khác".'
+                        : 'Có thể nhập thêm thông tin để nhân viên xử lý.';
+                }
+            }
+
+            select.addEventListener('change', updateFailureNote);
+            updateFailureNote();
+        });
+    </script>
+}

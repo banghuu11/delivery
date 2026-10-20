@@ -181,7 +181,19 @@
                                     </a>
                                 </li>
                             }
-
+                            <!-- DÀNH CHO NHÂN VIÊN GIAO HÀNG -->
+                            @if (User.IsInRole("DeliveryStaff"))
+                            {
+                                <li class="nav-item ms-lg-2">
+                                    <a class="nav-link text-primary fw-bold text-nowrap
+                          @(currentController == "DeliveryStaff"
+                                                           ? "active text-orange" : "")"
+                               asp-controller="DeliveryStaff"
+                               asp-action="Index">
+                                <i class="bi bi-truck me-1"></i> Đơn giao hàng
+                            </a>
+                        </li>
+                                                }
                             <!-- DÀNH CHO KHÁCH HÀNG -->
                             @if (User.IsInRole("Customer"))
                             {
@@ -229,6 +241,13 @@
                                 {
                                     <a asp-controller="Warehouse" asp-action="Index" class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
                                         Khu Vực Kho
+                                    </a>
+                                }
+                                else if (User.IsInRole("DeliveryStaff"))
+                                {
+                                    <a asp-controller="DeliveryStaff" asp-action="Index"
+                                       class="btn btn-tocdo-orange rounded-pill px-4 shadow-sm fw-bold">
+                                        Khu Vực Giao Hàng
                                     </a>
                                 }
                             }

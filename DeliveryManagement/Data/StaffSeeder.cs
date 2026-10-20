@@ -1,4 +1,5 @@
-﻿using DeliveryManagement.Models;
+﻿
+using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Identity;
 
 namespace DeliveryManagement.Data
@@ -21,6 +22,14 @@ namespace DeliveryManagement.Data
                 "Warehouse@123",
                 "Nhân viên kho",
                 "WarehouseStaff");
+
+            // Tạo tài khoản nhân viên giao hàng
+            await CreateStaffAsync(
+                userManager,
+                "shipper@delivery.com",
+                "Shipper@123",
+                "Nhân viên giao hàng",
+                "DeliveryStaff");
         }
 
         private static async Task CreateStaffAsync(
@@ -59,7 +68,17 @@ namespace DeliveryManagement.Data
 
             if (!await userManager.IsInRoleAsync(user, role))
             {
-                await userManager.AddToRoleAsync(user, role);
+                var result = await userManager.AddToRoleAsync(user, role);
+
+                if (!result.Succeeded)
+                {
+                    throw new Exception(
+                        string.Join(
+                            "; ",
+                            result.Errors.Select(e => e.Description)
+                        )
+                    );
+                }
             }
         }
     }
