@@ -234,6 +234,9 @@
                                     </td>
                                     <td class="pe-4 py-3 text-end">
                                         <div class="d-inline-flex gap-1">
+                                            <a asp-action="PrintWaybill" asp-route-id="@order.OrderCode" target="_blank" class="btn btn-sm btn-light text-dark rounded-circle p-2 shadow-xs" title="In phiếu giao hàng / Hóa đơn">
+                                                <i class="bi bi-printer-fill"></i>
+                                            </a>
                                             <a asp-action="Details" asp-route-id="@order.OrderCode" class="btn btn-sm btn-light text-primary rounded-circle p-2 shadow-xs" title="Xem chi tiết">
                                                 <i class="bi bi-eye-fill"></i>
                                             </a>
