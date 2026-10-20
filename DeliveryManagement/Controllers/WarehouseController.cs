@@ -37,7 +37,89 @@ namespace DeliveryManagement.Controllers
 
             return View(orders);
         }
+        // ==========================================
+        // ĐIỀU PHỐI ĐƠN GIAO NHANH (US03)
+        // ==========================================
 
+        [HttpGet]
+        public async Task<IActionResult> Dispatch()
+        {
+            // Lấy đơn giao nhanh đã sẵn sàng
+            // nhưng chưa có nhân viên giao hàng.
+            var orders = await _context.DeliveryOrders
+                .Include(o => o.OrderItems)
+                .Where(o =>
+                    o.DeliveryMethod == "Nhanh" &&
+                    o.CurrentStatus == "Đã nhận - Chưa giao" &&
+                    o.DeliveryStaffId == null)
+                .OrderBy(o => o.CreatedAt)
+                .ToListAsync();
+
+            // Danh sách nhân viên có vai trò DeliveryStaff.
+            ViewBag.DeliveryStaffs =
+                await _userManager.GetUsersInRoleAsync("DeliveryStaff");
+
+            return View(orders);
+        }
+        // ==========================================
+        // PHÂN CÔNG ĐƠN GIAO NHANH
+        // ==========================================
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AssignExpressOrder(
+            string id,
+            string deliveryStaffId)
+        {
+            if (string.IsNullOrWhiteSpace(id) ||
+                string.IsNullOrWhiteSpace(deliveryStaffId))
+            {
+                TempData["ErrorMessage"] =
+                    "Vui lòng chọn đơn hàng và nhân viên giao hàng.";
+
+                return RedirectToAction(nameof(Dispatch));
+            }
+
+            // Kiểm tra tài khoản được chọn có tồn tại
+            // và thật sự thuộc vai trò nhân viên giao hàng.
+            var staff = await _userManager.FindByIdAsync(deliveryStaffId);
+
+            if (staff == null ||
+                !await _userManager.IsInRoleAsync(staff, "DeliveryStaff"))
+            {
+                TempData["ErrorMessage"] =
+                    "Nhân viên giao hàng không hợp lệ.";
+
+                return RedirectToAction(nameof(Dispatch));
+            }
+
+            // Cập nhật có điều kiện để tránh hai người
+            // cùng phân công một đơn chưa có người phụ trách.
+            var affectedRows = await _context.DeliveryOrders
+                .Where(o =>
+                    o.OrderCode == id &&
+                    o.DeliveryMethod == "Nhanh" &&
+                    o.CurrentStatus == "Đã nhận - Chưa giao" &&
+                    o.DeliveryStaffId == null)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(
+                        o => o.DeliveryStaffId,
+                        deliveryStaffId));
+
+            if (affectedRows == 0)
+            {
+                TempData["ErrorMessage"] =
+                    "Không thể phân công. Đơn hàng không còn khả dụng " +
+                    "hoặc đã có nhân viên phụ trách.";
+
+                return RedirectToAction(nameof(Dispatch));
+            }
+
+            TempData["SuccessMessage"] =
+                $"Đã phân công đơn {id} cho nhân viên {staff.FullName}.";
+
+            return RedirectToAction(nameof(Dispatch));
+        }
         // ==========================================
         // MỞ TRANG PHÂN LOẠI
         // ==========================================
@@ -286,50 +368,25 @@ namespace DeliveryManagement.Controllers
             }
 
             // ==========================================
-            // TRẠNG THÁI ĐƯỢC PHÉP
-            // ==========================================
-
-            var validStatuses = new[]
-            {
-                "Chưa nhận",
-                "Đã nhận - Chưa giao",
-                "Đã nhận – Đang giao",
-                "Đã Giao"
-            };
-
-            if (!validStatuses.Contains(newStatus))
-            {
-                TempData["ErrorMessage"] =
-                    "Trạng thái không hợp lệ.";
-
-                return RedirectToAction(
-                    nameof(Classify),
-                    new { id = order.OrderCode });
-            }
-
-            // ==========================================
-            // KIỂM TRA CHUYỂN TRẠNG THÁI
+            // KHO CHỈ ĐƯỢC ĐƯA ĐƠN SANG TRẠNG THÁI SẴN SÀNG
             // ==========================================
 
             bool validTransition =
-                (order.CurrentStatus == "Chưa nhận" &&
-                 newStatus == "Đã nhận - Chưa giao")
-                ||
-                (order.CurrentStatus == "Đã nhận - Chưa giao" &&
-                 newStatus == "Đã nhận – Đang giao")
-                ||
-                (order.CurrentStatus == "Đã nhận – Đang giao" &&
-                 newStatus == "Đã Giao");
+                order.CurrentStatus == "Chưa nhận" &&
+                newStatus == "Đã nhận - Chưa giao";
 
             if (!validTransition)
             {
                 TempData["ErrorMessage"] =
-                    $"Không thể chuyển từ \"{order.CurrentStatus}\" sang \"{newStatus}\".";
+                    "Nhân viên kho chỉ được chuyển đơn từ " +
+                    "\"Chưa nhận\" sang \"Đã nhận - Chưa giao\". " +
+                    "Các trạng thái giao hàng do nhân viên giao hàng cập nhật.";
 
                 return RedirectToAction(
                     nameof(Classify),
                     new { id = order.OrderCode });
             }
+
 
             order.CurrentStatus = newStatus;
 
