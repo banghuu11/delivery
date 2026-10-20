@@ -88,7 +88,6 @@ namespace DeliveryManagement.Controllers
                         PackageTypeName = i.PackageType?.TypeName ?? "Chưa phân loại",
 
                         Description = i.Description,
-                        Size = i.Size,
                         Quantity = i.Quantity,
                         Weight = i.Weight,
 
@@ -166,7 +165,6 @@ namespace DeliveryManagement.Controllers
                 // PackageTypeId để WarehouseStaff xử lý ở #14.
 
                 item.Description = itemModel.Description;
-                item.Size = itemModel.Size;
                 item.Quantity = itemModel.Quantity;
                 item.Weight = itemModel.Weight;
                 item.IsFragile = itemModel.IsFragile;

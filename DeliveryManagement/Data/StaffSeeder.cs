@@ -1,3 +1,4 @@
+
 using DeliveryManagement.Models;
 using Microsoft.AspNetCore.Identity;
 
@@ -9,11 +10,11 @@ namespace DeliveryManagement.Data
             UserManager<ApplicationUser> userManager)
         {
             await CreateStaffAsync(
-                userManager,
-                "reception@delivery.com",
-                "Staff@123",
-                "Nhân viên tiếp nhận",
-                "ReceptionStaff");
+    userManager,
+    "reception@delivery.com",
+    "Staff@123",
+    "Nhân viên tiếp nhận",
+    "ReceptionStaff");
 
             await CreateStaffAsync(
                 userManager,
@@ -82,7 +83,17 @@ namespace DeliveryManagement.Data
 
             if (!await userManager.IsInRoleAsync(user, role))
             {
-                await userManager.AddToRoleAsync(user, role);
+                var result = await userManager.AddToRoleAsync(user, role);
+
+                if (!result.Succeeded)
+                {
+                    throw new Exception(
+                        string.Join(
+                            "; ",
+                            result.Errors.Select(e => e.Description)
+                        )
+                    );
+                }
             }
         }
     }
