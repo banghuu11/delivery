@@ -3,6 +3,10 @@
     ViewData["Title"] = $"{Model.Setting.BrandName} - {Model.Setting.Slogan}";
 }
 
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+}
+
 <div class="tocdo-home-wrapper">
 
     <!-- 1. HERO SECTION (Dữ liệu động từ Model.Setting) -->
@@ -42,12 +46,257 @@
 </div>
 
 @section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <script>
         $(document).ready(function () {
-            let currentLat = sessionStorage.getItem('user_lat') || null;
-            let currentLon = sessionStorage.getItem('user_lon') || null;
+            let currentLat = sessionStorage.getItem('user_lat') ? parseFloat(sessionStorage.getItem('user_lat')) : null;
+            let currentLon = sessionStorage.getItem('user_lon') ? parseFloat(sessionStorage.getItem('user_lon')) : null;
+            let currentUserAddress = sessionStorage.getItem('user_address') || '';
 
-            // Hàm lấy dữ liệu Thời tiết & Giao thông
+            // ==========================================
+            // 1. TÍNH KHOẢNG CÁCH HAVERSINE (KM)
+            // ==========================================
+            function calculateHaversineDistanceKm(lat1, lon1, lat2, lon2) {
+                const R = 6371; // Bán kính Trái Đất (km)
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+                const a =
+                    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                return R * c;
+            }
+
+            // ==========================================
+            // 2. KHỞI TẠO BẢN ĐỒ BƯU CỤC LEAFLET (US08)
+            // ==========================================
+            let homeMap = null;
+            let userMarker = null;
+            const stationMarkers = {}; // id -> { marker, lat, lon, name, addr, $card }
+            const allBounds = [];
+
+            function getStationIcon() {
+                return L.divIcon({
+                    className: 'custom-station-icon',
+                    html: '<div class="leaflet-station-marker"><div class="pin-body"><i class="bi bi-box-seam-fill"></i></div></div>',
+                    iconSize: [36, 46],
+                    iconAnchor: [18, 42],
+                    popupAnchor: [0, -38]
+                });
+            }
+
+            function getUserIcon() {
+                return L.divIcon({
+                    className: 'custom-user-icon',
+                    html: '<div class="leaflet-user-marker"><div class="pulse-ring"></div><div class="center-dot"><i class="bi bi-person-fill"></i></div></div>',
+                    iconSize: [24, 24],
+                    iconAnchor: [12, 12],
+                    popupAnchor: [0, -14]
+                });
+            }
+
+            if ($('#homeStationMap').length > 0 && typeof L !== 'undefined') {
+                const defaultCenter = [10.776889, 106.695444];
+                homeMap = L.map('homeStationMap', {
+                    zoomControl: true,
+                    scrollWheelZoom: false
+                }).setView(defaultCenter, 12);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                }).addTo(homeMap);
+
+                // Nạp tất cả bưu cục từ DOM vào bản đồ
+                $('.station-item-card').each(function () {
+                    const $card = $(this);
+                    const id = $card.data('station-id');
+                    const name = $card.data('name');
+                    const addr = $card.data('address');
+                    const lat = parseFloat($card.data('lat'));
+                    const lon = parseFloat($card.data('lon'));
+
+                    if (!isNaN(lat) && !isNaN(lon)) {
+                        allBounds.push([lat, lon]);
+                        const marker = L.marker([lat, lon], { icon: getStationIcon() }).addTo(homeMap);
+
+                        const popupHtml = `
+                            <div style="min-width: 220px;">
+                                <div class="d-flex align-items-center gap-1 mb-1">
+                                    <span class="badge bg-orange text-white"><i class="bi bi-box-seam-fill me-1"></i> Bưu cục</span>
+                                    <span class="badge bg-success-subtle text-success small">Hoạt động</span>
+                                </div>
+                                <h6 class="fw-bold mb-1 text-dark">${name}</h6>
+                                <p class="text-muted small mb-2"><i class="bi bi-geo-alt-fill text-danger me-1"></i>${addr}</p>
+                                <div class="popup-dist-text small mb-2 text-primary fw-semibold" id="popupDist_${id}"></div>
+                                <div class="d-flex gap-1">
+                                    <a href="https://www.google.com/maps/dir/?api=1&destination=${lat},${lon}" target="_blank" class="btn btn-sm btn-primary rounded-pill flex-fill text-white py-1" style="font-size: 0.8rem;">
+                                        <i class="bi bi-sign-turn-right-fill me-1"></i> Chỉ đường Google Maps
+                                    </a>
+                                </div>
+                            </div>`;
+                        marker.bindPopup(popupHtml);
+
+                        marker.on('click', function () {
+                            $('.station-item-card').removeClass('active');
+                            $card.addClass('active');
+                            // Cuộn danh sách đến card tương ứng
+                            const container = $('#stationCardsContainer');
+                            const scrollTo = $card.position().top + container.scrollTop() - container.position().top;
+                            container.animate({ scrollTop: scrollTo }, 300);
+                        });
+
+                        stationMarkers[id] = { marker, lat, lon, name, addr, $card };
+                    }
+                });
+
+                if (allBounds.length > 1) {
+                    homeMap.fitBounds(allBounds, { padding: [40, 40] });
+                }
+            }
+
+            // Cập nhật vị trí của bản thân lên bản đồ & tính khoảng cách tới các bưu cục
+            function updateUserLocationOnMap(lat, lon, addressName) {
+                if (!homeMap) return;
+
+                if (!userMarker) {
+                    userMarker = L.marker([lat, lon], { icon: getUserIcon(), zIndexOffset: 1000 }).addTo(homeMap);
+                } else {
+                    userMarker.setLatLng([lat, lon]);
+                }
+
+                const userPopupContent = `
+                    <div style="min-width: 200px;">
+                        <div class="d-flex align-items-center gap-1 mb-1">
+                            <span class="user-pulse-dot"></span>
+                            <strong class="text-primary">Vị trí hiện tại của bạn</strong>
+                        </div>
+                        <p class="small mb-1 text-dark">${addressName || 'Đang cập nhật địa chỉ...'}</p>
+                        <span class="text-muted" style="font-size: 0.75rem;">GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)}</span>
+                    </div>`;
+                userMarker.bindPopup(userPopupContent);
+
+                // Cập nhật UI Card Vị trí của bạn
+                $('#homeUserAddressDisplay').text(addressName || `Tọa độ GPS: ${lat.toFixed(4)}, ${lon.toFixed(4)}`);
+                $('#homeUserCoordsDisplay').text(`Kinh độ: ${lon.toFixed(5)} | Vĩ độ: ${lat.toFixed(5)}`);
+                $('#homeUserGpsBadge').removeClass('bg-secondary-subtle text-secondary').addClass('bg-primary-subtle text-primary').text('GPS Đã kích hoạt');
+
+                // Tính khoảng cách tới từng bưu cục và cập nhật badge
+                const cardsArray = [];
+                $('.station-item-card').each(function () {
+                    const $card = $(this);
+                    const id = $card.data('station-id');
+                    const stLat = parseFloat($card.data('lat'));
+                    const stLon = parseFloat($card.data('lon'));
+
+                    if (!isNaN(stLat) && !isNaN(stLon)) {
+                        const dist = calculateHaversineDistanceKm(lat, lon, stLat, stLon);
+                        $card.data('dist', dist);
+                        $card.find('.station-distance-badge').show().find('.dist-val').text(dist.toFixed(1));
+                        $(`#popupDist_${id}`).html(`<i class="bi bi-signpost-2 me-1"></i> Cách bạn: <strong>${dist.toFixed(1)} km</strong>`);
+                        cardsArray.push({ element: $card, dist: dist });
+                    }
+                });
+
+                // Sắp xếp các bưu cục theo khoảng cách gần nhất lên đầu
+                cardsArray.sort((a, b) => a.dist - b.dist);
+                const $container = $('#stationCardsContainer');
+                $.each(cardsArray, function (i, item) {
+                    $container.append(item.element);
+                });
+            }
+
+            // Click vào card bưu cục -> Zoom vào marker trên bản đồ
+            $(document).on('click', '.station-item-card', function (e) {
+                if ($(e.target).closest('a').length) return; // Nếu bấm nút link chỉ đường thì không trigger
+                const $card = $(this);
+                const id = $card.data('station-id');
+                const st = stationMarkers[id];
+                if (st && homeMap) {
+                    $('.station-item-card').removeClass('active');
+                    $card.addClass('active');
+                    homeMap.flyTo([st.lat, st.lon], 15, { duration: 1.2 });
+                    st.marker.openPopup();
+                }
+            });
+
+            // Nút "Xem trên bản đồ"
+            $(document).on('click', '.btn-focus-station', function (e) {
+                e.stopPropagation();
+                const $card = $(this).closest('.station-item-card');
+                const id = $card.data('station-id');
+                const st = stationMarkers[id];
+                if (st && homeMap) {
+                    $('.station-item-card').removeClass('active');
+                    $card.addClass('active');
+                    homeMap.flyTo([st.lat, st.lon], 15, { duration: 1.2 });
+                    st.marker.openPopup();
+                }
+            });
+
+            // Nút Xem tất cả bưu cục (Fit Bounds)
+            $('#btnFitAllStations').click(function () {
+                if (!homeMap) return;
+                const bounds = [...allBounds];
+                if (currentLat && currentLon) {
+                    bounds.push([currentLat, currentLon]);
+                }
+                if (bounds.length > 0) {
+                    homeMap.fitBounds(bounds, { padding: [40, 40] });
+                }
+            });
+
+            // Nút Focus vị trí của bạn trên bản đồ
+            $('#btnFocusUserLoc, #btnRecenterUser').click(function () {
+                if (currentLat && currentLon && homeMap) {
+                    homeMap.flyTo([currentLat, currentLon], 15, { duration: 1.2 });
+                    if (userMarker) userMarker.openPopup();
+                } else {
+                    requestLocation(true);
+                }
+            });
+
+            // Nút Định vị lại vị trí
+            $('#btnRelocateUser').click(function () {
+                requestLocation(true);
+            });
+
+            // Tìm kiếm bưu cục theo tên / địa chỉ
+            $('#stationSearchInput').on('input', function () {
+                const keyword = $(this).val().toLowerCase().trim();
+                $('.station-item-card').each(function () {
+                    const $card = $(this);
+                    const name = ($card.data('name') || '').toLowerCase();
+                    const addr = ($card.data('address') || '').toLowerCase();
+                    const id = $card.data('station-id');
+                    const match = name.includes(keyword) || addr.includes(keyword);
+
+                    if (match) {
+                        $card.show();
+                        if (stationMarkers[id] && homeMap) {
+                            if (!homeMap.hasLayer(stationMarkers[id].marker)) {
+                                stationMarkers[id].marker.addTo(homeMap);
+                            }
+                        }
+                    } else {
+                        $card.hide();
+                        if (stationMarkers[id] && homeMap) {
+                            if (homeMap.hasLayer(stationMarkers[id].marker)) {
+                                homeMap.removeLayer(stationMarkers[id].marker);
+                            }
+                        }
+                    }
+                });
+            });
+
+            $('#btnClearStationSearch').click(function () {
+                $('#stationSearchInput').val('').trigger('input');
+            });
+
+            // ==========================================
+            // 3. THỜI TIẾT & GIAO THÔNG THỜI GIAN THỰC
+            // ==========================================
             function loadLiveConditions(lat, lon) {
                 const params = {};
                 if (lat && lon) {
@@ -97,33 +346,52 @@
             }
 
             // Reverse geocode vị trí hiển thị tên quận/huyện
-            function updateLocationName(lat, lon) {
+            function updateLocationName(lat, lon, panMapAfter) {
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
                     .then(r => r.json())
                     .then(data => {
+                        let fullDisplay = '';
+                        let shortDisplay = '';
                         if (data && data.address) {
                             const addr = data.address;
-                            const district = addr.suburb || addr.district || addr.quarter || addr.city_district || '';
+                            const road = addr.road || '';
+                            const quarter = addr.quarter || addr.suburb || '';
+                            const district = addr.district || addr.city_district || addr.suburb || '';
                             const city = addr.city || addr.state || 'Việt Nam';
-                            const display = district ? `${district}, ${city}` : (data.display_name.split(',').slice(0, 2).join(',') || 'Vị trí của bạn');
-                            $('#homeLocationText').text(display);
+                            
+                            shortDisplay = district ? `${district}, ${city}` : (data.display_name.split(',').slice(0, 2).join(',') || 'Vị trí của bạn');
+                            fullDisplay = [road, quarter, district, city].filter(Boolean).join(', ') || data.display_name;
                         } else {
-                            $('#homeLocationText').text(`GPS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+                            shortDisplay = `GPS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                            fullDisplay = `Tọa độ GPS: ${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+                        }
+
+                        currentUserAddress = fullDisplay;
+                        sessionStorage.setItem('user_address', fullDisplay);
+                        $('#homeLocationText').text(shortDisplay);
+                        
+                        updateUserLocationOnMap(lat, lon, fullDisplay);
+
+                        if (panMapAfter && homeMap) {
+                            homeMap.flyTo([lat, lon], 14, { duration: 1.2 });
                         }
                     })
                     .catch(() => {
-                        $('#homeLocationText').text(`GPS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`);
+                        const fallbackText = `GPS: ${lat.toFixed(2)}, ${lon.toFixed(2)}`;
+                        $('#homeLocationText').text(fallbackText);
+                        updateUserLocationOnMap(lat, lon, fallbackText);
                     });
             }
 
             // Yêu cầu quyền vị trí
-            function requestLocation() {
+            function requestLocation(panMapAfter) {
                 if (!navigator.geolocation) {
                     alert('Trình duyệt của bạn không hỗ trợ định vị.');
                     return;
                 }
 
                 $('#homeLocationText').text('Đang lấy vị trí GPS...');
+                $('#homeUserAddressDisplay').text('Đang lấy tọa độ GPS từ thiết bị...');
 
                 navigator.geolocation.getCurrentPosition(
                     function (pos) {
@@ -133,13 +401,14 @@
                         sessionStorage.setItem('user_lon', currentLon);
                         $('#geoConsentToast').fadeOut(250);
 
-                        updateLocationName(currentLat, currentLon);
+                        updateLocationName(currentLat, currentLon, panMapAfter);
                         loadLiveConditions(currentLat, currentLon);
                     },
                     function (err) {
                         console.warn('Geolocation error:', err);
                         $('#geoConsentToast').fadeOut(250);
                         $('#homeLocationText').text('Mặc định: TP. Hồ Chí Minh');
+                        $('#homeUserAddressDisplay').text('Chưa cấp quyền GPS. Mặc định: TP. Hồ Chí Minh');
                         loadLiveConditions(null, null);
                     },
                     { timeout: 10000, enableHighAccuracy: true }
@@ -148,7 +417,7 @@
 
             // Event Listeners cho Popup
             $('#btnGrantGeo').click(function () {
-                requestLocation();
+                requestLocation(true);
             });
 
             $('#btnDismissGeo').click(function () {
@@ -162,10 +431,11 @@
 
             // Khởi tạo trang: Nếu đã có tọa độ thì dùng, nếu chưa thì tải mặc định và hiện popup sau 800ms
             if (currentLat && currentLon) {
-                updateLocationName(parseFloat(currentLat), parseFloat(currentLon));
-                loadLiveConditions(parseFloat(currentLat), parseFloat(currentLon));
+                updateLocationName(currentLat, currentLon, false);
+                loadLiveConditions(currentLat, currentLon);
             } else {
                 $('#homeLocationText').text('Mặc định: TP. Hồ Chí Minh');
+                $('#homeUserAddressDisplay').text('Chưa có vị trí GPS. Nhấn "Vị trí của tôi" để cấp quyền.');
                 loadLiveConditions(null, null);
 
                 if (!sessionStorage.getItem('geo_consent_dismissed') && navigator.geolocation) {
@@ -175,7 +445,9 @@
                 }
             }
 
-            // Tính cước dự kiến trên Trang chủ
+            // ==========================================
+            // 4. TÍNH CƯỚC DỰ KIẾN TRÊN TRANG CHỦ
+            // ==========================================
             $('#btnCalcPrice').click(function () {
                 var method = $('#calcMethod').val();
                 var weight = parseFloat($('#calcWeight').val());
@@ -202,7 +474,7 @@
                     if (res.success) {
                         var formattedPrice = Number(res.price).toLocaleString('vi-VN') + ' VNĐ';
                         var baseFeeText = Number(res.baseShippingFee || 0).toLocaleString('vi-VN') + ' VNĐ';
-                        
+
                         var breakdownHtml = '<strong>Cước phí dự kiến: ' + formattedPrice + '</strong> (' + method + ' - ' + distance + ' km)';
                         breakdownHtml += '<div class="mt-1 small">';
                         breakdownHtml += '&bull; Cước cơ bản: ' + baseFeeText;

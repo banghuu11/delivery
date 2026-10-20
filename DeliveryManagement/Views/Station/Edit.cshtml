@@ -1,0 +1,212 @@
+@model DeliveryManagement.Models.MapStation
+@{
+    ViewData["Title"] = $"Chỉnh sửa bưu cục: {Model.StationName}";
+}
+
+@section Styles {
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <style>
+        #stationPickerMap {
+            height: 480px;
+            border-radius: 1rem;
+            border: 1px solid #cbd5e1;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+    </style>
+}
+
+<div class="order-create-page">
+    <div class="order-create-header d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h1><i class="bi bi-pencil-square text-orange me-2"></i>Chỉnh Sửa Bưu Cục</h1>
+            <p>Cập nhật thông tin, địa chỉ và vị trí tọa độ của bưu cục <strong>@Model.StationName</strong></p>
+        </div>
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách
+        </a>
+    </div>
+
+    @if (!ViewData.ModelState.IsValid && ViewData.ModelState.ErrorCount > 0)
+    {
+        <div class="alert alert-danger alert-dismissible fade show rounded-3" role="alert">
+            <div asp-validation-summary="All" class="text-danger mb-0"></div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <form asp-action="Edit" asp-route-id="@Model.StationId" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" asp-for="StationId" />
+
+        <div class="row g-4">
+            <!-- CỘT TRÁI: FORM NHẬP LIỆU -->
+            <div class="col-lg-5 col-md-12">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <h5 class="fw-bold mb-3 text-dark">
+                        <i class="bi bi-info-circle me-1 text-primary"></i> Thông tin cơ bản
+                    </h5>
+
+                    <div class="mb-3">
+                        <label asp-for="StationName" class="form-label fw-semibold">Tên bưu cục / trạm <span class="text-danger">*</span></label>
+                        <input asp-for="StationName" class="form-control rounded-3" required />
+                        <span asp-validation-for="StationName" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Address" class="form-label fw-semibold">Địa chỉ chi tiết <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input asp-for="Address" id="stationAddressInput" class="form-control rounded-start-3" required />
+                            <button type="button" class="btn btn-outline-primary" id="btnGeocodeAddress" title="Tìm tọa độ theo địa chỉ này">
+                                <i class="bi bi-search-heart"></i> Tìm GPS
+                            </button>
+                        </div>
+                        <span asp-validation-for="Address" class="text-danger small"></span>
+                        <div class="form-text text-muted">Kéo thả ghim hoặc click trên bản đồ để thay đổi vị trí.</div>
+                    </div>
+
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label asp-for="Latitude" class="form-label fw-semibold">Vĩ độ (Lat) <span class="text-danger">*</span></label>
+                            <input asp-for="Latitude" id="stationLatInput" class="form-control rounded-3 font-monospace" step="any" required />
+                            <span asp-validation-for="Latitude" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Longitude" class="form-label fw-semibold">Kinh độ (Lon) <span class="text-danger">*</span></label>
+                            <input asp-for="Longitude" id="stationLonInput" class="form-control rounded-3 font-monospace" step="any" required />
+                            <span asp-validation-for="Longitude" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="form-check form-switch mb-4">
+                        <input asp-for="IsActive" class="form-check-input" type="checkbox" id="isActiveSwitch" />
+                        <label class="form-check-label fw-semibold" for="isActiveSwitch">Bưu cục đang hoạt động</label>
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-orange rounded-pill px-4 py-2 flex-grow-1 fw-bold shadow-sm">
+                            <i class="bi bi-check2-circle me-1"></i> Lưu thay đổi
+                        </button>
+                        <a asp-action="Index" class="btn btn-light border rounded-pill px-4 py-2 text-dark">
+                            Hủy bỏ
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CỘT PHẢI: BẢN ĐỒ CHỌN TỌA ĐỘ -->
+            <div class="col-lg-7 col-md-12">
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="fw-bold mb-0 text-dark">
+                            <i class="bi bi-map me-1 text-orange"></i> Vị trí trên bản đồ
+                        </h5>
+                        <span class="badge bg-light text-secondary border small">
+                            <i class="bi bi-hand-index-thumb me-1"></i> Click chuột hoặc kéo thả ghim
+                        </span>
+                    </div>
+
+                    <div id="stationPickerMap"></div>
+                    <div class="mt-2 text-muted small d-flex align-items-center gap-1">
+                        <i class="bi bi-info-circle text-primary"></i>
+                        <span>Click vào bản đồ để cập nhật tọa độ hoặc kéo thả ghim trực tiếp.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        $(document).ready(function () {
+            let currentLat = parseFloat($('#stationLatInput').val()) || 10.776889;
+            let currentLon = parseFloat($('#stationLonInput').val()) || 106.695444;
+
+            const map = L.map('stationPickerMap', {
+                zoomControl: true,
+                scrollWheelZoom: true
+            }).setView([currentLat, currentLon], 14);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 19,
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(map);
+
+            function getPickerIcon() {
+                return L.divIcon({
+                    className: 'custom-picker-icon',
+                    html: '<div class="leaflet-station-marker"><div class="pin-body"><i class="bi bi-geo-alt-fill"></i></div></div>',
+                    iconSize: [36, 46],
+                    iconAnchor: [18, 42],
+                    popupAnchor: [0, -38]
+                });
+            }
+
+            let marker = L.marker([currentLat, currentLon], {
+                icon: getPickerIcon(),
+                draggable: true
+            }).addTo(map);
+
+            marker.bindPopup('<strong>Vị trí bưu cục hiện tại.</strong><br>Kéo thả ghim để cập nhật tọa độ.').openPopup();
+
+            function updateInputsAndReverseGeocode(lat, lon) {
+                $('#stationLatInput').val(lat.toFixed(7));
+                $('#stationLonInput').val(lon.toFixed(7));
+
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.display_name) {
+                            marker.setPopupContent(`<strong>Vị trí đã chọn:</strong><br><small>${data.display_name}</small>`).openPopup();
+                        }
+                    })
+                    .catch(e => console.warn(e));
+            }
+
+            marker.on('dragend', function (e) {
+                const pos = marker.getLatLng();
+                updateInputsAndReverseGeocode(pos.lat, pos.lng);
+            });
+
+            map.on('click', function (e) {
+                marker.setLatLng(e.latlng);
+                updateInputsAndReverseGeocode(e.latlng.lat, e.latlng.lng);
+            });
+
+            $('#btnGeocodeAddress').click(function () {
+                const addr = $('#stationAddressInput').val().trim();
+                if (!addr) {
+                    alert('Vui lòng nhập địa chỉ trước khi tìm kiếm.');
+                    return;
+                }
+
+                fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addr)}&limit=1`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data && data.length > 0) {
+                            const lat = parseFloat(data[0].lat);
+                            const lon = parseFloat(data[0].lon);
+                            map.flyTo([lat, lon], 15, { duration: 1.2 });
+                            marker.setLatLng([lat, lon]);
+                            $('#stationLatInput').val(lat.toFixed(7));
+                            $('#stationLonInput').val(lon.toFixed(7));
+                            marker.setPopupContent(`<strong>Đã tìm thấy:</strong><br><small>${data[0].display_name}</small>`).openPopup();
+                        } else {
+                            alert('Không tìm thấy tọa độ cho địa chỉ này trên bản đồ.');
+                        }
+                    })
+                    .catch(() => alert('Lỗi khi tìm kiếm tọa độ.'));
+            });
+
+            $('#stationLatInput, #stationLonInput').on('change', function () {
+                const lat = parseFloat($('#stationLatInput').val());
+                const lon = parseFloat($('#stationLonInput').val());
+                if (!isNaN(lat) && !isNaN(lon)) {
+                    marker.setLatLng([lat, lon]);
+                    map.panTo([lat, lon]);
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,461 @@
+@model DeliveryManagement.Models.DeliveryOrder
+@{
+    Layout = null;
+    var viCulture = new System.Globalization.CultureInfo("vi-VN");
+    var totalWeight = Model.OrderItems.Sum(i => i.Weight * i.Quantity);
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Phiếu Giao Hàng & Hóa Đơn - @Model.OrderCode</title>
+    
+    <!-- Google Fonts & Bootstrap Icons -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Mono:wght@700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+
+    <style>
+        :root {
+            --brand-color: #ff5400;
+            --brand-dark: #0f172a;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: #f1f5f9;
+            color: #1e293b;
+            margin: 0;
+            padding: 20px 0;
+        }
+
+        /* Top Action Bar (Không in) */
+        .print-toolbar {
+            max-width: 840px;
+            margin: 0 auto 16px auto;
+            background: #ffffff;
+            border-radius: 12px;
+            padding: 12px 20px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Khổ phiếu in chuẩn A5 / 1/2 A4 */
+        .waybill-sheet {
+            max-width: 840px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 24px 28px;
+            border-radius: 8px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+            border: 2px solid #334155;
+            position: relative;
+        }
+
+        .header-brand {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--brand-color);
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .waybill-title {
+            font-size: 1.25rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #0f172a;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .waybill-code {
+            font-family: 'Space Mono', monospace;
+            font-size: 1.35rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+
+        .address-box {
+            border: 1.5px solid #cbd5e1;
+            border-radius: 6px;
+            padding: 10px 12px;
+            height: 100%;
+            background: #ffffff;
+        }
+
+        .address-box.receiver-box {
+            border-color: #0f172a;
+            border-width: 2px;
+            background: #fafafa;
+        }
+
+        .box-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 8px;
+            border-radius: 4px;
+        }
+
+        .table-items {
+            font-size: 0.85rem;
+            border: 1px solid #cbd5e1;
+            margin-bottom: 0;
+        }
+
+        .table-items th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 700;
+            border-bottom: 2px solid #94a3b8;
+            padding: 6px 8px;
+        }
+
+        .table-items td {
+            padding: 6px 8px;
+            border-color: #e2e8f0;
+            vertical-align: middle;
+        }
+
+        .price-summary-box {
+            border: 2px solid var(--brand-dark);
+            border-radius: 6px;
+            padding: 10px 14px;
+            background: #f8fafc;
+        }
+
+        .total-amount-display {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--brand-color);
+        }
+
+        .sign-box {
+            text-align: center;
+            height: 90px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .cut-line {
+            border-top: 1px dashed #94a3b8;
+            margin: 16px 0 12px 0;
+            position: relative;
+            text-align: center;
+        }
+
+        .cut-line span {
+            background: #ffffff;
+            padding: 0 10px;
+            font-size: 0.75rem;
+            color: #64748b;
+            position: relative;
+            top: -10px;
+        }
+
+        /* In an toi uu hoa */
+        @("@media print") {
+            body {
+                background: #ffffff !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+
+            .print-toolbar {
+                display: none !important;
+            }
+
+            .waybill-sheet {
+                box-shadow: none !important;
+                border: 2px solid #000000 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 16px !important;
+                border-radius: 0 !important;
+            }
+
+            @("@page") {
+                size: A5 landscape;
+                margin: 6mm;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TOOLBAR (Ẩn khi bấm in) -->
+    <div class="print-toolbar d-print-none">
+        <div class="d-flex align-items-center gap-2">
+            <button onclick="window.history.back()" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-arrow-left me-1"></i> Quay lại
+            </button>
+            <span class="badge bg-light text-dark border">
+                <i class="bi bi-file-earmark-text me-1"></i> Khổ in chuẩn A5 / A4
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <button onclick="window.print()" class="btn btn-primary btn-sm rounded-pill px-4 fw-bold shadow-sm">
+                <i class="bi bi-printer-fill me-1"></i> In hóa đơn / Phiếu gửi (Ctrl + P)
+            </button>
+        </div>
+    </div>
+
+    <!-- TỜ VẬN ĐƠN & HÓA ĐƠN CHUẨN IN -->
+    <div class="waybill-sheet">
+        <!-- 1. HEADER CÔNG TY & MÃ ĐƠN -->
+        <div class="row align-items-center pb-3 border-bottom border-2 border-dark mb-3">
+            <div class="col-4">
+                <div class="header-brand">TỐC ĐỘ DELIVERY</div>
+                <div class="small text-muted fw-semibold" style="font-size: 0.75rem;">Giao Nhanh - An Toàn - Đúng Hẹn</div>
+                <div class="small text-muted" style="font-size: 0.72rem;">Hotline: <strong>1900 6868</strong> | tocdodelivery.vn</div>
+            </div>
+            <div class="col-4 text-center">
+                <div class="waybill-title">PHIẾU GIAO HÀNG</div>
+                <div class="small text-secondary fw-semibold">HÓA ĐƠN VẬN CHUYỂN DỊCH VỤ</div>
+                <div class="text-muted" style="font-size: 0.75rem;">Ngày lập: @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+            </div>
+            <div class="col-4 text-end">
+                <div class="d-flex justify-content-end align-items-center gap-2">
+                    <div>
+                        <div class="waybill-code">#@Model.OrderCode</div>
+                        <!-- SVG BARCODE CODE128 -->
+                        <svg id="orderBarcode" style="max-height: 44px;"></svg>
+                    </div>
+                    <!-- QR CODE -->
+                    <div id="orderQrCode" style="width: 60px; height: 60px; flex-shrink: 0;" class="p-1 border rounded bg-white"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. THÔNG TIN NGƯỜI GỬI & NGƯỜI NHẬN -->
+        <div class="row g-2 mb-3">
+            <!-- BÊN GỬI -->
+            <div class="col-6">
+                <div class="address-box">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="box-badge bg-secondary text-white">1. NGƯỜI GỬI (FROM)</span>
+                        <span class="small text-muted" style="font-size: 0.75rem;">SĐT: <strong>@Model.SenderPhone</strong></span>
+                    </div>
+                    <div class="fw-bold text-dark fs-6">@Model.SenderName</div>
+                    <div class="small text-secondary" style="line-height: 1.35;">@Model.SenderAddress</div>
+                </div>
+            </div>
+
+            <!-- BÊN NHẬN -->
+            <div class="col-6">
+                <div class="address-box receiver-box">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <span class="box-badge bg-dark text-white">2. NGƯỜI NHẬN (TO)</span>
+                        <span class="fs-6 fw-bold text-primary">SĐT: @Model.ReceiverPhone</span>
+                    </div>
+                    <div class="fw-bold text-dark fs-5 mb-1">@Model.ReceiverName</div>
+                    <div class="small text-dark fw-semibold" style="line-height: 1.35;">@Model.ReceiverAddress</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. DANH SÁCH BƯU KIỆN & CẢNH BÁO -->
+        <div class="table-responsive mb-3">
+            <table class="table table-bordered table-items align-middle">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;" class="text-center">STT</th>
+                        <th style="width: 30%;">Tên kiện hàng / Mô tả</th>
+                        <th style="width: 15%;" class="text-center">Loại bao gói</th>
+                        <th style="width: 15%;" class="text-center">Kích thước</th>
+                        <th style="width: 10%;" class="text-center">Số lượng</th>
+                        <th style="width: 10%;" class="text-center">Khối lượng</th>
+                        <th style="width: 15%;" class="text-center">Cảnh báo</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model.OrderItems != null && Model.OrderItems.Any())
+                    {
+                        int stt = 1;
+                        foreach (var item in Model.OrderItems)
+                        {
+                            <tr>
+                                <td class="text-center fw-semibold">@stt</td>
+                                <td>
+                                    <strong>@(string.IsNullOrWhiteSpace(item.Description) ? "Bưu phẩm / Bưu kiện" : item.Description)</strong>
+                                </td>
+                                <td class="text-center">@(item.PackageType?.TypeName ?? "Gói tiêu chuẩn")</td>
+                                <td class="text-center font-monospace small">@item.Size</td>
+                                <td class="text-center fw-bold">@item.Quantity</td>
+                                <td class="text-center font-monospace">@item.Weight.ToString("0.##") kg</td>
+                                <td class="text-center">
+                                    @if (item.IsFragile)
+                                    {
+                                        <span class="badge bg-danger text-white p-1" style="font-size: 0.65rem;">DỄ VỠ</span>
+                                    }
+                                    @if (item.IsValuable)
+                                    {
+                                        <span class="badge bg-warning text-dark p-1" style="font-size: 0.65rem;">GIÁ TRỊ CAO</span>
+                                    }
+                                    @if (!item.IsFragile && !item.IsValuable)
+                                    {
+                                        <span class="badge bg-light text-secondary border p-1" style="font-size: 0.65rem;">HÀNG THƯỜNG</span>
+                                    }
+                                </td>
+                            </tr>
+                            stt++;
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">Bưu gửi nguyên kiện tiêu chuẩn</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <!-- 4. THÔNG TIN CƯỚC PHÍ & THANH TOÁN (HÓA ĐƠN) -->
+        <div class="row g-2 mb-3 align-items-stretch">
+            <!-- Cột trái: Chi tiết cước & Dịch vụ -->
+            <div class="col-7">
+                <div class="border rounded p-2 h-100 bg-white" style="font-size: 0.8rem;">
+                    <div class="d-flex justify-content-between border-bottom pb-1 mb-1">
+                        <span class="text-muted">Hình thức vận chuyển:</span>
+                        <strong class="text-dark">@Model.DeliveryMethod (Cự ly: @Model.DistanceKm km | Tổng KL: @totalWeight.ToString("0.##") kg)</strong>
+                    </div>
+                    <div class="d-flex justify-content-between border-bottom pb-1 mb-1">
+                        <span class="text-muted">Cước vận chuyển cơ bản:</span>
+                        <span>@(Model.BaseShippingFee > 0 ? Model.BaseShippingFee.ToString("N0", viCulture) + " đ" : Model.TotalAmount.ToString("N0", viCulture) + " đ")</span>
+                    </div>
+                    @if (Model.WeightFee > 0)
+                    {
+                        <div class="d-flex justify-content-between border-bottom pb-1 mb-1 text-muted">
+                            <span>Phụ phí vượt khối lượng:</span>
+                            <span>+@Model.WeightFee.ToString("N0", viCulture) đ</span>
+                        </div>
+                    }
+                    @if (Model.WeatherFee > 0)
+                    {
+                        <div class="d-flex justify-content-between border-bottom pb-1 mb-1 text-danger">
+                            <span>Phụ thu thời tiết (@(Model.WeatherDescription ?? "Mưa / Xấu")):</span>
+                            <span>+@Model.WeatherFee.ToString("N0", viCulture) đ</span>
+                        </div>
+                    }
+                    @if (Model.TrafficFee > 0)
+                    {
+                        <div class="d-flex justify-content-between border-bottom pb-1 mb-1 text-warning">
+                            <span>Phụ thu giao thông (@(Model.TrafficDescription ?? "Cao điểm")):</span>
+                            <span>+@Model.TrafficFee.ToString("N0", viCulture) đ</span>
+                        </div>
+                    }
+                    <div class="d-flex justify-content-between pt-1">
+                        <span class="text-muted">Hình thức thanh toán:</span>
+                        <span class="badge bg-light text-dark border">@Model.PaymentMethod</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cột phải: Khung tiền thanh toán lớn -->
+            <div class="col-5">
+                <div class="price-summary-box h-100 d-flex flex-column justify-content-center text-center">
+                    <span class="small fw-bold text-secondary text-uppercase mb-1">TỔNG CƯỚC THU (TOTAL COD & FEE)</span>
+                    <div class="total-amount-display mb-1">
+                        @Model.TotalAmount.ToString("N0", viCulture) <span class="fs-6 text-dark">VNĐ</span>
+                    </div>
+                    <div>
+                        @if (Model.PaymentStatus == "Đã thanh toán")
+                        {
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1">
+                                <i class="bi bi-check2-circle me-1"></i> ĐÃ THANH TOÁN
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1 fw-bold">
+                                <i class="bi bi-cash-coin me-1"></i> THU TIỀN NGƯỜI NHẬN
+                            </span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. CHỈ DẪN BƯU TÁ & KHUNG 3 CHỮ KÝ -->
+        <div class="border rounded p-2 mb-2 bg-light text-secondary" style="font-size: 0.75rem;">
+            <strong><i class="bi bi-info-circle me-1"></i>Chỉ dẫn bưu tá:</strong> Cho người nhận xem hàng trước khi nhận (không cho thử). Chuyển hoàn sau 3 lần giao không thành công. Mọi thắc mắc vui lòng liên hệ hotline 1900 6868.
+        </div>
+
+        <div class="row text-center mt-3 pt-1">
+            <div class="col-4">
+                <div class="sign-box">
+                    <div>
+                        <strong class="d-block text-dark small text-uppercase">Chữ ký người gửi</strong>
+                        <span class="text-muted" style="font-size: 0.72rem;">(Ký và ghi rõ họ tên)</span>
+                    </div>
+                    <div class="text-muted small">@Model.SenderName</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="sign-box">
+                    <div>
+                        <strong class="d-block text-dark small text-uppercase">Bưu tá tiếp nhận</strong>
+                        <span class="text-muted" style="font-size: 0.72rem;">(Ký và ghi rõ họ tên)</span>
+                    </div>
+                    <div class="text-muted small">Tốc Độ Delivery</div>
+                </div>
+            </div>
+            <div class="col-4">
+                <div class="sign-box">
+                    <div>
+                        <strong class="d-block text-dark small text-uppercase">Chữ ký người nhận</strong>
+                        <span class="text-muted" style="font-size: 0.72rem;">(Ký và ghi rõ ngày giờ nhận)</span>
+                    </div>
+                    <div class="text-muted small">...... / ...... / 2026</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS TẠO MÃ VẠCH & MÃ QR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            // 1. Tạo Barcode Code128 cho mã đơn hàng
+            try {
+                JsBarcode("#orderBarcode", "@Model.OrderCode", {
+                    format: "CODE128",
+                    lineColor: "#000000",
+                    width: 1.4,
+                    height: 38,
+                    displayValue: false,
+                    margin: 0
+                });
+            } catch (e) {
+                console.warn("Barcode rendering error:", e);
+            }
+
+            // 2. Tạo QR Code tra cứu đơn hàng trực tiếp
+            try {
+                const trackUrl = window.location.origin + "/Home/Track?orderCode=" + encodeURIComponent("@Model.OrderCode");
+                new QRCode(document.getElementById("orderQrCode"), {
+                    text: trackUrl,
+                    width: 60,
+                    height: 60,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            } catch (e) {
+                console.warn("QR Code rendering error:", e);
+            }
+        });
+    </script>
+</body>
+</html>

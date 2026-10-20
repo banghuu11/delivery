@@ -126,6 +126,9 @@
                                     </td>
                                     <td class="text-end">
                                         <div class="btn-group btn-group-sm">
+                                            <a asp-controller="DeliveryOrder" asp-action="PrintWaybill" asp-route-id="@order.OrderCode" target="_blank" class="btn btn-outline-dark" title="In phiếu giao hàng / Hóa đơn">
+                                                <i class="bi bi-printer-fill"></i>
+                                            </a>
                                             <a asp-action="OrderDetails" asp-route-id="@order.OrderCode" class="btn btn-outline-primary" title="Xem chi tiết">
                                                 <i class="bi bi-eye-fill"></i>
                                             </a>

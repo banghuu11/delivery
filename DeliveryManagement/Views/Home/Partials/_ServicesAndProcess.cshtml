@@ -31,36 +31,123 @@
     </div>
 </section>
 
-<!-- DANH SÁCH BƯU CỤC & TRẠM TRUNG CHUYỂN TỪ DB (MAPSTATIONS) -->
+<!-- BẢN ĐỒ MẠNG LƯỚI BƯU CỤC & VỊ TRÍ CỦA BẠN (US08) -->
 @if (Model.Stations != null && Model.Stations.Any())
 {
-    <section class="py-5 bg-light">
+    <section id="stations-network" class="py-5 bg-light position-relative">
         <div class="container py-4">
-            <div class="text-center mb-5">
-                <span class="badge bg-orange-soft text-orange fw-bold px-3 py-2 rounded-pill mb-2 text-uppercase">Mạng lưới bưu cục</span>
-                <h2 class="fw-bold section-heading">Hệ Thống Trạm & Bưu Cục Tiếp Nhận</h2>
-                <p class="text-muted">Mạng lưới phủ sóng rộng khắp, hỗ trợ lấy hàng và gửi hàng tận nơi.</p>
+            <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 gap-3">
+                <div>
+                    <span class="badge bg-orange-soft text-orange fw-bold px-3 py-2 rounded-pill mb-2 text-uppercase">
+                        <i class="bi bi-geo-alt-fill me-1"></i> Mạng lưới bưu cục toàn quốc
+                    </span>
+                    <h2 class="fw-bold section-heading mb-1">Hệ Thống Bưu Cục & Bản Đồ Điểm Gửi Hàng</h2>
+                    <p class="text-muted mb-0">Tra cứu nhanh bưu cục gần bạn nhất, xem khoảng cách thực tế và nhận chỉ đường chính xác.</p>
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-outline-primary btn-sm rounded-pill px-3 fw-semibold shadow-sm" id="btnRelocateUser">
+                        <i class="bi bi-crosshair me-1"></i> Vị trí của tôi
+                    </button>
+                    <a asp-controller="Home" asp-action="Stations" class="btn btn-orange btn-sm rounded-pill px-3 fw-semibold shadow-sm">
+                        <i class="bi bi-arrows-fullscreen me-1"></i> Mở bản đồ lớn
+                    </a>
+                </div>
             </div>
 
-            <div class="row g-3">
-                @foreach (var station in Model.Stations)
-                {
-                    <div class="col-lg-4 col-md-6">
-                        <div class="card h-100 border-0 shadow-sm rounded-4 p-3 bg-white">
-                            <div class="d-flex align-items-start">
-                                <div class="badge bg-orange text-white p-2 rounded-3 me-3 mt-1">
-                                    <i class="bi bi-geo-alt-fill fs-5"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-bold mb-1 text-dark">@station.StationName</h6>
-                                    <p class="text-muted small mb-2">@station.Address</p>
-                                    <span class="badge bg-success-subtle text-success border border-success small">Đang hoạt động</span>
-                                </div>
+            <div class="row g-4">
+                <!-- Cột trái: Vị trí của bạn + Tìm kiếm + Danh sách bưu cục -->
+                <div class="col-lg-5 col-md-12">
+                    <!-- Card vị trí bản thân -->
+                    <div class="card border-0 shadow-sm rounded-4 p-3 mb-3 user-location-box">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="user-pulse-dot"></span>
+                                <span class="fw-bold text-dark small text-uppercase">Vị trí của bạn</span>
                             </div>
+                            <span class="badge bg-primary-subtle text-primary small" id="homeUserGpsBadge">GPS thiết bị</span>
+                        </div>
+                        <div class="d-flex align-items-start gap-2">
+                            <i class="bi bi-geo-alt-fill text-primary fs-5 mt-1"></i>
+                            <div class="flex-grow-1">
+                                <div class="fw-semibold text-dark small" id="homeUserAddressDisplay">Đang tải vị trí của bạn...</div>
+                                <div class="text-muted" style="font-size: 0.75rem;" id="homeUserCoordsDisplay">Tọa độ: --</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-light border rounded-circle p-2 text-primary shadow-sm" id="btnRecenterUser" title="Xem vị trí của tôi trên bản đồ">
+                                <i class="bi bi-crosshair2"></i>
+                            </button>
                         </div>
                     </div>
-                }
+
+                    <!-- Ô tìm kiếm bưu cục -->
+                    <div class="input-group mb-3 shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" id="stationSearchInput" class="form-control border-start-0 ps-0" placeholder="Tìm theo tên bưu cục hoặc địa chỉ...">
+                        <button class="btn btn-light border" type="button" id="btnClearStationSearch" title="Xóa tìm kiếm"><i class="bi bi-x"></i></button>
+                    </div>
+
+                    <!-- Danh sách card bưu cục có cuộn -->
+                    <div class="station-list-scrollable" id="stationCardsContainer">
+                        @foreach (var station in Model.Stations)
+                        {
+                            <div class="card border-0 shadow-sm rounded-4 p-3 mb-2 station-item-card" 
+                                 data-station-id="@station.StationId"
+                                 data-name="@station.StationName"
+                                 data-address="@station.Address"
+                                 data-lat="@station.Latitude"
+                                 data-lon="@station.Longitude">
+                                <div class="d-flex align-items-start justify-content-between">
+                                    <div class="d-flex align-items-start gap-2 flex-grow-1">
+                                        <div class="station-card-icon bg-orange-soft text-orange rounded-3 p-2 text-center mt-1 flex-shrink-0">
+                                            <i class="bi bi-box-seam-fill fs-5"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="fw-bold mb-1 text-dark station-name-text">@station.StationName</h6>
+                                            <p class="text-muted small mb-2 station-address-text">
+                                                <i class="bi bi-geo-alt text-secondary me-1"></i>@station.Address
+                                            </p>
+                                            <div class="d-flex flex-wrap gap-2 align-items-center">
+                                                <span class="badge bg-success-subtle text-success border border-success-subtle small">
+                                                    <i class="bi bi-check-circle-fill me-1"></i>Đang hoạt động
+                                                </span>
+                                                <span class="badge bg-light text-secondary border station-distance-badge" style="display: none;">
+                                                    <i class="bi bi-signpost-2 me-1"></i><span class="dist-val">--</span> km
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2 mt-3 pt-2 border-top">
+                                    <button type="button" class="btn btn-sm btn-outline-orange flex-fill rounded-pill btn-focus-station">
+                                        <i class="bi bi-geo-alt-fill me-1"></i> Xem trên bản đồ
+                                    </button>
+                                    <a href="https://www.google.com/maps/dir/?api=1&destination=@station.Latitude,@station.Longitude" 
+                                       target="_blank" 
+                                       class="btn btn-sm btn-light border flex-fill rounded-pill text-dark text-nowrap">
+                                        <i class="bi bi-sign-turn-right-fill text-primary me-1"></i> Chỉ đường
+                                    </a>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Cột phải: Bản đồ Leaflet -->
+                <div class="col-lg-7 col-md-12">
+                    <div class="position-relative">
+                        <div id="homeStationMap" class="station-map-container"></div>
+                        <!-- Nút điều khiển nhanh nổi trên bản đồ -->
+                        <div class="map-floating-controls">
+                            <button type="button" class="btn btn-white btn-sm shadow-sm rounded-circle p-2 map-ctrl-btn" id="btnFitAllStations" title="Xem tất cả bưu cục">
+                                <i class="bi bi-aspect-ratio text-dark"></i>
+                            </button>
+                            <button type="button" class="btn btn-white btn-sm shadow-sm rounded-circle p-2 map-ctrl-btn" id="btnFocusUserLoc" title="Đến vị trí của tôi">
+                                <i class="bi bi-crosshair2 text-primary"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 }
+
