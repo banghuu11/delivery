@@ -82,6 +82,16 @@
                             <span class="text-muted small">Tổng tiền cước:</span>
                             <div class="fw-bold text-success fs-5">@Model.TotalAmount.ToString("N0") đ</div>
                         </div>
+                        <div class="col-md-4">
+                            <span class="text-muted small">Thanh toán:</span>
+                            <div>@await Html.PartialAsync("_PaymentBadge", (Model.PaymentMethod, Model.PaymentStatus))</div>
+                            @if (Model.PaymentTime.HasValue)
+                            {
+                                <small class="text-muted">
+                                    @((Model.PaymentAmount ?? Model.TotalAmount).ToString("N0")) đ lúc @Model.PaymentTime.Value.ToString("HH:mm dd/MM/yyyy")
+                                </small>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
@@ -114,7 +124,6 @@
                                         <td><span class="badge bg-secondary">@(item.PackageType?.TypeName ?? "-")</span></td>
                                         <td>@item.Quantity</td>
                                         <td>@item.Weight kg</td>
-                                        <td>@(string.IsNullOrWhiteSpace(item.Size) ? "-" : item.Size)</td>
                                         <td>
                                             @if (item.IsFragile) { <span class="badge bg-warning text-dark me-1">Dễ vỡ</span> }
                                             @if (item.IsValuable) { <span class="badge bg-danger">Giá trị cao</span> }

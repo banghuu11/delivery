@@ -43,13 +43,12 @@ namespace DeliveryManagement.Controllers
         // MỞ TRANG GHI NHẬN
         // =========================
 
+
         [HttpGet]
         public async Task<IActionResult> Record(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
-            {
                 return NotFound();
-            }
 
             var order = await _context.DeliveryOrders
                 .Include(o => o.OrderItems)
@@ -57,26 +56,20 @@ namespace DeliveryManagement.Controllers
                 .FirstOrDefaultAsync(o => o.OrderCode == id);
 
             if (order == null)
-            {
                 return NotFound();
-            }
 
             if (order.CurrentStatus == "Đã hủy")
             {
-                TempData["ErrorMessage"] =
-                    "Không thể ghi nhận đơn hàng đã hủy.";
-
+                TempData["ErrorMessage"] = "Không thể ghi nhận đơn hàng đã hủy.";
                 return RedirectToAction(nameof(Index));
             }
 
             var model = new ReceptionViewModel
             {
                 OrderCode = order.OrderCode,
-
                 ReceiverName = order.ReceiverName,
                 ReceiverPhone = order.ReceiverPhone,
                 ReceiverAddress = order.ReceiverAddress,
-
                 ReceptionNote = order.ReceptionNote,
 
                 Items = order.OrderItems
@@ -86,107 +79,135 @@ namespace DeliveryManagement.Controllers
                         OrderItemId = i.OrderItemId,
                         PackageTypeId = i.PackageTypeId,
                         PackageTypeName = i.PackageType?.TypeName ?? "Chưa phân loại",
-
-                        Description = i.Description,
-                        Size = i.Size,
+                        Description = i.Description ?? string.Empty,
                         Quantity = i.Quantity,
                         Weight = i.Weight,
-
                         IsFragile = i.IsFragile,
                         IsValuable = i.IsValuable
                     })
                     .ToList()
             };
 
+            // Truyền trạng thái để View biết chỉ xem hay được ghi nhận.
+            ViewBag.IsRecorded = order.ReceivedAt.HasValue;
+            ViewBag.ReceivedAt = order.ReceivedAt;
+            ViewBag.ReceivedBy = order.ReceivedBy;
+
             return View(model);
         }
-
-        // =========================
-        // LƯU GHI NHẬN
-        // =========================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Record(ReceptionViewModel model)
         {
-            if (!ModelState.IsValid)
-            {
-                return View(model);
-            }
-
             var user = await _userManager.GetUserAsync(User);
 
             if (user == null)
-            {
                 return Challenge();
-            }
 
             var order = await _context.DeliveryOrders
                 .Include(o => o.OrderItems)
                 .FirstOrDefaultAsync(o => o.OrderCode == model.OrderCode);
 
             if (order == null)
-            {
                 return NotFound();
-            }
 
             if (order.CurrentStatus == "Đã hủy")
             {
-                TempData["ErrorMessage"] =
-                    "Không thể ghi nhận đơn hàng đã hủy.";
-
+                TempData["ErrorMessage"] = "Không thể ghi nhận đơn hàng đã hủy.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // =========================
-            // CẬP NHẬT THÔNG TIN NGƯỜI NHẬN
-            // =========================
+            // Đã ghi nhận rồi thì không cho sửa bằng cách gửi POST trực tiếp.
+            if (order.ReceivedAt.HasValue)
+            {
+                TempData["ErrorMessage"] =
+                    "Đơn hàng đã được ghi nhận. Chỉ có thể xem hoặc in đơn hàng.";
 
+                return RedirectToAction(
+                    nameof(Record),
+                    new { id = order.OrderCode });
+            }
+
+            if (!ModelState.IsValid)
+            {
+                // Nạp lại thông tin hiển thị nếu validation thất bại.
+                var invalidModel = model;
+                invalidModel.Items ??= new List<ReceptionItemViewModel>();
+
+                var savedOrder = await _context.DeliveryOrders
+                    .Include(o => o.OrderItems)
+                        .ThenInclude(i => i.PackageType)
+                    .FirstOrDefaultAsync(o => o.OrderCode == model.OrderCode);
+
+                if (savedOrder != null)
+                {
+                    foreach (var item in invalidModel.Items)
+                    {
+                        var savedItem = savedOrder.OrderItems
+                            .FirstOrDefault(i => i.OrderItemId == item.OrderItemId);
+
+                        if (savedItem != null)
+                            item.PackageTypeName =
+                                savedItem.PackageType?.TypeName ?? "Chưa phân loại";
+                    }
+                }
+
+                ViewBag.IsRecorded = false;
+                return View(invalidModel);
+            }
+
+            if (model.Items == null || model.Items.Count == 0)
+            {
+                ModelState.AddModelError("", "Đơn hàng chưa có thông tin hàng hóa.");
+                ViewBag.IsRecorded = false;
+                return View(model);
+            }
+
+            // Cập nhật thông tin người nhận.
             order.ReceiverName = model.ReceiverName;
             order.ReceiverPhone = model.ReceiverPhone;
             order.ReceiverAddress = model.ReceiverAddress;
 
-            // =========================
-            // CẬP NHẬT THÔNG TIN HÀNG HÓA
-            // =========================
-
+            // Chỉ cập nhật những mặt hàng thực sự thuộc đơn này.
             foreach (var itemModel in model.Items)
             {
-                var item = order.OrderItems
-                    .FirstOrDefault(i =>
-                        i.OrderItemId == itemModel.OrderItemId);
+                var item = order.OrderItems.FirstOrDefault(
+                    i => i.OrderItemId == itemModel.OrderItemId);
 
                 if (item == null)
-                {
                     continue;
-                }
 
-                // ReceptionStaff được chỉnh thông tin thực tế
-                // nhưng KHÔNG thay đổi PackageTypeId.
-                // PackageTypeId để WarehouseStaff xử lý ở #14.
-
-                item.Description = itemModel.Description;
-                item.Size = itemModel.Size;
+                // Description trong database không cho phép NULL.
+                item.Description = itemModel.Description ?? string.Empty;
                 item.Quantity = itemModel.Quantity;
                 item.Weight = itemModel.Weight;
                 item.IsFragile = itemModel.IsFragile;
                 item.IsValuable = itemModel.IsValuable;
             }
 
-            // =========================
-            // THÔNG TIN TIẾP NHẬN
-            // =========================
-
             order.ReceivedBy = user.Id;
             order.ReceivedAt = DateTime.Now;
             order.ReceptionNote = model.ReceptionNote;
+            // Sau khi tiếp nhận ghi nhận xong, đơn sẵn sàng để kho điều phối.
+            order.CurrentStatus = "Đã nhận - Chưa giao";
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                Console.WriteLine("[RECEPTION] Lỗi khi lưu thông tin tiếp nhận:");
+                Console.WriteLine(ex.ToString());
+                throw;
+            }
 
             TempData["SuccessMessage"] =
                 $"Đã ghi nhận thông tin đơn {order.OrderCode}.";
 
             return RedirectToAction(nameof(Index));
         }
+
     }
 }

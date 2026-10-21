@@ -6,14 +6,34 @@
 
 <div class="container mt-4 mb-5">
 
-    <div class="mb-4">
-        <h2 class="mb-1">Quản lý kho</h2>
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
 
-        <p class="text-muted mb-0">
-            Phân loại hàng hóa và cập nhật trạng thái đơn hàng.
-        </p>
+        <div>
+            <h2 class="mb-1">Quản lý kho</h2>
+            <p class="text-muted mb-0">
+                Phân loại hàng hóa, điều phối và xử lý đơn hàng.
+            </p>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2">
+
+            <a asp-controller="Warehouse"
+               asp-action="Dispatch"
+               class="btn btn-primary">
+                <i class="bi bi-truck me-1"></i>
+                Điều phối đơn giao nhanh
+            </a>
+
+            <a asp-controller="Warehouse"
+               asp-action="FailedDeliveries"
+               class="btn btn-outline-danger">
+                <i class="bi bi-exclamation-triangle me-1"></i>
+                Xử lý đơn giao thất bại
+            </a>
+
+        </div>
+
     </div>
-
 
     @if (TempData["SuccessMessage"] != null)
     {
@@ -29,8 +49,7 @@
         </div>
     }
 
-
-    @if (!Model.Any())
+    @if (Model == null || !Model.Any())
     {
         <div class="alert alert-info">
             Hiện chưa có đơn hàng cần xử lý.
@@ -57,53 +76,53 @@
                             </tr>
                         </thead>
 
-
                         <tbody>
 
                             @foreach (var order in Model)
                             {
-                                var totalWeight =
-                                order.OrderItems.Sum(
+                                var totalWeight = order.OrderItems.Sum(
                                 i => i.Weight * i.Quantity);
 
                                 <tr>
 
                                     <td>
-                                        <strong>
-                                            @order.OrderCode
-                                        </strong>
+                                        <strong>@order.OrderCode</strong>
                                     </td>
-
 
                                     <td>
                                         @order.DeliveryMethod
                                     </td>
 
-
                                     <td>
                                         @totalWeight.ToString("0.##") kg
                                     </td>
 
-
                                     <td>
-
                                         @if (order.CurrentStatus == "Đã Giao")
                                         {
                                             <span class="badge bg-success">
                                                 @order.CurrentStatus
                                             </span>
                                         }
-                                        else if (
-                                        order.CurrentStatus ==
-                                        "Đã nhận – Đang giao")
+                                        else if (order.CurrentStatus == "Giao thất bại - Chờ xử lý")
+                                        {
+                                            <span class="badge bg-danger">
+                                                @order.CurrentStatus
+                                            </span>
+                                        }
+                                        else if (order.CurrentStatus == "Chờ hoàn hàng")
+                                        {
+                                            <span class="badge bg-dark">
+                                                @order.CurrentStatus
+                                            </span>
+                                        }
+                                        else if (order.CurrentStatus == "Đã nhận – Đang giao")
                                         {
                                             <span class="badge bg-primary">
                                                 @order.CurrentStatus
                                             </span>
                                         }
-                                        else if (
-                                        order.CurrentStatus ==
-                                        "Đã nhận - Chưa giao")
+                                        else if (order.CurrentStatus == "Đã nhận - Chưa giao")
                                         {
                                             <span class="badge bg-warning text-dark">
                                                 @order.CurrentStatus
@@ -115,28 +134,22 @@
                                                 @order.CurrentStatus
                                             </span>
                                         }
-
                                     </td>
 
-
                                     <td>
-                                        @order.CreatedAt.ToString(
-                                        "dd/MM/yyyy HH:mm")
-                            </td>
+                                        @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </td>
 
+                                    <td class="text-end">
+                                        <a asp-action="Classify"
+                                           asp-route-id="@order.OrderCode"
+                                           class="btn btn-primary btn-sm">
+                                            Xử lý đơn
+                                        </a>
+                                    </td>
 
-                            <td class="text-end">
-
-                                <a asp-action="Classify"
-                                   asp-route-id="@order.OrderCode"
-                                   class="btn btn-primary btn-sm">
-                                    Xử lý đơn
-                                </a>
-
-                            </td>
-
-                        </tr>
-                                                }
+                                </tr>
+                            }
 
                         </tbody>
 

@@ -82,8 +82,7 @@ namespace DeliveryManagement.Models.ViewModels
         public int PackageTypeId { get; set; }
 
         [StringLength(500)]
-        public string Description { get; set; } = string.Empty;
-
+        public string? Description { get; set; } = string.Empty;
         [StringLength(100)]
         public string? Size { get; set; }
 
