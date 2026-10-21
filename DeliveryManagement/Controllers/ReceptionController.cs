@@ -189,6 +189,8 @@ namespace DeliveryManagement.Controllers
             order.ReceivedBy = user.Id;
             order.ReceivedAt = DateTime.Now;
             order.ReceptionNote = model.ReceptionNote;
+            // Sau khi tiếp nhận ghi nhận xong, đơn sẵn sàng để kho điều phối.
+            order.CurrentStatus = "Đã nhận - Chưa giao";
 
             try
             {

@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DeliveryManagement.Data;
 using DeliveryManagement.Models;
+using DeliveryManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -27,15 +28,18 @@ namespace DeliveryManagement.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
+        private readonly IPaymentService _paymentService;
 
         public DeliveryStaffController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IPaymentService paymentService)
         {
             _context = context;
             _userManager = userManager;
             _environment = environment;
+            _paymentService = paymentService;
         }
 
         // ==========================================
@@ -357,6 +361,9 @@ namespace DeliveryManagement.Controllers
 
                 return RedirectToAction(nameof(Index));
             }
+
+            // Thu tiền COD sau khi kết quả giao thành công đã được lưu.
+            await _paymentService.CollectCodAsync(id);
 
             TempData["SuccessMessage"] =
                 $"Đã ghi nhận giao hàng thành công cho đơn {id}.";

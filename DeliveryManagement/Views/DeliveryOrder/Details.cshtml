@@ -45,6 +45,49 @@
         </div>
     </div>
 
+    @{
+        var viPay = new System.Globalization.CultureInfo("vi-VN");
+        bool payPaid = Model.PaymentStatus == DeliveryManagement.Models.PaymentConstants.Paid;
+        bool payOnline = Model.PaymentMethod == DeliveryManagement.Models.PaymentConstants.Online;
+        bool payCancelled = Model.CurrentStatus == "Đã hủy";
+    }
+    <div class="card mb-4 shadow-sm border-0">
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-2">
+            <div>
+                <div class="text-muted small">Thanh toán</div>
+                <div>
+                    <strong>@Model.PaymentMethod</strong>
+                    @if (payPaid)
+                    {
+                        <span class="badge bg-success ms-2">Đã thanh toán</span>
+                    }
+                    else if (payCancelled)
+                    {
+                        <span class="badge bg-secondary ms-2">Đã hủy</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark ms-2">Chưa thanh toán</span>
+                    }
+                </div>
+                @if (payPaid && Model.PaymentTime.HasValue)
+                {
+                    <div class="text-muted small">
+                        @((Model.PaymentAmount ?? Model.TotalAmount).ToString("N0", viPay)) VNĐ lúc @Model.PaymentTime.Value.ToString("HH:mm dd/MM/yyyy")
+                    </div>
+                }
+            </div>
+            @if (!payPaid && !payCancelled)
+            {
+                <a asp-controller="Payment" asp-action="Pay" asp-route-id="@Model.OrderCode"
+                   class="btn @(payOnline ? "btn-success" : "btn-outline-primary") fw-bold rounded-pill px-4">
+                    <i class="bi bi-credit-card me-1"></i>
+                    @(payOnline ? "Thanh toán ngay" : "Xem / đổi phương thức")
+                </a>
+            }
+        </div>
+    </div>
+
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success">@TempData["SuccessMessage"]</div>

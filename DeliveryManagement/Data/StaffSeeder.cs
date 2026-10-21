@@ -10,11 +10,11 @@ namespace DeliveryManagement.Data
             UserManager<ApplicationUser> userManager)
         {
             await CreateStaffAsync(
-                userManager,
-                "reception@delivery.com",
-                "Staff@123",
-                "Nhân viên tiếp nhận",
-                "ReceptionStaff");
+    userManager,
+    "reception@delivery.com",
+    "Staff@123",
+    "Nhân viên tiếp nhận",
+    "ReceptionStaff");
 
             await CreateStaffAsync(
                 userManager,

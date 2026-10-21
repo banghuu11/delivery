@@ -82,6 +82,16 @@
                             <span class="text-muted small">Tổng tiền cước:</span>
                             <div class="fw-bold text-success fs-5">@Model.TotalAmount.ToString("N0") đ</div>
                         </div>
+                        <div class="col-md-4">
+                            <span class="text-muted small">Thanh toán:</span>
+                            <div>@await Html.PartialAsync("_PaymentBadge", (Model.PaymentMethod, Model.PaymentStatus))</div>
+                            @if (Model.PaymentTime.HasValue)
+                            {
+                                <small class="text-muted">
+                                    @((Model.PaymentAmount ?? Model.TotalAmount).ToString("N0")) đ lúc @Model.PaymentTime.Value.ToString("HH:mm dd/MM/yyyy")
+                                </small>
+                            }
+                        </div>
                     </div>
                 </div>
             </div>
