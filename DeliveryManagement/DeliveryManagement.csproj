@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <Folder Include="Hubs\" />
-    <Folder Include="Services\" />
   </ItemGroup>
 
 </Project>

@@ -40,6 +40,10 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPricingService, PricingService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 
+builder.Services.AddHttpClient<
+    IRouteDistanceService,
+    RouteDistanceService>();
+
 var app = builder.Build(); 
 var invariant = System.Globalization.CultureInfo.InvariantCulture;
 System.Globalization.CultureInfo.DefaultThreadCurrentCulture = invariant;
