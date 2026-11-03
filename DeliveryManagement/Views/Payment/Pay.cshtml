@@ -1,0 +1,169 @@
+@model DeliveryManagement.Models.DeliveryOrder
+@using DeliveryManagement.Models
+
+@{
+    ViewData["Title"] = "Thanh toán đơn hàng";
+    var vi = new System.Globalization.CultureInfo("vi-VN");
+    bool isPaid = Model.PaymentStatus == PaymentConstants.Paid;
+    bool isCancelled = Model.CurrentStatus == "Đã hủy";
+    bool isOnline = Model.PaymentMethod == PaymentConstants.Online;
+    bool canChange = Model.CurrentStatus == "Chưa nhận" && !isPaid;
+}
+
+<div class="container mt-4 mb-5" style="max-width: 760px;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h2 class="mb-1">Thanh toán đơn hàng</h2>
+            <p class="text-muted mb-0">Mã đơn: <strong>@Model.OrderCode</strong></p>
+        </div>
+        <a asp-controller="DeliveryOrder" asp-action="Details" asp-route-id="@Model.OrderCode"
+           class="btn btn-light border rounded-pill px-3">
+            <i class="bi bi-arrow-left me-1"></i> Chi tiết đơn
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="card shadow-sm border-0 mb-4">
+        <div class="card-body">
+            <div class="d-flex justify-content-between py-1">
+                <span class="text-muted">Phương thức thanh toán</span>
+                <strong>@Model.PaymentMethod</strong>
+            </div>
+            <div class="d-flex justify-content-between py-1">
+                <span class="text-muted">Trạng thái thanh toán</span>
+                @if (isPaid)
+                {
+                    <span class="badge bg-success">@Model.PaymentStatus</span>
+                }
+                else
+                {
+                    <span class="badge bg-warning text-dark">@Model.PaymentStatus</span>
+                }
+            </div>
+            <hr />
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fs-6">Số tiền cần thanh toán</span>
+                <span class="fs-3 fw-bold text-primary">@Model.TotalAmount.ToString("N0", vi) VNĐ</span>
+            </div>
+        </div>
+    </div>
+
+    @if (isPaid)
+    {
+        <div class="alert alert-success">
+            <i class="bi bi-check-circle-fill me-1"></i>
+            Đơn hàng đã được thanh toán
+            @if (Model.PaymentTime.HasValue)
+            {
+                <span>lúc <strong>@Model.PaymentTime.Value.ToString("HH:mm dd/MM/yyyy")</strong></span>
+            }
+            @if (Model.PaymentAmount.HasValue)
+            {
+                <span> — <strong>@Model.PaymentAmount.Value.ToString("N0", vi) VNĐ</strong></span>
+            }
+        </div>
+    }
+    else if (isCancelled)
+    {
+        <div class="alert alert-secondary">Đơn hàng đã hủy, không cần thanh toán.</div>
+    }
+    else if (Model.TotalAmount <= 0)
+    {
+        <div class="alert alert-warning">Đơn hàng chưa có cước phí hợp lệ nên chưa thể thanh toán.</div>
+    }
+    else if (!isOnline)
+    {
+        <div class="alert alert-info">
+            Đơn này đang chọn <strong>thanh toán khi giao hàng</strong>. Bạn sẽ trả
+            <strong>@Model.TotalAmount.ToString("N0", vi) VNĐ</strong> cho nhân viên giao hàng khi nhận hàng.
+        </div>
+    }
+    else
+    {
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-primary text-white fw-bold">
+                <i class="bi bi-bank me-1"></i> Chuyển khoản ngân hàng
+            </div>
+            <div class="card-body">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4 text-center">
+                        <div id="payQr" class="d-inline-block p-2 bg-white border rounded"></div>
+                        <div class="small text-muted mt-1">Quét mã để chuyển khoản</div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="d-flex justify-content-between py-1 border-bottom">
+                            <span class="text-muted">Ngân hàng</span>
+                            <strong>@ViewBag.BankName</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom">
+                            <span class="text-muted">Số tài khoản</span>
+                            <strong>@ViewBag.AccountNumber</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom">
+                            <span class="text-muted">Chủ tài khoản</span>
+                            <strong>@ViewBag.AccountName</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1 border-bottom">
+                            <span class="text-muted">Số tiền</span>
+                            <strong>@Model.TotalAmount.ToString("N0", vi) VNĐ</strong>
+                        </div>
+                        <div class="d-flex justify-content-between py-1">
+                            <span class="text-muted">Nội dung CK</span>
+                            <strong class="text-danger">@Model.OrderCode</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-warning small mt-3 mb-3">
+                    <i class="bi bi-info-circle me-1"></i>
+                    Đây là <strong>cổng thanh toán mô phỏng (demo)</strong>: sau khi bấm xác nhận,
+                    hệ thống ghi nhận đơn đã thanh toán mà không kiểm tra giao dịch ngân hàng thật.
+                </div>
+
+                <form asp-action="Pay" method="post"
+                      onsubmit="return confirm('Xác nhận đã chuyển khoản @(Model.TotalAmount.ToString("N0", vi)) VNĐ cho đơn @(Model.OrderCode)?');">
+                    <input type="hidden" name="id" value="@Model.OrderCode" />
+                    <input type="hidden" name="confirm" value="true" />
+                    <button type="submit" class="btn btn-success btn-lg w-100 fw-bold">
+                        <i class="bi bi-check2-circle me-1"></i> Xác nhận đã thanh toán
+                    </button>
+                </form>
+            </div>
+        </div>
+    }
+
+    @if (canChange && !isCancelled)
+    {
+        <form asp-action="ChangeMethod" method="post" class="text-center">
+            <input type="hidden" name="id" value="@Model.OrderCode" />
+            <input type="hidden" name="method" value="@(isOnline ? PaymentConstants.Cod : PaymentConstants.Online)" />
+            <button type="submit" class="btn btn-outline-secondary rounded-pill px-4">
+                <i class="bi bi-arrow-repeat me-1"></i>
+                Đổi sang "@(isOnline ? PaymentConstants.Cod : PaymentConstants.Online)"
+            </button>
+        </form>
+    }
+</div>
+
+@section Scripts {
+    @if (isOnline && !isPaid && !isCancelled)
+    {
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+        <script>
+            (function () {
+                var el = document.getElementById("payQr");
+                if (!el || typeof QRCode === "undefined") return;
+                var content = "BANK:@(ViewBag.BankName)|STK:@(ViewBag.AccountNumber)|AMOUNT:@(Model.TotalAmount.ToString("0"))|NOTE:@(Model.OrderCode)";
+                new QRCode(el, { text: content, width: 150, height: 150 });
+            })();
+        </script>
+    }
+}
