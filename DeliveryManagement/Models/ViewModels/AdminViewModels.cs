@@ -140,8 +140,8 @@ namespace DeliveryManagement.Models.ViewModels
         [Range(0.1, 10000, ErrorMessage = "Khoảng cách phải lớn hơn 0")]
         public decimal DistanceKm { get; set; } = 5;
 
-        public string PaymentMethod { get; set; } = "Tiền mặt khi nhận hàng (COD)";
-        public string PaymentStatus { get; set; } = "Chưa thanh toán";
+        public string PaymentMethod { get; set; } = PaymentConstants.Cod;
+        public string PaymentStatus { get; set; } = PaymentConstants.Unpaid;
 
         [Range(0, 1000000000, ErrorMessage = "Tổng tiền phải từ 0 trở lên")]
         public decimal TotalAmount { get; set; }
@@ -194,8 +194,8 @@ namespace DeliveryManagement.Models.ViewModels
         public string DeliveryMethod { get; set; } = "Giao tiêu chuẩn";
         public decimal DistanceKm { get; set; }
 
-        public string PaymentMethod { get; set; } = "Tiền mặt khi nhận hàng (COD)";
-        public string PaymentStatus { get; set; } = "Chưa thanh toán";
+        public string PaymentMethod { get; set; } = PaymentConstants.Cod;
+        public string PaymentStatus { get; set; } = PaymentConstants.Unpaid;
         public decimal TotalAmount { get; set; }
 
         public string CurrentStatus { get; set; } = "Chờ tiếp nhận";

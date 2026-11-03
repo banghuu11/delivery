@@ -1,0 +1,19 @@
+﻿@model (string Method, string Status)
+@{
+    bool paid = Model.Status == DeliveryManagement.Models.PaymentConstants.Paid;
+    bool refunded = Model.Status == DeliveryManagement.Models.PaymentConstants.Refunded;
+    bool online = Model.Method == DeliveryManagement.Models.PaymentConstants.Online;
+}
+@if (paid)
+{
+    <span class="badge bg-success">Đã thanh toán</span>
+}
+else if (refunded)
+{
+    <span class="badge bg-secondary">Hoàn tiền</span>
+}
+else
+{
+    <span class="badge bg-warning text-dark">Chưa thanh toán</span>
+}
+<small class="text-muted d-block">@(online ? "Trực tuyến" : "COD")</small>
