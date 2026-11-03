@@ -171,6 +171,10 @@ namespace DeliveryManagement.Migrations
                     b.Property<string>("OrderCode")
                         .HasColumnType("nvarchar(450)");
 
+                    b.Property<decimal>("BaseShippingFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -251,6 +255,24 @@ namespace DeliveryManagement.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TrafficDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TrafficFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("WeatherDescription")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("WeatherFee")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("WeightFee")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
@@ -410,9 +432,6 @@ namespace DeliveryManagement.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
-                    b.Property<string>("Size")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<decimal>("Weight")
                         .HasPrecision(10, 2)
                         .HasColumnType("decimal(10,2)");
@@ -523,6 +542,71 @@ namespace DeliveryManagement.Migrations
                     b.ToTable("PriceTables");
                 });
 
+            modelBuilder.Entity("DeliveryManagement.Models.PricingPolicy", b =>
+                {
+                    b.Property<int>("PricingPolicyId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PricingPolicyId"));
+
+                    b.Property<decimal>("BaseDistanceKm")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.Property<bool>("EnableTrafficSurcharge")
+                        .HasColumnType("bit");
+
+                    b.Property<bool>("EnableWeatherSurcharge")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("ExpressBasePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ExpressPricePerKm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("ExtraPricePerKg")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("StandardBasePrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("StandardPricePerKm")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("TomTomApiKey")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("TrafficJamSurcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("WeatherRainSurcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("WeatherStormSurcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("WeightThresholdKg")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("decimal(10,2)");
+
+                    b.HasKey("PricingPolicyId");
+
+                    b.ToTable("PricingPolicies");
+                });
+
             modelBuilder.Entity("DeliveryManagement.Models.Review", b =>
                 {
                     b.Property<int>("ReviewId")
@@ -532,7 +616,12 @@ namespace DeliveryManagement.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ReviewId"));
 
                     b.Property<string>("Comment")
-                        .HasColumnType("nvarchar(max)");
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("CustomerId")
                         .IsRequired()
@@ -552,13 +641,15 @@ namespace DeliveryManagement.Migrations
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Response")
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
 
                     b.HasKey("ReviewId");
 
                     b.HasIndex("CustomerId");
 
-                    b.HasIndex("OrderCode");
+                    b.HasIndex("OrderCode")
+                        .IsUnique();
 
                     b.HasIndex("RespondedBy");
 

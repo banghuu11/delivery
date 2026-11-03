@@ -1,11 +1,17 @@
 @model DeliveryManagement.Models.DeliveryOrder
 @using Microsoft.AspNetCore.Identity
+@using DeliveryManagement.Models
 
 @{
     ViewData["Title"] = "Chi tiết đơn hàng";
 
     var isReceptionist = User.IsInRole("ReceptionStaff")
         || User.IsInRole("Admin");
+
+    var isCustomer = User.IsInRole("Customer");
+    var isDelivered = Model.CurrentStatus == "Đã Giao";
+
+    var orderReview = ViewBag.OrderReview as Review;
 }
 
 <div class="container mt-4">
@@ -32,22 +38,104 @@
     </div>
 
     <div class="card mb-4 shadow-sm border-0">
-        <div class="card-body d-flex justify-content-between align-items-center bg-light rounded">
-            <span>Trạng thái đơn hàng: <strong class="text-primary fs-5">@Model.CurrentStatus</strong></span>
+        <div class="card-body d-flex flex-wrap justify-content-between align-items-center gap-3 bg-light rounded">
+            <span>
+                Trạng thái đơn hàng:
+                <strong class="text-primary fs-5">@Model.CurrentStatus</strong>
+            </span>
 
-            @if (Model.CurrentStatus == "Chưa nhận")
-            {
-                <form asp-action="Cancel" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');">
-                    <input type="hidden" name="id" value="@Model.OrderCode" />
-                    <button type="submit" class="btn btn-danger text-white fw-bold">Hủy yêu cầu giao hàng</button>
-                </form>
-            }
+            <div class="d-flex flex-wrap gap-2">
+                @if (isCustomer && isDelivered)
+                {
+                    @if (orderReview == null)
+                    {
+                        <a asp-controller="Reviews"
+                           asp-action="Create"
+                           asp-route-orderCode="@Model.OrderCode"
+                           class="btn btn-warning fw-bold">
+                            <i class="bi bi-star-fill me-1"></i>
+                            Đánh giá đơn hàng
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success p-2 d-flex align-items-center">
+                            <i class="bi bi-check-circle me-1"></i>
+                            Đã đánh giá
+                        </span>
+                    }
+                }
+
+                @if (Model.CurrentStatus == "Chưa nhận")
+                {
+                    <form asp-action="Cancel"
+                          method="post"
+                          onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này?');">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@Model.OrderCode" />
+                        <button type="submit" class="btn btn-danger text-white fw-bold">
+                            Hủy yêu cầu giao hàng
+                        </button>
+                    </form>
+                }
+            </div>
         </div>
     </div>
 
     @if (TempData["SuccessMessage"] != null)
     {
         <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    @* Hiển thị đánh giá và phản hồi đã có của khách hàng *@
+    @if (isCustomer && orderReview != null)
+    {
+        <div class="card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-white fw-bold">
+                Đánh giá của bạn
+            </div>
+            <div class="card-body">
+                <div class="text-warning fs-4 mb-2" aria-label="@orderReview.Rating trên 5 sao">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        if (i <= orderReview.Rating)
+                        {
+                            <span>★</span>
+                        }
+                        else
+                        {
+                            <span class="text-secondary">☆</span>
+                        }
+                    }
+                </div>
+
+                <p class="mb-2">@orderReview.Comment</p>
+                <small class="text-muted">
+                    Đánh giá lúc: @orderReview.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                </small>
+
+                @if (!string.IsNullOrWhiteSpace(orderReview.Response))
+                {
+                    <hr />
+                    <div class="bg-light rounded p-3">
+                        <strong class="text-primary">Phản hồi từ nhân viên</strong>
+                        <p class="mb-1 mt-2">@orderReview.Response</p>
+                        <small class="text-muted">
+                            @(orderReview.Staff?.FullName ?? "Nhân viên")
+                            @if (orderReview.RespondedAt.HasValue)
+                            {
+                                <span> - @orderReview.RespondedAt.Value.ToString("dd/MM/yyyy HH:mm")</span>
+                            }
+                        </small>
+                    </div>
+                }
+            </div>
+        </div>
     }
 
     <div class="row">
@@ -67,6 +155,7 @@
                 </div>
             </div>
         </div>
+
         <div class="col-md-6 mb-3">
             <div class="card shadow-sm mb-4 border-0">
                 <div class="card-header bg-white fw-bold border-bottom-0 pt-3">2. Thông tin hàng hóa</div>
@@ -130,8 +219,6 @@
                     }
                 </div>
             </div>
-            
-
         </div>
     </div>
 </div>

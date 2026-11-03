@@ -22,6 +22,15 @@ namespace DeliveryManagement.Controllers
         private const string CanceledStatus = "Đã hủy";
         private const string ReturnStatus = "Chờ hoàn hàng";
 
+        // Các giá trị giao nhanh được sử dụng ở trang khách hàng và trang Admin.
+        // Dùng danh sách này để không bỏ sót đơn do khác cách đặt tên hình thức giao.
+        private static readonly string[] ExpressDeliveryMethods =
+        {
+            "Nhanh",
+            "Giao hỏa tốc",
+            "Giao siêu tốc 2h"
+        };
+
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -53,8 +62,8 @@ namespace DeliveryManagement.Controllers
         }
 
         // ==========================================
-        // DANH SÁCH ĐƠN ĐÃ TIẾP NHẬN, CHỜ PHÂN CÔNG
-        // Chỉ đơn đã ghi nhận, ở trạng thái Ready và chưa có shipper.
+        // DANH SÁCH ĐƠN GIAO NHANH ĐÃ TIẾP NHẬN, CHỜ PHÂN CÔNG
+        // Đơn giao thường không xuất hiện ở đây vì shipper tự nhận giao.
         // ==========================================
         [HttpGet]
         public async Task<IActionResult> Dispatch()
@@ -63,6 +72,7 @@ namespace DeliveryManagement.Controllers
                 .Include(o => o.OrderItems)
                 .Where(o =>
                     o.ReceivedAt.HasValue &&
+                    ExpressDeliveryMethods.Contains(o.DeliveryMethod) &&
                     o.CurrentStatus == ReadyStatus &&
                     o.DeliveryStaffId == null)
                 .OrderBy(o => o.CreatedAt)
@@ -75,8 +85,8 @@ namespace DeliveryManagement.Controllers
         }
 
         // ==========================================
-        // PHÂN CÔNG SHIPPER VÀ CHUYỂN SANG ĐANG GIAO
-        // Chỉ phân công đơn đã được ReceptionStaff ghi nhận.
+        // PHÂN CÔNG SHIPPER CHO ĐƠN GIAO NHANH
+        // Chỉ phân công đơn giao nhanh đã được ReceptionStaff ghi nhận.
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -118,6 +128,7 @@ namespace DeliveryManagement.Controllers
                     .Where(o =>
                         o.OrderCode == id &&
                         o.ReceivedAt.HasValue &&
+                        ExpressDeliveryMethods.Contains(o.DeliveryMethod) &&
                         o.CurrentStatus == ReadyStatus &&
                         o.DeliveryStaffId == null)
                     .ExecuteUpdateAsync(setters => setters
@@ -128,7 +139,7 @@ namespace DeliveryManagement.Controllers
                 {
                     await transaction.RollbackAsync();
                     TempData["ErrorMessage"] =
-                        "Không thể phân công. Đơn chưa được tiếp nhận, " +
+                        "Không thể phân công. Đơn không phải giao nhanh, chưa được tiếp nhận, " +
                         "đã được phân công hoặc trạng thái đã thay đổi.";
                     return RedirectToAction(nameof(Dispatch));
                 }
