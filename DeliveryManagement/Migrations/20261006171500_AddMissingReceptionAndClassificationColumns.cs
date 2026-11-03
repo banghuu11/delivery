@@ -11,47 +11,35 @@ namespace DeliveryManagement.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
-                name: "ReceivedBy",
-                table: "DeliveryOrders",
-                type: "nvarchar(max)",
-                nullable: true);
+            migrationBuilder.Sql(@"
+        IF COL_LENGTH('dbo.DeliveryOrders', 'ReceivedBy') IS NULL
+            ALTER TABLE [dbo].[DeliveryOrders]
+            ADD [ReceivedBy] nvarchar(max) NULL;
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ReceivedAt",
-                table: "DeliveryOrders",
-                type: "datetime2",
-                nullable: true);
+        IF COL_LENGTH('dbo.DeliveryOrders', 'ReceivedAt') IS NULL
+            ALTER TABLE [dbo].[DeliveryOrders]
+            ADD [ReceivedAt] datetime2 NULL;
 
-            migrationBuilder.AddColumn<string>(
-                name: "ReceptionNote",
-                table: "DeliveryOrders",
-                type: "nvarchar(max)",
-                nullable: true);
+        IF COL_LENGTH('dbo.DeliveryOrders', 'ReceptionNote') IS NULL
+            ALTER TABLE [dbo].[DeliveryOrders]
+            ADD [ReceptionNote] nvarchar(max) NULL;
 
-            migrationBuilder.AddColumn<int>(
-                name: "OriginalPackageTypeId",
-                table: "OrderItems",
-                type: "int",
-                nullable: true);
+        IF COL_LENGTH('dbo.OrderItems', 'OriginalPackageTypeId') IS NULL
+            ALTER TABLE [dbo].[OrderItems]
+            ADD [OriginalPackageTypeId] int NULL;
 
-            migrationBuilder.AddColumn<string>(
-                name: "ClassificationNote",
-                table: "OrderItems",
-                type: "nvarchar(max)",
-                nullable: true);
+        IF COL_LENGTH('dbo.OrderItems', 'ClassificationNote') IS NULL
+            ALTER TABLE [dbo].[OrderItems]
+            ADD [ClassificationNote] nvarchar(max) NULL;
 
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ClassifiedAt",
-                table: "OrderItems",
-                type: "datetime2",
-                nullable: true);
+        IF COL_LENGTH('dbo.OrderItems', 'ClassifiedAt') IS NULL
+            ALTER TABLE [dbo].[OrderItems]
+            ADD [ClassifiedAt] datetime2 NULL;
 
-            migrationBuilder.AddColumn<string>(
-                name: "ClassifiedBy",
-                table: "OrderItems",
-                type: "nvarchar(max)",
-                nullable: true);
+        IF COL_LENGTH('dbo.OrderItems', 'ClassifiedBy') IS NULL
+            ALTER TABLE [dbo].[OrderItems]
+            ADD [ClassifiedBy] nvarchar(max) NULL;
+    ");
         }
 
         /// <inheritdoc />

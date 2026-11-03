@@ -1,0 +1,490 @@
+﻿@model List<DeliveryManagement.Models.DeliveryOrder>
+@using System.Linq
+
+@{
+    ViewData["Title"] = "Quản lý đơn giao hàng";
+
+    var orders = Model ?? new List<DeliveryManagement.Models.DeliveryOrder>();
+
+    // Các giá trị này phải thống nhất với DeliveryStaffController.
+    var normalDeliveryMethods = new[]
+    {
+        "Thường",
+        "Giao tiêu chuẩn",
+        "Giao tiết kiệm"
+    };
+
+    var readyStatus = "Đã nhận - Chưa giao";
+    var deliveringStatus = "Đã nhận – Đang giao";
+    var deliveredStatus = "Đã Giao";
+    var failedStatus = "Giao thất bại - Chờ xử lý";
+
+    // Chỉ các đơn giao thường đã tiếp nhận, chưa có shipper và đang chờ nhận
+    // mới được hiển thị nút Nhận giao.
+    var availableNormalOrders = orders
+        .Where(o =>
+            o.DeliveryStaffId == null &&
+            o.ReceivedAt.HasValue &&
+            normalDeliveryMethods.Contains(o.DeliveryMethod) &&
+            o.CurrentStatus == readyStatus)
+        .OrderBy(o => o.CreatedAt)
+        .ToList();
+
+    // Index() của controller chỉ trả về đơn đã gán cho tài khoản hiện tại
+    // hoặc đơn giao thường đang chờ shipper nhận.
+    var assignedOrders = orders
+        .Where(o => o.DeliveryStaffId != null)
+        .OrderByDescending(o => o.CreatedAt)
+        .ToList();
+
+    var deliveringCount = assignedOrders.Count(o => o.CurrentStatus == deliveringStatus);
+    var deliveredCount = assignedOrders.Count(o => o.CurrentStatus == deliveredStatus);
+    var failedCount = assignedOrders.Count(o => o.CurrentStatus == failedStatus);
+}
+
+<style>
+    .delivery-page {
+        color: #172033;
+    }
+
+    .delivery-hero {
+        padding: 28px;
+        border-radius: 20px;
+        color: #fff;
+        background: linear-gradient(120deg, #102a56, #1d4ed8);
+        box-shadow: 0 12px 28px rgba(29, 78, 216, .15);
+    }
+
+        .delivery-hero h1 {
+            font-weight: 800;
+            letter-spacing: -.04em;
+        }
+
+    .delivery-stat {
+        height: 100%;
+        padding: 20px;
+        background: #fff;
+        border: 1px solid #e7ebf2;
+        border-radius: 16px;
+        box-shadow: 0 4px 15px rgba(15, 23, 42, .04);
+    }
+
+    .delivery-stat-label {
+        color: #64748b;
+        font-size: .82rem;
+        font-weight: 700;
+    }
+
+    .delivery-stat-value {
+        margin-top: 6px;
+        font-size: 1.8rem;
+        font-weight: 800;
+    }
+
+    .delivery-panel {
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid #e7ebf2;
+        border-radius: 18px;
+        box-shadow: 0 6px 20px rgba(15, 23, 42, .04);
+    }
+
+    .delivery-panel-heading {
+        padding: 20px 22px;
+        border-bottom: 1px solid #e7ebf2;
+    }
+
+    .delivery-table {
+        margin-bottom: 0;
+    }
+
+        .delivery-table thead th {
+            padding: 14px 16px;
+            color: #64748b;
+            background: #f8fafc;
+            border-bottom: 1px solid #e7ebf2;
+            font-size: .76rem;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .delivery-table tbody td {
+            padding: 16px;
+            vertical-align: middle;
+        }
+
+        .delivery-table tbody tr:hover {
+            background: #f8fbff;
+        }
+
+    .delivery-order-code {
+        color: #1d4ed8;
+        font-weight: 800;
+        overflow-wrap: anywhere;
+    }
+
+    .delivery-status {
+        display: inline-block;
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: .76rem;
+        font-weight: 800;
+        white-space: nowrap;
+    }
+
+    .status-delivering {
+        color: #1d4ed8;
+        background: #dbeafe;
+    }
+
+    .status-delivered {
+        color: #166534;
+        background: #dcfce7;
+    }
+
+    .status-failed {
+        color: #b91c1c;
+        background: #fee2e2;
+    }
+
+    .status-ready {
+        color: #92400e;
+        background: #fef3c7;
+    }
+
+    .status-other {
+        color: #334155;
+        background: #e2e8f0;
+    }
+
+    .delivery-empty {
+        padding: 45px 20px;
+        color: #64748b;
+        text-align: center;
+    }
+
+    .delivery-empty-icon {
+        display: grid;
+        width: 64px;
+        height: 64px;
+        margin: 0 auto 14px;
+        place-items: center;
+        color: #2563eb;
+        background: #eff6ff;
+        border-radius: 18px;
+        font-size: 1.8rem;
+    }
+
+    @@media (max-width: 767.98px) {
+        .delivery-hero {
+            padding: 22px;
+        }
+
+        .delivery-panel-heading {
+            padding: 16px;
+        }
+
+        .delivery-table tbody td {
+            padding: 12px;
+        }
+    }
+</style>
+
+<div class="container py-4 delivery-page">
+
+    <!-- TIÊU ĐỀ -->
+    <div class="delivery-hero d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <div class="small fw-bold text-uppercase opacity-75 mb-2">
+                <i class="bi bi-truck me-2"></i>KHU VỰC NHÂN VIÊN GIAO HÀNG
+            </div>
+
+            <h1 class="mb-2">Quản lý đơn giao hàng</h1>
+
+            <p class="mb-0 opacity-75">
+                Nhận đơn giao thường hoặc xử lý các đơn đã được kho phân công.
+            </p>
+        </div>
+
+        <a asp-controller="Home"
+           asp-action="Index"
+           class="btn btn-light rounded-pill px-4 fw-bold">
+            <i class="bi bi-house-door me-1"></i>
+            Trang chủ
+        </a>
+    </div>
+
+    <!-- THÔNG BÁO -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle-fill me-2"></i>
+            @TempData["SuccessMessage"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            @TempData["ErrorMessage"]
+
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- THỐNG KÊ -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="delivery-stat">
+                <div class="delivery-stat-label">Đang giao</div>
+                <div class="delivery-stat-value text-primary">@deliveringCount</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="delivery-stat">
+                <div class="delivery-stat-label">Đã giao thành công</div>
+                <div class="delivery-stat-value text-success">@deliveredCount</div>
+            </div>
+        </div>
+
+        <div class="col-6 col-lg-3">
+            <div class="delivery-stat">
+                <div class="delivery-stat-label">Giao thất bại</div>
+                <div class="delivery-stat-value text-danger">@failedCount</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- GIẢI THÍCH QUY TRÌNH -->
+    <div class="alert alert-info mb-4">
+        <div class="fw-bold mb-1">
+            <i class="bi bi-info-circle me-1"></i>Quy trình nhận đơn
+        </div>
+        <ul class="mb-0">
+            <li>Đơn giao thường đã tiếp nhận và chưa có shipper: bạn có thể nhấn <strong>Nhận giao</strong>.</li>
+            <li>Đơn giao nhanh: kho phân công shipper; đơn chỉ xuất hiện trong danh sách của người được phân công.</li>
+            <li>Sau khi nhận đơn thành công, trạng thái chuyển sang <strong>Đã nhận – Đang giao</strong>.</li>
+        </ul>
+    </div>
+
+    <!-- ĐƠN GIAO THƯỜNG CHỜ NHẬN -->
+    <section class="delivery-panel mb-4">
+        <div class="delivery-panel-heading d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-hand-index-thumb me-2 text-warning"></i>
+                    Đơn giao chờ nhận
+                </h5>
+            </div>
+
+            <span class="badge rounded-pill text-bg-warning px-3 py-2">
+                @availableNormalOrders.Count đơn
+            </span>
+        </div>
+
+        @if (!availableNormalOrders.Any())
+        {
+            <div class="delivery-empty">
+                <div class="delivery-empty-icon">
+                    <i class="bi bi-inbox"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Hiện chưa có đơn giao thường chờ nhận</h5>
+                <p class="mb-0">
+                    Đơn giao thường sẽ xuất hiện tại đây sau khi nhân viên tiếp nhận ghi nhận thành công
+                </p>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table delivery-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn hàng</th>
+                            <th>Người nhận</th>
+                            <th>Địa chỉ nhận</th>
+                            <th>Hình thức</th>
+                            <th>Ngày tiếp nhận</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var order in availableNormalOrders)
+                        {
+                            <tr>
+                                <td>
+                                    <div class="delivery-order-code">@order.OrderCode</div>
+                                    <div class="small text-muted mt-1">
+                                        @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="fw-semibold">@order.ReceiverName</div>
+                                    <div class="small text-muted">@order.ReceiverPhone</div>
+                                </td>
+
+                                <td style="min-width:220px;max-width:320px;">
+                                    @order.ReceiverAddress
+                                </td>
+
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        <i class="bi bi-truck me-1"></i>
+                                        @order.DeliveryMethod
+                                    </span>
+                                </td>
+
+                                <td>
+                                    @order.ReceivedAt?.ToString("dd/MM/yyyy HH:mm")
+                                </td>
+
+                                <td class="text-center">
+                                    <form asp-controller="DeliveryStaff"
+                                          asp-action="AcceptOrder"
+                                          method="post"
+                                          class="d-inline">
+
+                                        @Html.AntiForgeryToken()
+
+                                        <input type="hidden"
+                                               name="id"
+                                               value="@order.OrderCode" />
+
+                                        <button type="submit"
+                                                class="btn btn-success btn-sm rounded-pill px-3"
+                                                onclick="return confirm('Bạn có chắc chắn muốn nhận giao đơn @order.OrderCode không? Sau khi nhận, đơn sẽ được chuyển sang trạng thái đang giao.');">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Nhận giao
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+    <!-- ĐƠN ĐÃ ĐƯỢC PHÂN CÔNG / ĐÃ NHẬN -->
+    <section class="delivery-panel">
+        <div class="delivery-panel-heading d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="fw-bold mb-1">
+                    <i class="bi bi-clipboard-check me-2 text-primary"></i>
+                    Đơn hàng của tôi
+                </h5>
+            </div>
+
+            <span class="badge rounded-pill text-bg-primary px-3 py-2">
+                @assignedOrders.Count đơn
+            </span>
+        </div>
+
+        @if (!assignedOrders.Any())
+        {
+            <div class="delivery-empty">
+                <div class="delivery-empty-icon">
+                    <i class="bi bi-truck"></i>
+                </div>
+                <h5 class="fw-bold text-dark">Bạn chưa có đơn hàng được giao</h5>
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table delivery-table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn hàng</th>
+                            <th>Người nhận</th>
+                            <th>Địa chỉ nhận</th>
+                            <th>Hình thức</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        @foreach (var order in assignedOrders)
+                        {
+                            var statusClass =
+                            order.CurrentStatus == deliveringStatus
+                            ? "status-delivering"
+                            : order.CurrentStatus == deliveredStatus
+                            ? "status-delivered"
+                            : order.CurrentStatus == failedStatus
+                            ? "status-failed"
+                            : order.CurrentStatus == readyStatus
+                            ? "status-ready"
+                            : "status-other";
+
+                            var statusLabel =
+                            order.CurrentStatus == deliveringStatus
+                            ? "Đang giao"
+                            : order.CurrentStatus == deliveredStatus
+                            ? "Đã giao"
+                            : order.CurrentStatus == failedStatus
+                            ? "Giao thất bại"
+                            : order.CurrentStatus == readyStatus
+                            ? "Đã nhận - Chưa giao"
+                            : order.CurrentStatus;
+
+                            <tr>
+                                <td>
+                                    <div class="delivery-order-code">
+                                        @order.OrderCode
+                                    </div>
+
+                                    <div class="small text-muted mt-1">
+                                        @order.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </div>
+                                </td>
+
+                                <td>
+                                    <div class="fw-semibold">@order.ReceiverName</div>
+                                    <div class="small text-muted">@order.ReceiverPhone</div>
+                                </td>
+
+                                <td style="min-width:220px;max-width:320px;">
+                                    @order.ReceiverAddress
+                                </td>
+
+                                <td>@order.DeliveryMethod</td>
+
+                                <td>
+                                    <span class="delivery-status @statusClass">
+                                        @statusLabel
+                                    </span>
+                                </td>
+
+                                <td class="text-center">
+                                    <a asp-controller="DeliveryStaff"
+                                       asp-action="Details"
+                                       asp-route-id="@order.OrderCode"
+                                       class="btn btn-primary btn-sm rounded-pill px-3">
+                                        <i class="bi bi-eye me-1"></i>
+                                        Xem chi tiết
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </section>
+
+</div>

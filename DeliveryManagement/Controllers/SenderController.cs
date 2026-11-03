@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DeliveryManagement.Controllers
 {
+    // Mọi tài khoản đã đăng nhập đều có thể quản lý hồ sơ cá nhân và đổi mật khẩu.
     [Authorize]
     public class SenderController : Controller
     {
@@ -26,7 +27,7 @@ namespace DeliveryManagement.Controllers
         }
 
         // ==========================================
-        // 1. TRANG QUẢN LÝ THÔNG TIN NGƯỜI GỬI (INDEX)
+        // 1. HỒ SƠ CÁ NHÂN
         // ==========================================
         [HttpGet]
         public async Task<IActionResult> Index()
@@ -37,34 +38,45 @@ namespace DeliveryManagement.Controllers
                 return Challenge();
             }
 
-            var savedAddresses = await _context.SenderAddresses
-                .Where(a => a.UserId == user.Id)
-                .OrderByDescending(a => a.IsDefault)
-                .ThenByDescending(a => a.CreatedAt)
-                .ToListAsync();
+            var isCustomer = await _userManager.IsInRoleAsync(user, "Customer");
+            var savedAddresses = new List<SenderAddress>();
+            var userOrders = new List<DeliveryOrder>();
 
-            // Nếu user có DefaultSenderAddress mà chưa có trong danh sách địa chỉ, tự động seed 1 địa chỉ mặc định ban đầu
-            if (!savedAddresses.Any() && !string.IsNullOrWhiteSpace(user.DefaultSenderAddress))
+            // Chỉ Customer có sổ địa chỉ gửi hàng.
+            if (isCustomer)
             {
-                var initialAddress = new SenderAddress
-                {
-                    UserId = user.Id,
-                    SenderName = user.FullName ?? user.UserName ?? "Người gửi",
-                    SenderPhone = user.PhoneNumber ?? string.Empty,
-                    SenderAddressText = user.DefaultSenderAddress,
-                    AddressTag = "Kho hàng chính",
-                    IsDefault = true,
-                    CreatedAt = DateTime.Now
-                };
-                _context.SenderAddresses.Add(initialAddress);
-                await _context.SaveChangesAsync();
-                savedAddresses.Add(initialAddress);
-            }
+                savedAddresses = await _context.SenderAddresses
+                    .Where(a => a.UserId == user.Id)
+                    .OrderByDescending(a => a.IsDefault)
+                    .ThenByDescending(a => a.CreatedAt)
+                    .ToListAsync();
 
-            // Thống kê đơn gửi của user
-            var userOrders = await _context.DeliveryOrders
-                .Where(o => o.CustomerId == user.Id)
-                .ToListAsync();
+                // Nếu khách có địa chỉ mặc định nhưng chưa có trong sổ địa chỉ,
+                // tạo một bản ghi địa chỉ mặc định ban đầu.
+                if (!savedAddresses.Any() &&
+                    !string.IsNullOrWhiteSpace(user.DefaultSenderAddress))
+                {
+                    var initialAddress = new SenderAddress
+                    {
+                        UserId = user.Id,
+                        SenderName = user.FullName ?? user.UserName ?? "Người gửi",
+                        SenderPhone = user.PhoneNumber ?? string.Empty,
+                        SenderAddressText = user.DefaultSenderAddress,
+                        AddressTag = "Kho hàng chính",
+                        IsDefault = true,
+                        CreatedAt = DateTime.Now
+                    };
+
+                    _context.SenderAddresses.Add(initialAddress);
+                    await _context.SaveChangesAsync();
+                    savedAddresses.Add(initialAddress);
+                }
+
+                // Chỉ thống kê đơn hàng của tài khoản Customer.
+                userOrders = await _context.DeliveryOrders
+                    .Where(o => o.CustomerId == user.Id)
+                    .ToListAsync();
+            }
 
             var vm = new SenderProfileViewModel
             {
@@ -72,26 +84,44 @@ namespace DeliveryManagement.Controllers
                 FullName = user.FullName ?? string.Empty,
                 Email = user.Email ?? string.Empty,
                 PhoneNumber = user.PhoneNumber ?? string.Empty,
-                DefaultSenderAddress = user.DefaultSenderAddress,
+                DefaultSenderAddress = isCustomer
+                    ? user.DefaultSenderAddress
+                    : null,
                 SavedAddresses = savedAddresses,
                 TotalOrdersSent = userOrders.Count,
-                PendingOrders = userOrders.Count(o => o.CurrentStatus == "Chưa nhận" || o.CurrentStatus == "Chờ tiếp nhận" || o.CurrentStatus == "Đã nhận" || o.CurrentStatus == "Đã tiếp nhận"),
-                DeliveringOrders = userOrders.Count(o => o.CurrentStatus == "Trong kho" || o.CurrentStatus == "Đang xử lý" || o.CurrentStatus == "Đang giao"),
-                CompletedOrders = userOrders.Count(o => o.CurrentStatus == "Đã giao" || o.CurrentStatus == "Giao thành công"),
-                TotalSpent = userOrders.Where(o => o.CurrentStatus != "Đã hủy" && o.CurrentStatus != "Giao thất bại").Sum(o => o.TotalAmount)
+                PendingOrders = userOrders.Count(o =>
+                    o.CurrentStatus == "Chưa nhận" ||
+                    o.CurrentStatus == "Chờ tiếp nhận" ||
+                    o.CurrentStatus == "Đã nhận" ||
+                    o.CurrentStatus == "Đã tiếp nhận"),
+                DeliveringOrders = userOrders.Count(o =>
+                    o.CurrentStatus == "Trong kho" ||
+                    o.CurrentStatus == "Đang xử lý" ||
+                    o.CurrentStatus == "Đang giao"),
+                CompletedOrders = userOrders.Count(o =>
+                    o.CurrentStatus == "Đã giao" ||
+                    o.CurrentStatus == "Giao thành công"),
+                TotalSpent = userOrders
+                    .Where(o => o.CurrentStatus != "Đã hủy" &&
+                                o.CurrentStatus != "Giao thất bại")
+                    .Sum(o => o.TotalAmount)
             };
 
             return View(vm);
         }
 
         // ==========================================
-        // 2. CẬP NHẬT THÔNG TIN HỒ SƠ NGƯỜI GỬI
+        // 2. CẬP NHẬT HỒ SƠ CÁ NHÂN
+        // Mọi role được sửa hồ sơ của chính mình.
+        // Chỉ Customer được quản lý địa chỉ gửi hàng.
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> UpdateProfile(SenderProfileViewModel model)
+        public async Task<IActionResult> UpdateProfile(
+            SenderProfileViewModel model)
         {
             var user = await _userManager.GetUserAsync(User);
+
             if (user == null)
             {
                 return Challenge();
@@ -99,43 +129,136 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(model.FullName))
             {
-                TempData["ErrorMessage"] = "Họ và tên người gửi không được để trống.";
+                TempData["ErrorMessage"] =
+                    "Họ và tên không được để trống.";
+
                 return RedirectToAction(nameof(Index));
             }
 
             if (string.IsNullOrWhiteSpace(model.PhoneNumber))
             {
-                TempData["ErrorMessage"] = "Số điện thoại liên hệ không được để trống.";
+                TempData["ErrorMessage"] =
+                    "Số điện thoại liên hệ không được để trống.";
+
                 return RedirectToAction(nameof(Index));
             }
 
+            // Cập nhật hồ sơ của tài khoản đang đăng nhập.
             user.FullName = model.FullName.Trim();
             user.PhoneNumber = model.PhoneNumber.Trim();
 
-            if (!string.IsNullOrWhiteSpace(model.DefaultSenderAddress))
+            var isCustomer = await _userManager.IsInRoleAsync(
+                user,
+                "Customer");
+
+            if (isCustomer)
             {
-                user.DefaultSenderAddress = model.DefaultSenderAddress.Trim();
+                string? newAddress =
+                    string.IsNullOrWhiteSpace(model.DefaultSenderAddress)
+                        ? null
+                        : model.DefaultSenderAddress.Trim();
+
+                var savedAddresses = await _context.SenderAddresses
+                    .Where(a => a.UserId == user.Id)
+                    .OrderByDescending(a => a.IsDefault)
+                    .ThenByDescending(a => a.CreatedAt)
+                    .ToListAsync();
+
+                // TRƯỜNG HỢP 1:
+                // Khách để trống địa chỉ mặc định.
+                if (newAddress == null)
+                {
+                    user.DefaultSenderAddress = null;
+
+                    // Bỏ trạng thái mặc định nhưng vẫn giữ các địa chỉ đã lưu.
+                    foreach (var address in savedAddresses)
+                    {
+                        address.IsDefault = false;
+                    }
+                }
+                else
+                {
+                    user.DefaultSenderAddress = newAddress;
+
+                    // Tìm địa chỉ đang được đánh dấu mặc định.
+                    var defaultAddress = savedAddresses
+                        .FirstOrDefault(a => a.IsDefault);
+
+                    // Nếu chưa có địa chỉ mặc định, thử tìm địa chỉ
+                    // đã lưu có nội dung trùng với địa chỉ vừa nhập.
+                    if (defaultAddress == null)
+                    {
+                        defaultAddress = savedAddresses.FirstOrDefault(a =>
+                            string.Equals(
+                                a.SenderAddressText?.Trim(),
+                                newAddress,
+                                StringComparison.OrdinalIgnoreCase));
+                    }
+
+                    // Nếu vẫn không tìm thấy, tạo một địa chỉ mới.
+                    if (defaultAddress == null)
+                    {
+                        defaultAddress = new SenderAddress
+                        {
+                            UserId = user.Id,
+                            SenderName = user.FullName,
+                            SenderPhone = user.PhoneNumber,
+                            SenderAddressText = newAddress,
+                            AddressTag = "Kho hàng chính",
+                            IsDefault = true,
+                            CreatedAt = DateTime.Now
+                        };
+
+                        _context.SenderAddresses.Add(defaultAddress);
+                        savedAddresses.Add(defaultAddress);
+                    }
+                    else
+                    {
+                        // Đồng bộ địa chỉ mặc định với hồ sơ cá nhân.
+                        defaultAddress.SenderName = user.FullName;
+                        defaultAddress.SenderPhone = user.PhoneNumber;
+                        defaultAddress.SenderAddressText = newAddress;
+                    }
+
+                    // Đảm bảo chỉ có một địa chỉ được đánh dấu mặc định.
+                    foreach (var address in savedAddresses)
+                    {
+                        address.IsDefault =
+                            address.Id == defaultAddress.Id;
+                    }
+
+                    defaultAddress.IsDefault = true;
+                }
             }
 
+            // Nhân viên và Admin chỉ cập nhật họ tên, số điện thoại.
+            // Không cho họ thay đổi địa chỉ gửi hàng qua form này.
             var result = await _userManager.UpdateAsync(user);
-            if (result.Succeeded)
+
+            if (!result.Succeeded)
             {
-                TempData["SuccessMessage"] = "Đã cập nhật thông tin người gửi thành công!";
+                TempData["ErrorMessage"] = string.Join(
+                    "; ",
+                    result.Errors.Select(e => e.Description));
+
+                return RedirectToAction(nameof(Index));
             }
-            else
-            {
-                TempData["ErrorMessage"] = string.Join("; ", result.Errors.Select(e => e.Description));
-            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["SuccessMessage"] =
+                "Đã cập nhật hồ sơ cá nhân thành công!";
 
             return RedirectToAction(nameof(Index));
         }
-
         // ==========================================
-        // 3. THÊM ĐỊA CHỈ NGƯỜI GỬI MỚI VÀO SỔ ĐỊA CHỈ
+        // 3. THÊM ĐỊA CHỈ GỬI HÀNG - CHỈ CUSTOMER
         // ==========================================
+        [Authorize(Roles = "Customer")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> AddAddress(SenderAddressInputModel model)
+        public async Task<IActionResult> AddAddress(
+            SenderAddressInputModel model)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
@@ -145,12 +268,14 @@ namespace DeliveryManagement.Controllers
 
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Vui lòng nhập đầy đủ các thông tin bắt buộc của địa chỉ người gửi.";
+                TempData["ErrorMessage"] =
+                    "Vui lòng nhập đầy đủ thông tin bắt buộc của địa chỉ người gửi.";
                 return RedirectToAction(nameof(Index));
             }
 
-            // Nếu đây là địa chỉ đầu tiên hoặc được đánh dấu IsDefault
-            bool hasAnyAddress = await _context.SenderAddresses.AnyAsync(a => a.UserId == user.Id);
+            bool hasAnyAddress = await _context.SenderAddresses
+                .AnyAsync(a => a.UserId == user.Id);
+
             if (!hasAnyAddress)
             {
                 model.IsDefault = true;
@@ -158,7 +283,6 @@ namespace DeliveryManagement.Controllers
 
             if (model.IsDefault)
             {
-                // Bỏ cờ default của các địa chỉ cũ
                 var oldDefaults = await _context.SenderAddresses
                     .Where(a => a.UserId == user.Id && a.IsDefault)
                     .ToListAsync();
@@ -168,9 +292,19 @@ namespace DeliveryManagement.Controllers
                     old.IsDefault = false;
                 }
 
-                // Đồng bộ địa chỉ mặc định vào user profile
-                user.DefaultSenderAddress = model.SenderAddressText.Trim();
-                await _userManager.UpdateAsync(user);
+                user.DefaultSenderAddress =
+                    model.SenderAddressText.Trim();
+
+                var updateResult = await _userManager.UpdateAsync(user);
+
+                if (!updateResult.Succeeded)
+                {
+                    TempData["ErrorMessage"] = string.Join(
+                        "; ",
+                        updateResult.Errors.Select(e => e.Description));
+
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             var newAddress = new SenderAddress
@@ -179,7 +313,9 @@ namespace DeliveryManagement.Controllers
                 SenderName = model.SenderName.Trim(),
                 SenderPhone = model.SenderPhone.Trim(),
                 SenderAddressText = model.SenderAddressText.Trim(),
-                AddressTag = string.IsNullOrWhiteSpace(model.AddressTag) ? "Địa chỉ gửi hàng" : model.AddressTag.Trim(),
+                AddressTag = string.IsNullOrWhiteSpace(model.AddressTag)
+                    ? "Địa chỉ gửi hàng"
+                    : model.AddressTag.Trim(),
                 IsDefault = model.IsDefault,
                 CreatedAt = DateTime.Now
             };
@@ -187,16 +323,20 @@ namespace DeliveryManagement.Controllers
             _context.SenderAddresses.Add(newAddress);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Đã thêm địa chỉ '{newAddress.AddressTag}' vào sổ địa chỉ người gửi!";
+            TempData["SuccessMessage"] =
+                $"Đã thêm địa chỉ '{newAddress.AddressTag}' vào sổ địa chỉ người gửi!";
+
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
-        // 4. SỬA ĐỊA CHỈ NGƯỜI GỬI
+        // 4. SỬA ĐỊA CHỈ GỬI HÀNG - CHỈ CUSTOMER
         // ==========================================
+        [Authorize(Roles = "Customer")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> EditAddress(SenderAddressInputModel model)
+        public async Task<IActionResult> EditAddress(
+            SenderAddressInputModel model)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
@@ -204,25 +344,33 @@ namespace DeliveryManagement.Controllers
                 return Challenge();
             }
 
-            var address = await _context.SenderAddresses
-                .FirstOrDefaultAsync(a => a.Id == model.Id && a.UserId == user.Id);
-
-            if (address == null)
+            if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy địa chỉ người gửi cần sửa.";
+                TempData["ErrorMessage"] =
+                    "Dữ liệu cập nhật địa chỉ không hợp lệ.";
                 return RedirectToAction(nameof(Index));
             }
 
-            if (!ModelState.IsValid)
+            var address = await _context.SenderAddresses
+                .FirstOrDefaultAsync(a =>
+                    a.Id == model.Id &&
+                    a.UserId == user.Id);
+
+            if (address == null)
             {
-                TempData["ErrorMessage"] = "Dữ liệu cập nhật địa chỉ không hợp lệ.";
+                TempData["ErrorMessage"] =
+                    "Không tìm thấy địa chỉ người gửi cần sửa.";
+
                 return RedirectToAction(nameof(Index));
             }
 
             address.SenderName = model.SenderName.Trim();
             address.SenderPhone = model.SenderPhone.Trim();
             address.SenderAddressText = model.SenderAddressText.Trim();
-            address.AddressTag = string.IsNullOrWhiteSpace(model.AddressTag) ? "Địa chỉ gửi hàng" : model.AddressTag.Trim();
+
+            address.AddressTag = string.IsNullOrWhiteSpace(model.AddressTag)
+                ? "Địa chỉ gửi hàng"
+                : model.AddressTag.Trim();
 
             if (model.IsDefault && !address.IsDefault)
             {
@@ -237,17 +385,31 @@ namespace DeliveryManagement.Controllers
 
                 address.IsDefault = true;
                 user.DefaultSenderAddress = address.SenderAddressText;
-                await _userManager.UpdateAsync(user);
+
+                var updateResult = await _userManager.UpdateAsync(user);
+
+                if (!updateResult.Succeeded)
+                {
+                    TempData["ErrorMessage"] = string.Join(
+                        "; ",
+                        updateResult.Errors.Select(e => e.Description));
+
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = "Đã cập nhật thông tin địa chỉ người gửi thành công!";
+
+            TempData["SuccessMessage"] =
+                "Đã cập nhật thông tin địa chỉ người gửi thành công!";
+
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
-        // 5. ĐẶT ĐỊA CHỈ MẶC ĐỊNH
+        // 5. ĐẶT ĐỊA CHỈ MẶC ĐỊNH - CHỈ CUSTOMER
         // ==========================================
+        [Authorize(Roles = "Customer")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> SetDefaultAddress(int id)
@@ -259,7 +421,9 @@ namespace DeliveryManagement.Controllers
             }
 
             var targetAddress = await _context.SenderAddresses
-                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == user.Id);
+                .FirstOrDefaultAsync(a =>
+                    a.Id == id &&
+                    a.UserId == user.Id);
 
             if (targetAddress == null)
             {
@@ -271,25 +435,38 @@ namespace DeliveryManagement.Controllers
                 .Where(a => a.UserId == user.Id)
                 .ToListAsync();
 
-            foreach (var addr in allAddresses)
+            foreach (var address in allAddresses)
             {
-                addr.IsDefault = (addr.Id == id);
+                address.IsDefault = address.Id == id;
             }
 
             user.DefaultSenderAddress = targetAddress.SenderAddressText;
             user.FullName = targetAddress.SenderName;
             user.PhoneNumber = targetAddress.SenderPhone;
 
-            await _userManager.UpdateAsync(user);
+            var updateResult = await _userManager.UpdateAsync(user);
+
+            if (!updateResult.Succeeded)
+            {
+                TempData["ErrorMessage"] = string.Join(
+                    "; ",
+                    updateResult.Errors.Select(e => e.Description));
+
+                return RedirectToAction(nameof(Index));
+            }
+
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Đã đặt '{targetAddress.AddressTag}' làm địa chỉ người gửi mặc định.";
+            TempData["SuccessMessage"] =
+                $"Đã đặt '{targetAddress.AddressTag}' làm địa chỉ người gửi mặc định.";
+
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
-        // 6. XÓA ĐỊA CHỈ NGƯỜI GỬI
+        // 6. XÓA ĐỊA CHỈ GỬI HÀNG - CHỈ CUSTOMER
         // ==========================================
+        [Authorize(Roles = "Customer")]
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteAddress(int id)
@@ -301,19 +478,24 @@ namespace DeliveryManagement.Controllers
             }
 
             var address = await _context.SenderAddresses
-                .FirstOrDefaultAsync(a => a.Id == id && a.UserId == user.Id);
+                .FirstOrDefaultAsync(a =>
+                    a.Id == id &&
+                    a.UserId == user.Id);
 
             if (address == null)
             {
-                TempData["ErrorMessage"] = "Không tìm thấy địa chỉ cần xóa.";
+                TempData["ErrorMessage"] =
+                    "Không tìm thấy địa chỉ cần xóa.";
+
                 return RedirectToAction(nameof(Index));
             }
 
             bool wasDefault = address.IsDefault;
+
             _context.SenderAddresses.Remove(address);
             await _context.SaveChangesAsync();
 
-            // Nếu xóa địa chỉ mặc định thì gán cho địa chỉ đầu tiên còn lại
+            // Nếu xóa địa chỉ mặc định thì gán cho địa chỉ còn lại.
             if (wasDefault)
             {
                 var firstRemaining = await _context.SenderAddresses
@@ -324,27 +506,52 @@ namespace DeliveryManagement.Controllers
                 if (firstRemaining != null)
                 {
                     firstRemaining.IsDefault = true;
-                    user.DefaultSenderAddress = firstRemaining.SenderAddressText;
-                    await _userManager.UpdateAsync(user);
+                    user.DefaultSenderAddress =
+                        firstRemaining.SenderAddressText;
+
+                    var updateResult = await _userManager.UpdateAsync(user);
+
+                    if (!updateResult.Succeeded)
+                    {
+                        TempData["ErrorMessage"] = string.Join(
+                            "; ",
+                            updateResult.Errors.Select(e => e.Description));
+
+                        return RedirectToAction(nameof(Index));
+                    }
+
                     await _context.SaveChangesAsync();
                 }
                 else
                 {
                     user.DefaultSenderAddress = null;
-                    await _userManager.UpdateAsync(user);
+
+                    var updateResult = await _userManager.UpdateAsync(user);
+
+                    if (!updateResult.Succeeded)
+                    {
+                        TempData["ErrorMessage"] = string.Join(
+                            "; ",
+                            updateResult.Errors.Select(e => e.Description));
+
+                        return RedirectToAction(nameof(Index));
+                    }
                 }
             }
 
-            TempData["SuccessMessage"] = "Đã xóa địa chỉ khỏi sổ địa chỉ người gửi thành công.";
+            TempData["SuccessMessage"] =
+                "Đã xóa địa chỉ khỏi sổ địa chỉ người gửi thành công.";
+
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
-        // 7. ĐỔI MẬT KHẨU TÀI KHOẢN NGƯỜI GỬI
+        // 7. ĐỔI MẬT KHẨU - MỌI ROLE ĐÃ ĐĂNG NHẬP
         // ==========================================
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ChangePassword(ChangePasswordInputModel model)
+        public async Task<IActionResult> ChangePassword(
+            ChangePasswordInputModel model)
         {
             var user = await _userManager.GetUserAsync(User);
             if (user == null)
@@ -354,11 +561,17 @@ namespace DeliveryManagement.Controllers
 
             if (!ModelState.IsValid)
             {
-                TempData["ErrorMessage"] = "Thông tin đổi mật khẩu không hợp lệ.";
+                TempData["ErrorMessage"] =
+                    "Thông tin đổi mật khẩu không hợp lệ. Vui lòng kiểm tra lại.";
+
                 return RedirectToAction(nameof(Index));
             }
 
-            var result = await _userManager.ChangePasswordAsync(user, model.CurrentPassword, model.NewPassword);
+            var result = await _userManager.ChangePasswordAsync(
+                user,
+                model.CurrentPassword,
+                model.NewPassword);
+
             if (result.Succeeded)
             {
                 await _signInManager.RefreshSignInAsync(user);
@@ -366,15 +579,18 @@ namespace DeliveryManagement.Controllers
             }
             else
             {
-                TempData["ErrorMessage"] = string.Join("; ", result.Errors.Select(e => e.Description));
+                TempData["ErrorMessage"] = string.Join(
+                    "; ",
+                    result.Errors.Select(e => e.Description));
             }
 
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
-        // 8. API JSON: LẤY SỔ ĐỊA CHỈ NGƯỜI GỬI (DÙNG CHO TRANG TẠO ĐƠN HÀNG)
+        // 8. API SỔ ĐỊA CHỈ - CHỈ CUSTOMER
         // ==========================================
+        [Authorize(Roles = "Customer")]
         [HttpGet]
         public async Task<IActionResult> GetAddressesJson()
         {

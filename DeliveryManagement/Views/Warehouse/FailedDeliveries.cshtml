@@ -1,0 +1,183 @@
+﻿@model List<DeliveryManagement.Models.DeliveryOrder>
+
+@{
+    ViewData["Title"] = "Xử lý đơn giao thất bại";
+}
+
+<div class="container py-4">
+
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="mb-1">Xử lý đơn giao thất bại</h2>
+            <p class="text-muted mb-0">
+                Xem lý do giao thất bại và quyết định giao lại hoặc chuyển chờ hoàn hàng.
+            </p>
+        </div>
+
+        <a asp-action="Index" class="btn btn-outline-secondary">
+            Quay lại quản lý kho
+        </a>
+    </div>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">
+            @TempData["SuccessMessage"]
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["ErrorMessage"]
+        </div>
+    }
+
+    @if (Model == null || !Model.Any())
+    {
+        <div class="alert alert-info">
+            Hiện không có đơn hàng nào đang chờ xử lý giao thất bại.
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+
+            @foreach (var order in Model)
+            {
+                <div class="col-12">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+                                <div>
+                                    <h5 class="mb-1">Đơn @order.OrderCode</h5>
+                                    <span class="badge bg-danger">
+                                        Giao thất bại - Chờ xử lý
+                                    </span>
+                                </div>
+
+                                <span class="badge bg-secondary">
+                                    @order.DeliveryMethod
+                                </span>
+                            </div>
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <div class="text-muted small">Người nhận</div>
+                                    <strong>@order.ReceiverName</strong>
+                                    <div>@order.ReceiverPhone</div>
+                                </div>
+
+                                <div class="col-md-8">
+                                    <div class="text-muted small">Địa chỉ giao</div>
+                                    <strong>@order.ReceiverAddress</strong>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="text-muted small">Kết quả giao hàng</div>
+                                    <strong class="text-danger">
+                                        @order.DeliveryResult
+                                    </strong>
+                                </div>
+
+                                <div class="col-12">
+                                    <div class="text-muted small">Lý do và ghi chú</div>
+
+                                    @if (!string.IsNullOrWhiteSpace(order.DeliveryNote))
+                                    {
+                                        <div style="white-space: pre-line">@order.DeliveryNote</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">
+                                            Chưa có ghi chú.
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+
+                            <hr />
+
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6 class="text-primary">
+                                            <i class="bi bi-arrow-repeat me-1"></i>
+                                            Giao lại
+                                        </h6>
+
+                                        <p class="small text-muted">
+                                            Đưa đơn về trạng thái chờ giao. Đơn nhanh sẽ chờ kho
+                                            phân công lại; đơn thường sẽ xuất hiện trong danh sách
+                                            chờ shipper nhận.
+                                        </p>
+
+                                        <form asp-action="RetryFailedDelivery"
+                                              method="post"
+                                              onsubmit="return confirm('Xác nhận đưa đơn này về trạng thái chờ giao lại?');">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@order.OrderCode" />
+
+                                            <button type="submit"
+                                                    class="btn btn-primary w-100">
+                                                Giao lại đơn này
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="border rounded p-3 h-100">
+                                        <h6 class="text-danger">
+                                            <i class="bi bi-box-seam me-1"></i>
+                                            Chờ hoàn hàng
+                                        </h6>
+
+                                        <p class="small text-muted">
+                                            Chuyển đơn sang trạng thái chờ hoàn hàng để xử lý
+                                            tiếp. Hành động này không đồng nghĩa hàng đã hoàn về kho.
+                                        </p>
+
+                                        <form asp-action="MarkReturn"
+                                              method="post"
+                                              onsubmit="return confirm('Xác nhận chuyển đơn sang trạng thái chờ hoàn hàng?');">
+                                            @Html.AntiForgeryToken()
+
+                                            <input type="hidden"
+                                                   name="id"
+                                                   value="@order.OrderCode" />
+
+                                            <div class="mb-2">
+                                                <label class="form-label small">
+                                                    Ghi chú xử lý (không bắt buộc)
+                                                </label>
+
+                                                <textarea name="resolutionNote"
+                                                  class="form-control form-control-sm"
+                                                  rows="2"
+                                                  maxlength="500"
+                                                  placeholder="Nhập ghi chú nếu có..."></textarea>
+                                            </div>
+
+                                            <button type="submit"
+                                                    class="btn btn-outline-danger w-100">
+                                                Chuyển chờ hoàn hàng
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            }
+
+        </div>
+    }
+
+</div>
