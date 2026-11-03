@@ -274,7 +274,6 @@ namespace DeliveryManagement.Controllers
 
             Console.WriteLine(
                 "[CREATE ORDER] BƯỚC 3 THÀNH CÔNG: Loại hàng hóa hợp lệ.");
-
             // ==========================================
             // TỔNG KHỐI LƯỢNG
             // ==========================================
@@ -517,7 +516,6 @@ namespace DeliveryManagement.Controllers
                         $"[CREATE ORDER] USER UPDATE ERROR: {error.Code} - {error.Description}");
                 }
             }
-
             // ==========================================
             // LƯU SỔ ĐỊA CHỈ NẾU NGƯỜI DÙNG CHỌN
             // ==========================================
@@ -792,6 +790,13 @@ namespace DeliveryManagement.Controllers
 
                 return RedirectToAction("Index", "Home");
             }
+
+            // Lấy đánh giá của đơn hàng (nếu khách hàng đã đánh giá).
+            var orderReview = await _context.Reviews
+                .Include(r => r.Staff)
+                .FirstOrDefaultAsync(r => r.OrderCode == order.OrderCode);
+
+            ViewBag.OrderReview = orderReview;
 
             return View(order);
         }

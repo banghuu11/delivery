@@ -1,0 +1,78 @@
+﻿@{
+    ViewData["Title"] = "Đánh giá đơn hàng";
+}
+
+<div class="container mt-4">
+    <div class="card shadow-sm mx-auto" style="max-width: 650px;">
+        <div class="card-header">
+            <h4 class="mb-0">Đánh giá đơn hàng</h4>
+        </div>
+
+        <div class="card-body">
+            <p>
+                Mã đơn hàng:
+                <strong>@ViewBag.OrderCode</strong>
+            </p>
+
+            <form asp-action="Create" method="post">
+                @Html.AntiForgeryToken()
+
+                <input type="hidden"
+                       name="orderCode"
+                       value="@ViewBag.OrderCode" />
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">
+                        Mức độ hài lòng
+                    </label>
+
+                    <div class="d-flex gap-3 flex-wrap">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <label class="form-check">
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="rating"
+                                       value="@i"
+                                       @(i == 5 ? "checked" : "") />
+                                @i ⭐
+                            </label>
+                        }
+                    </div>
+
+                    @Html.ValidationMessage(
+                    "rating",
+                                        null,
+                                        new { @class = "text-danger" })
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">
+                        Nhận xét của bạn
+                    </label>
+
+                    <textarea name="comment"
+                              class="form-control"
+                              rows="4"
+                              maxlength="1000"
+                              placeholder="Hãy chia sẻ trải nghiệm giao hàng của bạn..."></textarea>
+
+                    @Html.ValidationMessage(
+                                        "comment",
+                                        null,
+                                        new { @class = "text-danger" })
+                </div>
+
+                <button type="submit" class="btn btn-primary">
+                    Gửi đánh giá
+                </button>
+
+                <a asp-controller="Home"
+                   asp-action="Index"
+                   class="btn btn-secondary">
+                    Quay lại
+                </a>
+            </form>
+        </div>
+    </div>
+</div>

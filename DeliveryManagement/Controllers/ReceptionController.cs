@@ -1,4 +1,5 @@
-﻿using DeliveryManagement.Data;
+﻿
+using DeliveryManagement.Data;
 using DeliveryManagement.Models;
 using DeliveryManagement.Models.ViewModels;
 using Microsoft.AspNetCore.Authorization;
@@ -11,6 +12,9 @@ namespace DeliveryManagement.Controllers
     [Authorize(Roles = "ReceptionStaff")]
     public class ReceptionController : Controller
     {
+        private const string ReadyStatus = "Đã nhận - Chưa giao";
+        private const string CanceledStatus = "Đã hủy";
+
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
 
@@ -22,9 +26,9 @@ namespace DeliveryManagement.Controllers
             _userManager = userManager;
         }
 
-        // =========================
+        // ==========================================
         // DANH SÁCH ĐƠN CẦN TIẾP NHẬN
-        // =========================
+        // ==========================================
 
         [HttpGet]
         public async Task<IActionResult> Index()
@@ -32,17 +36,16 @@ namespace DeliveryManagement.Controllers
             var orders = await _context.DeliveryOrders
                 .Include(o => o.OrderItems)
                     .ThenInclude(i => i.PackageType)
-                .Where(o => o.CurrentStatus != "Đã hủy")
+                .Where(o => o.CurrentStatus != CanceledStatus)
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
             return View(orders);
         }
 
-        // =========================
+        // ==========================================
         // MỞ TRANG GHI NHẬN
-        // =========================
-
+        // ==========================================
 
         [HttpGet]
         public async Task<IActionResult> Record(string id)
@@ -58,9 +61,11 @@ namespace DeliveryManagement.Controllers
             if (order == null)
                 return NotFound();
 
-            if (order.CurrentStatus == "Đã hủy")
+            if (order.CurrentStatus == CanceledStatus)
             {
-                TempData["ErrorMessage"] = "Không thể ghi nhận đơn hàng đã hủy.";
+                TempData["ErrorMessage"] =
+                    "Không thể ghi nhận đơn hàng đã hủy.";
+
                 return RedirectToAction(nameof(Index));
             }
 
@@ -78,7 +83,8 @@ namespace DeliveryManagement.Controllers
                     {
                         OrderItemId = i.OrderItemId,
                         PackageTypeId = i.PackageTypeId,
-                        PackageTypeName = i.PackageType?.TypeName ?? "Chưa phân loại",
+                        PackageTypeName =
+                            i.PackageType?.TypeName ?? "Chưa phân loại",
                         Description = i.Description ?? string.Empty,
                         Quantity = i.Quantity,
                         Weight = i.Weight,
@@ -88,13 +94,17 @@ namespace DeliveryManagement.Controllers
                     .ToList()
             };
 
-            // Truyền trạng thái để View biết chỉ xem hay được ghi nhận.
-            ViewBag.IsRecorded = order.ReceivedAt.HasValue;
+            // Nếu đã tiếp nhận thì chỉ được xem hoặc in đơn hàng.
+            ViewBag.IsReadOnly = order.ReceivedAt.HasValue;
             ViewBag.ReceivedAt = order.ReceivedAt;
             ViewBag.ReceivedBy = order.ReceivedBy;
 
             return View(model);
         }
+
+        // ==========================================
+        // XÁC NHẬN TIẾP NHẬN ĐƠN HÀNG
+        // ==========================================
 
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -112,13 +122,16 @@ namespace DeliveryManagement.Controllers
             if (order == null)
                 return NotFound();
 
-            if (order.CurrentStatus == "Đã hủy")
+            // Không cho phép tiếp nhận đơn đã hủy.
+            if (order.CurrentStatus == CanceledStatus)
             {
-                TempData["ErrorMessage"] = "Không thể ghi nhận đơn hàng đã hủy.";
+                TempData["ErrorMessage"] =
+                    "Không thể ghi nhận đơn hàng đã hủy.";
+
                 return RedirectToAction(nameof(Index));
             }
 
-            // Đã ghi nhận rồi thì không cho sửa bằng cách gửi POST trực tiếp.
+            // Không cho phép ghi nhận lại đơn đã tiếp nhận.
             if (order.ReceivedAt.HasValue)
             {
                 TempData["ErrorMessage"] =
@@ -129,9 +142,9 @@ namespace DeliveryManagement.Controllers
                     new { id = order.OrderCode });
             }
 
+            // Kiểm tra dữ liệu đầu vào.
             if (!ModelState.IsValid)
             {
-                // Nạp lại thông tin hiển thị nếu validation thất bại.
                 var invalidModel = model;
                 invalidModel.Items ??= new List<ReceptionItemViewModel>();
 
@@ -145,29 +158,45 @@ namespace DeliveryManagement.Controllers
                     foreach (var item in invalidModel.Items)
                     {
                         var savedItem = savedOrder.OrderItems
-                            .FirstOrDefault(i => i.OrderItemId == item.OrderItemId);
+                            .FirstOrDefault(
+                                i => i.OrderItemId == item.OrderItemId);
 
                         if (savedItem != null)
+                        {
                             item.PackageTypeName =
-                                savedItem.PackageType?.TypeName ?? "Chưa phân loại";
+                                savedItem.PackageType?.TypeName
+                                ?? "Chưa phân loại";
+                        }
                     }
                 }
 
-                ViewBag.IsRecorded = false;
+                ViewBag.IsReadOnly = false;
+
                 return View(invalidModel);
             }
 
             if (model.Items == null || model.Items.Count == 0)
             {
-                ModelState.AddModelError("", "Đơn hàng chưa có thông tin hàng hóa.");
-                ViewBag.IsRecorded = false;
+                ModelState.AddModelError(
+                    "",
+                    "Đơn hàng chưa có thông tin hàng hóa.");
+
+                ViewBag.IsReadOnly = false;
+
                 return View(model);
             }
 
-            // Cập nhật thông tin người nhận.
+            // ==========================================
+            // 1. CẬP NHẬT THÔNG TIN NGƯỜI NHẬN
+            // ==========================================
+
             order.ReceiverName = model.ReceiverName;
             order.ReceiverPhone = model.ReceiverPhone;
             order.ReceiverAddress = model.ReceiverAddress;
+
+            // ==========================================
+            // 2. CẬP NHẬT THÔNG TIN HÀNG HÓA
+            // ==========================================
 
             // Chỉ cập nhật những mặt hàng thực sự thuộc đơn này.
             foreach (var itemModel in model.Items)
@@ -178,7 +207,6 @@ namespace DeliveryManagement.Controllers
                 if (item == null)
                     continue;
 
-                // Description trong database không cho phép NULL.
                 item.Description = itemModel.Description ?? string.Empty;
                 item.Quantity = itemModel.Quantity;
                 item.Weight = itemModel.Weight;
@@ -186,9 +214,36 @@ namespace DeliveryManagement.Controllers
                 item.IsValuable = itemModel.IsValuable;
             }
 
+            // ==========================================
+            // 3. CẬP NHẬT THÔNG TIN TIẾP NHẬN
+            // ==========================================
+
             order.ReceivedBy = user.Id;
             order.ReceivedAt = DateTime.Now;
             order.ReceptionNote = model.ReceptionNote;
+
+            // QUAN TRỌNG:
+            // Chuyển trạng thái sang Đã nhận - Chưa giao.
+            // Đây là trạng thái mà WarehouseController
+            // đang sử dụng để lọc đơn chờ xử lý.
+            order.CurrentStatus = ReadyStatus;
+
+            // ==========================================
+            // 4. LƯU LỊCH SỬ THAY ĐỔI TRẠNG THÁI
+            // ==========================================
+
+            _context.OrderStatusHistories.Add(
+                new OrderStatusHistory
+                {
+                    OrderCode = order.OrderCode,
+                    Status = ReadyStatus,
+                    ChangedBy = user.Id,
+                    ChangedAt = DateTime.Now
+                });
+
+            // ==========================================
+            // 5. LƯU DỮ LIỆU
+            // ==========================================
 
             try
             {
@@ -196,16 +251,24 @@ namespace DeliveryManagement.Controllers
             }
             catch (DbUpdateException ex)
             {
-                Console.WriteLine("[RECEPTION] Lỗi khi lưu thông tin tiếp nhận:");
+                Console.WriteLine(
+                    "[RECEPTION] Lỗi khi lưu thông tin tiếp nhận:");
+
                 Console.WriteLine(ex.ToString());
-                throw;
+
+                TempData["ErrorMessage"] =
+                    "Có lỗi xảy ra khi lưu thông tin tiếp nhận. Vui lòng thử lại.";
+
+                return RedirectToAction(
+                    nameof(Record),
+                    new { id = order.OrderCode });
             }
 
             TempData["SuccessMessage"] =
-                $"Đã ghi nhận thông tin đơn {order.OrderCode}.";
+                $"Đã tiếp nhận đơn {order.OrderCode} thành công. " +
+                $"Trạng thái: {ReadyStatus}.";
 
             return RedirectToAction(nameof(Index));
         }
-
     }
 }

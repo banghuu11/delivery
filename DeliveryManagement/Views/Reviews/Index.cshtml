@@ -1,0 +1,435 @@
+﻿@model List<DeliveryManagement.Models.Review>
+
+@{
+    ViewData["Title"] = "Quản lý đánh giá";
+
+    var reviews = Model ?? new List<DeliveryManagement.Models.Review>();
+
+    int? selectedRating = ViewBag.SelectedRating == null
+        ? null
+        : (int?)Convert.ToInt32(ViewBag.SelectedRating);
+
+    string selectedResponseStatus =
+        ViewBag.SelectedResponseStatus as string ?? "all";
+
+    string keyword = ViewBag.Keyword as string ?? "";
+
+    int totalReviews = ViewBag.TotalReviews == null
+        ? 0
+        : Convert.ToInt32(ViewBag.TotalReviews);
+
+    int pendingReviews = ViewBag.PendingReviews == null
+        ? 0
+        : Convert.ToInt32(ViewBag.PendingReviews);
+
+    int respondedReviews = ViewBag.RespondedReviews == null
+        ? 0
+        : Convert.ToInt32(ViewBag.RespondedReviews);
+
+    double averageRating = ViewBag.AverageRating == null
+        ? 0
+        : Convert.ToDouble(ViewBag.AverageRating);
+}
+
+<div class="container mt-4 mb-5">
+
+    <!-- TIÊU ĐỀ -->
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
+        <div>
+            <h2 class="fw-bold mb-1">
+                <i class="bi bi-star-half text-warning me-2"></i>
+                Quản lý đánh giá
+            </h2>
+            <p class="text-muted mb-0">
+                Theo dõi đánh giá của khách hàng và quản lý phản hồi.
+            </p>
+        </div>
+    </div>
+
+    <!-- THÔNG BÁO -->
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <i class="bi bi-check-circle me-1"></i>
+            @TempData["SuccessMessage"]
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Đóng"></button>
+        </div>
+    }
+
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-circle me-1"></i>
+            @TempData["ErrorMessage"]
+            <button type="button"
+                    class="btn-close"
+                    data-bs-dismiss="alert"
+                    aria-label="Đóng"></button>
+        </div>
+    }
+
+    <!-- THỐNG KÊ -->
+    <div class="row g-3 mb-4">
+
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        Tổng số đánh giá
+                    </div>
+                    <div class="fs-3 fw-bold">
+                        @totalReviews
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        Chưa phản hồi
+                    </div>
+                    <div class="fs-3 fw-bold text-danger">
+                        @pendingReviews
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        Đã phản hồi
+                    </div>
+                    <div class="fs-3 fw-bold text-success">
+                        @respondedReviews
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small mb-1">
+                        Điểm đánh giá trung bình
+                    </div>
+                    <div class="fs-3 fw-bold text-warning">
+                        @averageRating.ToString("0.0")
+                        <small class="fs-6 text-muted">/ 5</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BỘ LỌC -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold">
+                <i class="bi bi-funnel me-2"></i>
+                Tìm kiếm và lọc đánh giá
+            </h5>
+        </div>
+
+        <div class="card-body">
+            <form asp-controller="Reviews"
+                  asp-action="Index"
+                  method="get">
+
+                <div class="row g-3 align-items-end">
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label fw-semibold">
+                            Tìm kiếm
+                        </label>
+                        <input type="text"
+                               name="keyword"
+                               value="@keyword"
+                               class="form-control"
+                               placeholder="Mã đơn, tên hoặc email khách hàng..." />
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-semibold">
+                            Số sao
+                        </label>
+
+                        <select name="rating" class="form-select">
+                            <option value="">Tất cả số sao</option>
+
+                            @for (int i = 5; i >= 1; i--)
+                            {
+                                <option value="@i"
+                                        selected="@(selectedRating == i ? "selected" : null)">
+                                    @i sao
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-3">
+                        <label class="form-label fw-semibold">
+                            Trạng thái phản hồi
+                        </label>
+
+                        <select name="responseStatus" class="form-select">
+                            <option value="all"
+                                    selected="@(selectedResponseStatus == "all" ? "selected" : null)">
+                                Tất cả
+                            </option>
+
+                            <option value="pending"
+                                    selected="@(selectedResponseStatus == "pending" ? "selected" : null)">
+                                Chưa phản hồi
+                            </option>
+
+                            <option value="replied"
+                                    selected="@(selectedResponseStatus == "replied" ? "selected" : null)">
+                                Đã phản hồi
+                            </option>
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-2 d-flex gap-2">
+                        <button type="submit"
+                                class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-search me-1"></i>
+                            Lọc
+                        </button>
+
+                        <a asp-controller="Reviews"
+                           asp-action="Index"
+                           class="btn btn-outline-secondary"
+                           title="Xóa bộ lọc">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </a>
+                    </div>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- DANH SÁCH ĐÁNH GIÁ -->
+    <div class="card border-0 shadow-sm">
+
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h5 class="mb-0 fw-bold">
+                Danh sách đánh giá
+            </h5>
+
+            <span class="badge bg-secondary">
+                @reviews.Count kết quả
+            </span>
+        </div>
+
+        <div class="card-body">
+
+            @if (!reviews.Any())
+            {
+                <div class="text-center py-5">
+                    <i class="bi bi-chat-square-text fs-1 text-muted"></i>
+
+                    <h5 class="mt-3">
+                        Không tìm thấy đánh giá
+                    </h5>
+
+                    <p class="text-muted mb-0">
+                        Thử thay đổi điều kiện tìm kiếm hoặc bộ lọc.
+                    </p>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex flex-column gap-4">
+
+                    @foreach (var review in reviews)
+                    {
+                        bool hasResponse =
+                        !string.IsNullOrWhiteSpace(review.Response);
+
+                        <div class="border rounded-3 p-3 p-md-4">
+
+                            <!-- THÔNG TIN ĐÁNH GIÁ -->
+                            <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-3">
+
+                                <div>
+                                    <div class="fw-bold fs-5">
+                                        @(review.Customer?.FullName ?? "Khách hàng")
+                                    </div>
+
+                                    <div class="text-muted small">
+                                        @(review.Customer?.Email ?? "Không có email")
+                                    </div>
+                                </div>
+
+                                <div>
+                                    @if (hasResponse)
+                                    {
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle me-1"></i>
+                                            Đã phản hồi
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark">
+                                            <i class="bi bi-clock me-1"></i>
+                                            Chưa phản hồi
+                                        </span>
+                                    }
+                                </div>
+
+                            </div>
+
+                            <!-- MÃ ĐƠN VÀ THỜI GIAN -->
+                            <div class="row g-2 mb-3">
+                                <div class="col-12 col-md-6">
+                                    <span class="text-muted small">
+                                        Mã đơn hàng:
+                                    </span>
+                                    <strong>@review.OrderCode</strong>
+                                </div>
+
+                                <div class="col-12 col-md-6">
+                                    <span class="text-muted small">
+                                        Thời gian đánh giá:
+                                    </span>
+                                    <strong>
+                                        @review.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                    </strong>
+                                </div>
+                            </div>
+
+                            <!-- SỐ SAO -->
+                            <div class="mb-2">
+                                <span class="fw-semibold me-2">
+                                    Đánh giá:
+                                </span>
+
+                                <span class="fs-5">
+                                    @for (int i = 1; i <= 5; i++)
+                                    {
+                                        if (i <= review.Rating)
+                                        {
+                                            <span class="text-warning">★</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-secondary">☆</span>
+                                        }
+                                    }
+                            </span>
+
+                            <span class="text-muted small ms-1">
+                                (@review.Rating/5)
+                            </span>
+                        </div>
+
+                        <!-- NỘI DUNG NHẬN XÉT -->
+                        <div class="bg-light rounded p-3 mb-3">
+                            <div class="small fw-bold text-secondary mb-1">
+                                Nhận xét của khách hàng
+                            </div>
+
+                            <div>
+                                @(string.IsNullOrWhiteSpace(review.Comment)
+                                                            ? "Khách hàng không để lại nhận xét."
+                                                            : review.Comment)
+                        </div>
+                    </div>
+
+                            <!-- PHẢN HỒI CŨ -->
+                    @if (hasResponse)
+                            {
+                                <div class="border-start border-3 border-success ps-3 mb-3">
+                                    <div class="fw-bold text-success mb-1">
+                                        <i class="bi bi-reply-fill me-1"></i>
+                                        Phản hồi hiện tại
+                                    </div>
+
+                                    <p class="mb-1">
+                                        @review.Response
+                                    </p>
+
+                                    <small class="text-muted">
+                                        Người phản hồi:
+                                        @(review.Staff?.FullName ?? "Nhân viên")
+
+                                        @if (review.RespondedAt.HasValue)
+                                        {
+                                            <span>
+                                                -
+                                                @review.RespondedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                            </span>
+                                        }
+                                    </small>
+                                </div>
+                            }
+
+                        <!-- FORM GỬI / CẬP NHẬT PHẢN HỒI -->
+                        <form asp-controller="Reviews"
+                              asp-action="Reply"
+                              method="post">
+
+                            @Html.AntiForgeryToken()
+
+                            <input type="hidden"
+                                   name="reviewId"
+                                   value="@review.ReviewId" />
+
+                            <input type="hidden"
+                                   name="rating"
+                                   value="@selectedRating" />
+
+                            <input type="hidden"
+                                   name="responseStatus"
+                                   value="@selectedResponseStatus" />
+
+                            <input type="hidden"
+                                   name="keyword"
+                                   value="@keyword" />
+
+                            <label class="form-label fw-semibold">
+                                @(hasResponse
+                                                            ? "Cập nhật phản hồi"
+                                                            : "Nhập phản hồi cho khách hàng")
+                                                                                         </label>
+
+                            <textarea name="response"
+                                  class="form-control"
+                                  rows="3"
+                                  maxlength="1000"
+                                  placeholder="Nhập nội dung phản hồi..."
+                                  required>@review.Response</textarea>
+
+                            <div class="d-flex justify-content-end mt-2">
+                                <button type="submit"
+                                        class="btn btn-primary">
+                                    <i class="bi bi-send me-1"></i>
+
+                                    @(hasResponse
+                                                                    ? "Cập nhật phản hồi"
+                                                                    : "Gửi phản hồi")
+                            </button>
+                        </div>
+
+                            </form>
+
+                        </div>
+                                }
+
+                </div>
+            }
+
+        </div>
+    </div>
+
+</div>

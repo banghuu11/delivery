@@ -22,6 +22,15 @@ namespace DeliveryManagement.Controllers
         private const string FailedStatus = "Giao thất bại - Chờ xử lý";
         private const string CanceledStatus = "Đã hủy";
 
+        // Các giá trị hình thức giao hàng thường được hệ thống hiện tại sử dụng.
+        // Đơn thường do shipper tự nhận; đơn nhanh do kho phân công.
+        private static readonly string[] NormalDeliveryMethods =
+        {
+            "Thường",
+            "Giao tiêu chuẩn",
+            "Giao tiết kiệm"
+        };
+
         private const long MaxProofSize = 2 * 1024 * 1024;
 
         private readonly ApplicationDbContext _context;
@@ -39,10 +48,11 @@ namespace DeliveryManagement.Controllers
         }
 
         // ==========================================
-        // DANH SÁCH ĐƠN ĐƯỢC PHÂN CÔNG CHO SHIPPER
-        // Chỉ hiển thị các đơn được gán cho tài khoản hiện tại.
+        // DANH SÁCH ĐƠN CỦA SHIPPER
+        // - Đơn đã được kho phân công cho tài khoản hiện tại.
+        // - Đơn giao thường đã tiếp nhận, đang chờ một shipper nhận.
+        // - Không hiển thị đơn giao nhanh chưa được kho phân công.
         // ==========================================
-
         [HttpGet]
         public async Task<IActionResult> Index()
         {
@@ -57,13 +67,23 @@ namespace DeliveryManagement.Controllers
                 .AsNoTracking()
                 .Include(o => o.OrderItems)
                 .Where(o =>
-                    o.DeliveryStaffId == user.Id &&
-                    o.CurrentStatus != CanceledStatus)
+                    o.CurrentStatus != CanceledStatus &&
+                    (
+                        // Đơn đã được kho phân công cho shipper hiện tại.
+                        o.DeliveryStaffId == user.Id
+                        ||
+                        // Đơn giao thường đã tiếp nhận và chưa có shipper.
+                        (
+                            o.ReceivedAt.HasValue &&
+                            NormalDeliveryMethods.Contains(o.DeliveryMethod) &&
+                            o.CurrentStatus == ReadyStatus &&
+                            o.DeliveryStaffId == null
+                        )
+                    ))
                 .OrderByDescending(o => o.CreatedAt)
                 .ToListAsync();
 
-            // Truyền danh sách trực tiếp cho View.
-            // View có thể dùng Model hoặc ViewBag.MyOrders.
+            // View có thể sử dụng Model hoặc ViewBag.MyOrders.
             ViewBag.MyOrders = myOrders;
 
             return View(myOrders);
@@ -71,7 +91,8 @@ namespace DeliveryManagement.Controllers
 
         // ==========================================
         // CHI TIẾT ĐƠN GIAO HÀNG
-        // Chỉ shipper được phân công mới được xem.
+        // Chỉ shipper đã được gán đơn mới được xem.
+        // Đơn thường chỉ được xem sau khi nhận giao thành công.
         // ==========================================
         [HttpGet]
         public async Task<IActionResult> Details(string id)
@@ -96,7 +117,8 @@ namespace DeliveryManagement.Controllers
                     o.OrderCode == id &&
                     o.DeliveryStaffId == user.Id);
 
-            // Không cho shipper xem đơn được phân công cho người khác.
+            // Không cho shipper xem đơn được phân công cho người khác
+            // hoặc đơn chưa được ai nhận.
             if (order == null)
             {
                 return NotFound();
@@ -106,25 +128,91 @@ namespace DeliveryManagement.Controllers
         }
 
         // ==========================================
-        // ACTION CŨ: SHIPPER TỰ NHẬN ĐƠN
-        // Không cho phép tự nhận; kho phải phân công.
+        // SHIPPER TỰ NHẬN ĐƠN GIAO THƯỜNG
+        // Chỉ nhận đơn đã tiếp nhận, đúng hình thức giao thường,
+        // đang ở trạng thái Ready và chưa có shipper.
         // ==========================================
-
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public IActionResult AcceptOrder(string id)
+        public async Task<IActionResult> AcceptOrder(string id)
         {
-            TempData["ErrorMessage"] =
-                "Shipper không được tự nhận đơn. Vui lòng chờ kho phân công đơn hàng.";
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Challenge();
+            }
+
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            await using var transaction =
+                await _context.Database.BeginTransactionAsync();
+
+            try
+            {
+                // ExecuteUpdateAsync kiểm tra và cập nhật trong cùng một câu lệnh.
+                // Nếu shipper khác nhận trước, affectedRows sẽ bằng 0.
+                var affectedRows = await _context.DeliveryOrders
+                    .Where(o =>
+                        o.OrderCode == id &&
+                        o.ReceivedAt.HasValue &&
+                        NormalDeliveryMethods.Contains(o.DeliveryMethod) &&
+                        o.CurrentStatus == ReadyStatus &&
+                        o.DeliveryStaffId == null)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(o => o.DeliveryStaffId, user.Id)
+                        .SetProperty(o => o.CurrentStatus, DeliveringStatus));
+
+                if (affectedRows != 1)
+                {
+                    await transaction.RollbackAsync();
+
+                    TempData["ErrorMessage"] =
+                        "Không thể nhận đơn. Đơn chưa được tiếp nhận, " +
+                        "không phải đơn giao thường, đã được shipper khác nhận " +
+                        "hoặc trạng thái đơn đã thay đổi.";
+
+                    return RedirectToAction(nameof(Index));
+                }
+
+                _context.OrderStatusHistories.Add(new OrderStatusHistory
+                {
+                    OrderCode = id,
+                    Status = DeliveringStatus,
+                    ChangedBy = user.Id,
+                    ChangedAt = DateTime.Now
+                });
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                TempData["SuccessMessage"] =
+                    $"Bạn đã nhận giao đơn {id} thành công. " +
+                    $"Trạng thái đơn hàng: {DeliveringStatus}.";
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+
+                Console.WriteLine(
+                    $"[DELIVERY STAFF] Lỗi khi nhận đơn {id}: {ex}");
+
+                TempData["ErrorMessage"] =
+                    "Có lỗi xảy ra khi nhận đơn hàng. Vui lòng thử lại.";
+            }
 
             return RedirectToAction(nameof(Index));
         }
 
         // ==========================================
-        // ACTION CŨ: BẮT ĐẦU GIAO HÀNG
-        // Kho đã chuyển trạng thái khi phân công.
+        // XÁC NHẬN BẮT ĐẦU GIAO HÀNG
+        // Đơn được chuyển sang đang giao ngay khi shipper nhận
+        // đơn thường hoặc khi kho phân công đơn giao nhanh.
         // ==========================================
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> StartDelivery(string id)
@@ -138,9 +226,7 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] =
-                    "Không tìm thấy mã đơn hàng.";
-
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -153,13 +239,14 @@ namespace DeliveryManagement.Controllers
             if (!orderExists)
             {
                 TempData["ErrorMessage"] =
-                    "Đơn không thuộc quyền xử lý của bạn hoặc chưa được kho phân công.";
+                    "Đơn không thuộc quyền xử lý của bạn hoặc chưa được phân công/nhận giao.";
 
                 return RedirectToAction(nameof(Index));
             }
 
             TempData["SuccessMessage"] =
-                $"Đơn {id} đã ở trạng thái đang giao. Bạn có thể cập nhật kết quả giao hàng.";
+                $"Đơn {id} đang ở trạng thái đang giao. " +
+                "Bạn có thể cập nhật kết quả giao hàng.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -168,7 +255,6 @@ namespace DeliveryManagement.Controllers
         // XÁC NHẬN GIAO HÀNG THÀNH CÔNG KÈM ẢNH
         // Chỉ shipper được phân công và đơn đang giao mới được xác nhận.
         // ==========================================
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         [RequestSizeLimit(3 * 1024 * 1024)]
@@ -186,9 +272,7 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] =
-                    "Không tìm thấy mã đơn hàng.";
-
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -201,7 +285,8 @@ namespace DeliveryManagement.Controllers
             if (!orderExists)
             {
                 TempData["ErrorMessage"] =
-                    "Đơn không tồn tại, không thuộc quyền xử lý của bạn hoặc không ở trạng thái đang giao.";
+                    "Đơn không tồn tại, không thuộc quyền xử lý của bạn " +
+                    "hoặc không ở trạng thái đang giao.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -303,8 +388,7 @@ namespace DeliveryManagement.Controllers
                 await using var transaction =
                     await _context.Database.BeginTransactionAsync();
 
-                // Cập nhật có điều kiện lần cuối:
-                // phải đúng shipper và đơn vẫn đang giao.
+                // Kiểm tra lại quyền sở hữu và trạng thái tại thời điểm cập nhật.
                 var affectedRows = await _context.DeliveryOrders
                     .Where(o =>
                         o.OrderCode == id &&
@@ -327,7 +411,6 @@ namespace DeliveryManagement.Controllers
                 if (affectedRows != 1)
                 {
                     await transaction.RollbackAsync();
-
                     TryDeleteFile(physicalPath);
 
                     TempData["ErrorMessage"] =
@@ -348,9 +431,12 @@ namespace DeliveryManagement.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 TryDeleteFile(physicalPath);
+
+                Console.WriteLine(
+                    $"[DELIVERY STAFF] Lỗi hoàn tất đơn {id}: {ex}");
 
                 TempData["ErrorMessage"] =
                     "Có lỗi khi lưu kết quả giao hàng. Vui lòng thử lại.";
@@ -368,7 +454,6 @@ namespace DeliveryManagement.Controllers
         // GHI NHẬN GIAO HÀNG THẤT BẠI
         // Sau khi thất bại, kho xử lý giao lại hoặc hoàn hàng.
         // ==========================================
-
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> FailDelivery(
@@ -385,9 +470,7 @@ namespace DeliveryManagement.Controllers
 
             if (string.IsNullOrWhiteSpace(id))
             {
-                TempData["ErrorMessage"] =
-                    "Không tìm thấy mã đơn hàng.";
-
+                TempData["ErrorMessage"] = "Không tìm thấy mã đơn hàng.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -436,7 +519,8 @@ namespace DeliveryManagement.Controllers
             if (order == null)
             {
                 TempData["ErrorMessage"] =
-                    "Đơn không tồn tại, không thuộc quyền xử lý của bạn hoặc không ở trạng thái đang giao.";
+                    "Đơn không tồn tại, không thuộc quyền xử lý của bạn " +
+                    "hoặc không ở trạng thái đang giao.";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -498,9 +582,12 @@ namespace DeliveryManagement.Controllers
                 await _context.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
+
+                Console.WriteLine(
+                    $"[DELIVERY STAFF] Lỗi ghi nhận giao thất bại {id}: {ex}");
 
                 TempData["ErrorMessage"] =
                     "Có lỗi khi lưu kết quả giao thất bại. Vui lòng thử lại.";
@@ -509,7 +596,8 @@ namespace DeliveryManagement.Controllers
             }
 
             TempData["SuccessMessage"] =
-                $"Đã ghi nhận giao thất bại cho đơn {order.OrderCode}. Đơn đang chờ kho xử lý tiếp.";
+                $"Đã ghi nhận giao thất bại cho đơn {order.OrderCode}. " +
+                "Đơn đang chờ kho xử lý tiếp.";
 
             return RedirectToAction(nameof(Index));
         }
@@ -517,7 +605,6 @@ namespace DeliveryManagement.Controllers
         // ==========================================
         // XÓA FILE MINH CHỨNG NẾU CẬP NHẬT CSDL THẤT BẠI
         // ==========================================
-
         private static void TryDeleteFile(string physicalPath)
         {
             try

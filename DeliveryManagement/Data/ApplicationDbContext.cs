@@ -125,6 +125,11 @@ namespace DeliveryManagement.Data
                 .HasForeignKey(r => r.RespondedBy)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            // Mỗi đơn hàng chỉ được có một đánh giá
+            builder.Entity<Review>()
+                .HasIndex(r => r.OrderCode)
+                .IsUnique();
+
             // Conversation → Customer
             builder.Entity<Conversation>()
                 .HasOne(c => c.Customer)
