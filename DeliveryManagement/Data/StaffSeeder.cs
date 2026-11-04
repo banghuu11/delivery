@@ -36,20 +36,6 @@ namespace DeliveryManagement.Data
                 "Customer@123",
                 "Khách hàng mẫu",
                 "Customer");
-
-            await CreateStaffAsync(
-                userManager,
-                "ai-assistant@delivery.com",
-                "AiBot@123",
-                "Trợ lý AI Tốc Độ",
-                "ReceptionStaff");
-
-            await CreateStaffAsync(
-                userManager,
-                "guest@delivery.com",
-                "Guest@123",
-                "Khách vãng lai",
-                "Customer");
         }
 
         private static async Task CreateStaffAsync(

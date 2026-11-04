@@ -38,7 +38,6 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPricingService, PricingService>();
-builder.Services.AddScoped<IAiChatService, AiChatService>();
 
 builder.Services.AddHttpClient<
     IRouteDistanceService,
