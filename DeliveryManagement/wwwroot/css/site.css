@@ -1637,6 +1637,31 @@ body {
     font-weight: 700;
     color: #1e293b;
     line-height: 1.1;
+    max-width: 125px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+@media (max-width: 1199.98px) {
+    .app-navbar .navbar-collapse {
+        background: #ffffff;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        margin-top: 0.75rem;
+        border: 1px solid #e2e8f0;
+    }
+    .app-navbar .dropdown-menu {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0 !important;
+        margin-top: 4px;
+        box-shadow: none !important;
+        padding: 0.5rem;
+    }
+    .app-navbar .nav-link {
+        padding: 8px 12px !important;
+    }
 }
 
 .user-role-badge {
@@ -2442,4 +2467,13 @@ body {
 
 
 
-
+
+
+/* HOVER SHADOW HELPER */
+.hover-shadow {
+    transition: all 0.2s ease;
+}
+.hover-shadow:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
