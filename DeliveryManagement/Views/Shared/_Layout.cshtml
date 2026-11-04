@@ -39,6 +39,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/ai-chat-widget.css" asp-append-version="true" />
     @await RenderSectionAsync("Styles", required: false)
 </head>
 
@@ -274,9 +275,19 @@
                                         <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Users"><i class="bi bi-people me-2"></i>Quản lý người dùng</a></li>
                                         <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Roles"><i class="bi bi-shield-shaded me-2"></i>Ma trận phân quyền</a></li>
                                         <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="Orders"><i class="bi bi-box-seam me-2"></i>Quản lý đơn hàng</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Admin" asp-action="PackageTypes"><i class="bi bi-tags me-2 text-primary"></i>Danh mục loại hàng hóa</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Reception" asp-action="ChatSupport"><i class="bi bi-chat-dots me-2 text-info"></i>Hộp thoại Chat CSKH</a></li>
                                     }
                                     @if (User.IsInRole("ReceptionStaff") )
                                     {
+                                        <li>
+                                            <a class="dropdown-item py-2"
+                                               asp-controller="Reception"
+                                               asp-action="ChatSupport">
+                                                <i class="bi bi-chat-dots-fill me-2 text-info"></i>
+                                                Hộp thoại Chat CSKH
+                                            </a>
+                                        </li>
                                         <li>
                                             <a class="dropdown-item py-2"
                                                asp-controller="Reviews"
@@ -290,6 +301,7 @@
                                     {
                                         <li><a class="dropdown-item py-2" asp-controller="DeliveryOrder" asp-action="Index"><i class="bi bi-box-seam me-2"></i>Đơn hàng của tôi</a></li>
                                         <li><a class="dropdown-item py-2" asp-controller="Sender" asp-action="Index"><i class="bi bi-person-vcard me-2"></i>Thông tin người gửi</a></li>
+                                        <li><a class="dropdown-item py-2" asp-controller="Chat" asp-action="Index"><i class="bi bi-robot me-2 text-primary"></i>Trợ lý AI Hỗ trợ 24/7</a></li>
                                     }
                                     else
                                     {
@@ -381,6 +393,9 @@
             </div>
         </div>
     </footer>
+
+    <!-- FLOATING AI CHAT ASSISTANT WIDGET (STORY 11.0) -->
+    <partial name="_AiChatWidget" />
 
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

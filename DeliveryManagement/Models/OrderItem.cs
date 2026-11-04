@@ -14,7 +14,7 @@ namespace DeliveryManagement.Models
         public int PackageTypeId { get; set; }
 
         // Mô tả hàng hóa
-        public string Description { get; set; } 
+        public string Description { get; set; } = string.Empty; 
 
         // Số lượng
         public int Quantity { get; set; }

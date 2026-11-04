@@ -524,7 +524,8 @@ namespace DeliveryManagement.Controllers
                 new PermissionMatrixItem { FeatureName = "Tạo yêu cầu gửi hàng mới", Category = "Khách hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = true },
                 new PermissionMatrixItem { FeatureName = "Quản lý thông tin & Sổ địa chỉ người gửi", Category = "Khách hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = true },
                 new PermissionMatrixItem { FeatureName = "Theo dõi hành trình bưu phẩm", Category = "Công khai", Admin = true, ReceptionStaff = true, WarehouseStaff = true, DeliveryStaff = true, Customer = true },
-                new PermissionMatrixItem { FeatureName = "Đánh giá chất lượng phục vụ", Category = "Khách hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = true }
+                new PermissionMatrixItem { FeatureName = "Đánh giá chất lượng phục vụ", Category = "Khách hàng", Admin = true, ReceptionStaff = false, WarehouseStaff = false, DeliveryStaff = false, Customer = true },
+                new PermissionMatrixItem { FeatureName = "Chat box AI & Hỗ trợ khách hàng", Category = "Hỗ trợ", Admin = true, ReceptionStaff = true, WarehouseStaff = false, DeliveryStaff = false, Customer = true }
             };
 
             ViewBag.RoleSummaries = roleSummaries;
@@ -537,10 +538,60 @@ namespace DeliveryManagement.Controllers
         // 3. QUẢN LÝ LOẠI HÀNG HÓA (PACKAGE TYPES)
         // ==========================================
         [HttpGet]
-        public async Task<IActionResult> PackageTypes()
+        public async Task<IActionResult> PackageTypes(string? search, string? status)
         {
-            var list = await _context.PackageTypes.OrderBy(p => p.PackageTypeId).ToListAsync();
-            return View(list);
+            var query = _context.PackageTypes.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var term = search.Trim().ToLower();
+                query = query.Where(p => p.TypeName.ToLower().Contains(term) || (p.Description != null && p.Description.ToLower().Contains(term)));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                if (status.Equals("active", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(p => p.IsActive);
+                }
+                else if (status.Equals("inactive", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(p => !p.IsActive);
+                }
+            }
+
+            var packageList = await query.OrderBy(p => p.PackageTypeId).ToListAsync();
+
+            // Tính số lượng OrderItems đang liên kết với từng PackageType
+            var itemCounts = await _context.OrderItems
+                .GroupBy(i => i.PackageTypeId)
+                .Select(g => new { PackageTypeId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.PackageTypeId, x => x.Count);
+
+            var viewItems = packageList.Select(p => new PackageTypeItemViewModel
+            {
+                PackageTypeId = p.PackageTypeId,
+                TypeName = p.TypeName,
+                Description = p.Description,
+                IsActive = p.IsActive,
+                AssociatedOrderItemsCount = itemCounts.TryGetValue(p.PackageTypeId, out int c) ? c : 0
+            }).ToList();
+
+            var allTypes = await _context.PackageTypes.ToListAsync();
+            var totalInOrders = await _context.OrderItems.CountAsync();
+
+            var model = new PackageTypeIndexViewModel
+            {
+                Items = viewItems,
+                TotalCount = allTypes.Count,
+                ActiveCount = allTypes.Count(p => p.IsActive),
+                InactiveCount = allTypes.Count(p => !p.IsActive),
+                TotalItemsInOrders = totalInOrders,
+                SearchTerm = search,
+                StatusFilter = status ?? "all"
+            };
+
+            return View(model);
         }
 
         [HttpPost]
@@ -553,11 +604,21 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(PackageTypes));
             }
 
+            var trimmedName = model.TypeName.Trim();
+            bool duplicate = await _context.PackageTypes.AnyAsync(p => p.TypeName.ToLower() == trimmedName.ToLower());
+            if (duplicate)
+            {
+                TempData["ErrorMessage"] = $"Loại hàng hóa '{trimmedName}' đã tồn tại trong hệ thống. Vui lòng chọn tên khác.";
+                return RedirectToAction(nameof(PackageTypes));
+            }
+
+            model.TypeName = trimmedName;
+            model.Description = model.Description?.Trim();
             model.IsActive = true;
             _context.PackageTypes.Add(model);
             await _context.SaveChangesAsync();
 
-            TempData["SuccessMessage"] = $"Đã thêm loại hàng '{model.TypeName}' thành công.";
+            TempData["SuccessMessage"] = $"Đã thêm loại hàng mới '{model.TypeName}' thành công.";
             return RedirectToAction(nameof(PackageTypes));
         }
 
@@ -571,12 +632,44 @@ namespace DeliveryManagement.Controllers
                 return NotFound();
             }
 
-            entity.TypeName = model.TypeName;
-            entity.Description = model.Description;
+            if (string.IsNullOrWhiteSpace(model.TypeName))
+            {
+                TempData["ErrorMessage"] = "Tên loại hàng không được để trống.";
+                return RedirectToAction(nameof(PackageTypes));
+            }
+
+            var trimmedName = model.TypeName.Trim();
+            bool duplicate = await _context.PackageTypes.AnyAsync(p => p.PackageTypeId != model.PackageTypeId && p.TypeName.ToLower() == trimmedName.ToLower());
+            if (duplicate)
+            {
+                TempData["ErrorMessage"] = $"Tên loại hàng '{trimmedName}' đã trùng với một loại hàng khác có trong hệ thống.";
+                return RedirectToAction(nameof(PackageTypes));
+            }
+
+            entity.TypeName = trimmedName;
+            entity.Description = model.Description?.Trim();
             entity.IsActive = model.IsActive;
 
             await _context.SaveChangesAsync();
-            TempData["SuccessMessage"] = $"Đã cập nhật loại hàng '{entity.TypeName}'.";
+            TempData["SuccessMessage"] = $"Đã cập nhật thông tin loại hàng '{entity.TypeName}' thành công.";
+            return RedirectToAction(nameof(PackageTypes));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> TogglePackageTypeStatus(int id)
+        {
+            var entity = await _context.PackageTypes.FindAsync(id);
+            if (entity == null)
+            {
+                return NotFound();
+            }
+
+            entity.IsActive = !entity.IsActive;
+            await _context.SaveChangesAsync();
+
+            string statusText = entity.IsActive ? "kích hoạt áp dụng" : "chuyển sang ngưng áp dụng";
+            TempData["SuccessMessage"] = $"Đã {statusText} cho loại hàng '{entity.TypeName}'.";
             return RedirectToAction(nameof(PackageTypes));
         }
 
@@ -595,13 +688,13 @@ namespace DeliveryManagement.Controllers
             {
                 entity.IsActive = false;
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Loại hàng '{entity.TypeName}' đang có trong các đơn hàng, hệ thống đã chuyển sang trạng thái Ngưng hoạt động.";
+                TempData["SuccessMessage"] = $"Loại hàng '{entity.TypeName}' đang có kiện hàng trong đơn vận chuyển. Hệ thống đã tự động chuyển sang trạng thái 'Ngưng áp dụng' để bảo toàn lịch sử dữ liệu.";
             }
             else
             {
                 _context.PackageTypes.Remove(entity);
                 await _context.SaveChangesAsync();
-                TempData["SuccessMessage"] = $"Đã xóa loại hàng '{entity.TypeName}'.";
+                TempData["SuccessMessage"] = $"Đã xóa vĩnh viễn loại hàng '{entity.TypeName}' khỏi hệ thống.";
             }
 
             return RedirectToAction(nameof(PackageTypes));
