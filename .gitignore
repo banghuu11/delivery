@@ -363,4 +363,11 @@ MigrationBackup/
 FodyWeavers.xsd
 
 # macOS
-.DS_Store
+.DS_Store
+# Environment variables and local secrets
+.env
+.env.*
+!.env.example
+
+# Local configuration files
+appsettings.*.local.json
