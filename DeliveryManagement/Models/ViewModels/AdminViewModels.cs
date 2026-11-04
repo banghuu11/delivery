@@ -202,5 +202,25 @@ namespace DeliveryManagement.Models.ViewModels
         public string? DeliveryStaffId { get; set; }
         public string? DeliveryNote { get; set; }
     }
+
+    public class PackageTypeItemViewModel
+    {
+        public int PackageTypeId { get; set; }
+        public string TypeName { get; set; } = string.Empty;
+        public string? Description { get; set; }
+        public bool IsActive { get; set; }
+        public int AssociatedOrderItemsCount { get; set; }
+    }
+
+    public class PackageTypeIndexViewModel
+    {
+        public List<PackageTypeItemViewModel> Items { get; set; } = new();
+        public int TotalCount { get; set; }
+        public int ActiveCount { get; set; }
+        public int InactiveCount { get; set; }
+        public int TotalItemsInOrders { get; set; }
+        public string? SearchTerm { get; set; }
+        public string? StatusFilter { get; set; }
+    }
 }
 

@@ -1,4 +1,4 @@
-﻿@model List<DeliveryManagement.Models.DeliveryOrder>
+@model List<DeliveryManagement.Models.DeliveryOrder>
 
 @{
     ViewData["Title"] = "Tiếp nhận đơn hàng";
@@ -12,6 +12,11 @@
             <p class="text-muted mb-0">
                 Kiểm tra và ghi nhận thông tin người nhận, hàng hóa.
             </p>
+        </div>
+        <div>
+            <a asp-action="ChatSupport" class="btn btn-outline-info shadow-sm">
+                <i class="bi bi-chat-dots-fill me-1"></i> Hộp thoại Chat CSKH
+            </a>
         </div>
     </div>
 
