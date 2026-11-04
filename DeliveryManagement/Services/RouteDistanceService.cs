@@ -23,6 +23,9 @@ public interface IRouteDistanceService
         string receiverAddress,
         double? senderLat = null,
         double? senderLon = null);
+
+    /// <summary>Chuyển địa chỉ thành tọa độ; trả về null nếu không tìm thấy.</summary>
+    Task<(double Latitude, double Longitude)?> GeocodeAddressAsync(string address);
 }
 
 public sealed class RouteDistanceService : IRouteDistanceService
@@ -203,6 +206,30 @@ public sealed class RouteDistanceService : IRouteDistanceService
         }
     }
 
+
+    public async Task<(double Latitude, double Longitude)?> GeocodeAddressAsync(string address)
+    {
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            return null;
+        }
+
+        try
+        {
+            var point = await GeocodeAsync(address);
+
+            if (point.HasValue)
+            {
+                return (point.Value.Latitude, point.Value.Longitude);
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
 
     private async Task<GeoPoint?> GeocodeAsync(string address)
     {

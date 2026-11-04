@@ -36,6 +36,7 @@ namespace DeliveryManagement.Data
         public DbSet<HomeFeature> HomeFeatures { get; set; }
         public DbSet<WebsiteSetting> WebsiteSettings { get; set; }
         public DbSet<SenderAddress> SenderAddresses { get; set; }
+        public DbSet<ShipperLocation> ShipperLocations { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

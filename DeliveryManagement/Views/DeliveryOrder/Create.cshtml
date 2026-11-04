@@ -1,4 +1,5 @@
 @model DeliveryManagement.Models.ViewModels.CreateOrderViewModel
+@inject Microsoft.Extensions.Configuration.IConfiguration Configuration
 
 @{
     ViewData["Title"] = "Tạo yêu cầu giao hàng";
@@ -197,6 +198,24 @@
             </div>
 
             <span asp-validation-for="PaymentMethod" class="field-validation-error"></span>
+
+            <div id="paymentQrBox" class="border rounded-3 p-3 mt-3 text-center" style="display:none;"
+                 data-bank-code="@Configuration["Payment:BankCode"]"
+                 data-account-number="@Configuration["Payment:AccountNumber"]"
+                 data-account-name="@Configuration["Payment:AccountName"]">
+                <div id="paymentQrHint" class="text-muted small">
+                    Nhập đủ địa chỉ và hàng hóa để tính tổng tiền, mã QR sẽ hiện ở đây.
+                </div>
+                <div id="paymentQrContent" style="display:none;">
+                    <img id="paymentQrImg" alt="Mã QR thanh toán" style="width:220px;max-width:100%;" />
+                    <div class="mt-2"><strong>@Configuration["Payment:BankName"]</strong> - @Configuration["Payment:AccountNumber"]</div>
+                    <div class="small text-muted">@Configuration["Payment:AccountName"]</div>
+                    <div class="mt-1">Số tiền: <strong id="paymentQrAmount">0 VNĐ</strong></div>
+                    <div class="small text-muted mt-2">
+                        Quét mã để thanh toán, sau đó bấm "Tạo đơn" - đơn sẽ được ghi nhận là đã thanh toán.
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- 5. THÔNG TIN HÀNG HÓA -->
@@ -268,6 +287,14 @@
                         <div class="fare-amount" id="bdTrafficFee">+0 VNĐ</div>
                     </div>
                 </div>
+            </div>
+
+            <div class="text-end mt-3">
+                <button type="button" id="btnExportQuote" class="btn btn-outline-primary" disabled
+                        title="Điền đủ thông tin người gửi, người nhận, hàng hóa và chờ tính giá để xuất báo giá">
+                    <i class="bi bi-file-earmark-text me-1"></i> Xuất báo giá
+                </button>
+                <div id="quoteHint" class="small text-muted mt-1">Điền đủ thông tin và chờ tính giá để xuất báo giá.</div>
             </div>
         </div>
 
@@ -996,4 +1023,5 @@
             });
         })();
     </script>
+    <script src="~/js/order-extras.js" asp-append-version="true"></script>
 }
