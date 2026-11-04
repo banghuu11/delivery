@@ -731,15 +731,9 @@ namespace DeliveryManagement.Controllers
                 "Giao tiêu chuẩn", "Giao hỏa tốc", "Giao tiết kiệm", "Giao siêu tốc 2h"
             };
 
-            ViewBag.PaymentMethods = new List<string>
-            {
-                "Tiền mặt khi nhận hàng (COD)", "Chuyển khoản / VNPAY", "Đã thanh toán trước"
-            };
+            ViewBag.PaymentMethods = PaymentConstants.Methods.ToList();
 
-            ViewBag.PaymentStatuses = new List<string>
-            {
-                "Chưa thanh toán", "Đã thanh toán", "Hoàn tiền"
-            };
+            ViewBag.PaymentStatuses = PaymentConstants.Statuses.ToList();
         }
 
         [HttpGet]
@@ -795,8 +789,8 @@ namespace DeliveryManagement.Controllers
                 DistanceKm = model.DistanceKm,
                 PaymentMethod = model.PaymentMethod,
                 PaymentStatus = model.PaymentStatus,
-                PaymentAmount = model.TotalAmount,
-                PaymentTime = model.PaymentStatus == "Đã thanh toán" ? DateTime.Now : null,
+                PaymentAmount = model.PaymentStatus == PaymentConstants.Paid ? model.TotalAmount : null,
+                PaymentTime = model.PaymentStatus == PaymentConstants.Paid ? DateTime.Now : null,
                 TotalAmount = model.TotalAmount,
                 CurrentStatus = model.CurrentStatus,
                 DeliveryStaffId = model.DeliveryStaffId,
@@ -909,11 +903,15 @@ namespace DeliveryManagement.Controllers
             order.CurrentStatus = model.CurrentStatus;
             order.DeliveryStaffId = model.DeliveryStaffId;
             order.DeliveryNote = model.DeliveryNote;
-
-            if (model.PaymentStatus == "Đã thanh toán" && order.PaymentTime == null)
+            if (model.PaymentStatus == PaymentConstants.Paid)
             {
-                order.PaymentTime = DateTime.Now;
+                order.PaymentTime ??= DateTime.Now;
                 order.PaymentAmount = model.TotalAmount;
+            }
+            else if (model.PaymentStatus == PaymentConstants.Unpaid)
+            {
+                order.PaymentTime = null;
+                order.PaymentAmount = null;
             }
 
             if (statusChanged)

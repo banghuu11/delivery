@@ -385,6 +385,11 @@ namespace DeliveryManagement.Controllers
             Console.WriteLine(
                 $"[CREATE ORDER] PriceCalc.TotalPrice = {priceCalc.TotalPrice}");
 
+            // Thanh toán trực tuyến (đã quét QR): ghi nhận đã thanh toán ngay khi tạo đơn.
+            bool paidOnline = model.PaymentMethod == PaymentConstants.Online
+                && priceCalc.Success
+                && priceCalc.TotalPrice > 0;
+
             // ==========================================
             // TẠO DELIVERY ORDER
             // ==========================================
@@ -406,9 +411,9 @@ namespace DeliveryManagement.Controllers
                 DistanceKm = distanceKm,
 
                 PaymentMethod = model.PaymentMethod,
-                PaymentStatus = "Chưa thanh toán",
-                PaymentAmount = null,
-                PaymentTime = null,
+                PaymentStatus = paidOnline ? PaymentConstants.Paid : PaymentConstants.Unpaid,
+                PaymentAmount = paidOnline ? priceCalc.TotalPrice : (decimal?)null,
+                PaymentTime = paidOnline ? DateTime.Now : (DateTime?)null,
 
                 TotalAmount = priceCalc.TotalPrice,
                 BaseShippingFee = priceCalc.BaseShippingFee,
@@ -568,7 +573,7 @@ namespace DeliveryManagement.Controllers
             TempData[priceCalc.Success
                 ? "SuccessMessage"
                 : "ErrorMessage"] = priceCalc.Success
-                ? $"Tạo yêu cầu giao hàng thành công. Mã đơn: {orderCode}"
+                ? $"Tạo yêu cầu giao hàng thành công. Mã đơn: {orderCode}" + (paidOnline ? ". Đã thanh toán trực tuyến." : "")
                 : $"Tạo yêu cầu giao hàng thành công. Mã đơn: {orderCode}. Chưa có mức giá phù hợp trong bảng giá.";
 
             Console.WriteLine(

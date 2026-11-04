@@ -38,6 +38,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 
 builder.Services.AddHttpClient<
     IRouteDistanceService,

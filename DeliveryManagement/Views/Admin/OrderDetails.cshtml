@@ -43,6 +43,11 @@
 
         <!-- CỘT TRÁI: THÔNG TIN CHI TIẾT -->
         <div class="col-lg-8">
+            @if (Model.CurrentStatus.Contains("Đang giao"))
+            {
+                <partial name="_ShipperMap" model="Model.OrderCode" />
+            }
+
             <div class="card shadow-sm border-0 mb-4">
                 <div class="card-header bg-white border-0 py-3">
                     <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-info-circle me-2"></i>Thông Tin Giao Nhận</h5>
@@ -81,6 +86,16 @@
                         <div class="col-md-4">
                             <span class="text-muted small">Tổng tiền cước:</span>
                             <div class="fw-bold text-success fs-5">@Model.TotalAmount.ToString("N0") đ</div>
+                        </div>
+                        <div class="col-md-4">
+                            <span class="text-muted small">Thanh toán:</span>
+                            <div>@await Html.PartialAsync("_PaymentBadge", (Model.PaymentMethod, Model.PaymentStatus))</div>
+                            @if (Model.PaymentTime.HasValue)
+                            {
+                                <small class="text-muted">
+                                    @((Model.PaymentAmount ?? Model.TotalAmount).ToString("N0")) đ lúc @Model.PaymentTime.Value.ToString("HH:mm dd/MM/yyyy")
+                                </small>
+                            }
                         </div>
                     </div>
                 </div>
@@ -154,36 +169,6 @@
 
         <!-- CỘT PHẢI: CAN THIỆP ADMIN -->
         <div class="col-lg-4">
-            <div class="card shadow-sm border-0 border-top border-primary border-4 mb-4">
-                <div class="card-header bg-white border-0 py-3">
-                    <h5 class="fw-bold mb-0 text-primary"><i class="bi bi-gear-fill me-2"></i>Admin Điều Phối Trạng Thái</h5>
-                </div>
-                <div class="card-body">
-                    <form asp-action="UpdateOrderStatus" method="post">
-                        <input type="hidden" name="id" value="@Model.OrderCode" />
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Chọn trạng thái mới:</label>
-                            <select name="newStatus" class="form-select">
-                                @foreach (var s in allStatuses)
-                                {
-                                    <option value="@s" selected="@(Model.CurrentStatus == s)">@s</option>
-                                }
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Ghi chú điều chỉnh:</label>
-                            <textarea name="note" class="form-control" rows="3" placeholder="Lý do cập nhật hoặc ghi chú bổ sung..."></textarea>
-                        </div>
-
-                        <button type="submit" class="btn btn-primary-custom w-100" onclick="return confirm('Bạn có chắc muốn cập nhật trạng thái đơn hàng này?');">
-                            <i class="bi bi-check-circle me-1"></i> Cập nhật trạng thái
-                        </button>
-                    </form>
-                </div>
-            </div>
-
             <div class="card shadow-sm border-0 p-3 bg-light">
                 <h6 class="fw-bold mb-2">Thông tin hệ thống</h6>
                 <small class="text-muted d-block mb-1">Mã khách hàng: @Model.CustomerId</small>
