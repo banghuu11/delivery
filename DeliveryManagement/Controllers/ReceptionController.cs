@@ -1,4 +1,4 @@
-
+﻿
 using DeliveryManagement.Data;
 using DeliveryManagement.Models;
 using DeliveryManagement.Models.ViewModels;
@@ -269,75 +269,6 @@ namespace DeliveryManagement.Controllers
                 $"Trạng thái: {ReadyStatus}.";
 
             return RedirectToAction(nameof(Index));
-        }
-
-        // ==========================================
-        // 6. CHAT HỖ TRỢ KHÁCH HÀNG (STORY 11.0)
-        // ==========================================
-        [HttpGet]
-        public async Task<IActionResult> ChatSupport(int? id)
-        {
-            var conversations = await _context.Conversations
-                .Include(c => c.Customer)
-                .Include(c => c.Staff)
-                .Include(c => c.Messages)
-                    .ThenInclude(m => m.Sender)
-                .OrderByDescending(c => c.CreatedAt)
-                .ToListAsync();
-
-            Conversation? activeConversation = null;
-            if (id.HasValue && id.Value > 0)
-            {
-                activeConversation = conversations.FirstOrDefault(c => c.ConversationId == id.Value);
-            }
-
-            if (activeConversation == null && conversations.Any())
-            {
-                activeConversation = conversations.First();
-            }
-
-            ViewBag.ActiveConversation = activeConversation;
-            return View(conversations);
-        }
-
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public async Task<IActionResult> StaffReply(int conversationId, string content)
-        {
-            if (string.IsNullOrWhiteSpace(content))
-            {
-                TempData["ErrorMessage"] = "Nội dung phản hồi không được để trống.";
-                return RedirectToAction(nameof(ChatSupport), new { id = conversationId });
-            }
-
-            var conv = await _context.Conversations.FindAsync(conversationId);
-            if (conv == null)
-            {
-                return NotFound();
-            }
-
-            var staff = await _userManager.GetUserAsync(User);
-            if (staff == null)
-            {
-                return Unauthorized();
-            }
-
-            var message = new Message
-            {
-                ConversationId = conversationId,
-                SenderId = staff.Id,
-                Content = content.Trim(),
-                SentAt = DateTime.Now
-            };
-
-            conv.StaffId = staff.Id;
-            conv.Status = "StaffAnswered";
-
-            _context.Messages.Add(message);
-            await _context.SaveChangesAsync();
-
-            TempData["SuccessMessage"] = "Đã gửi tin nhắn phản hồi tới khách hàng thành công.";
-            return RedirectToAction(nameof(ChatSupport), new { id = conversationId });
         }
     }
 }
