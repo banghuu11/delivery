@@ -38,7 +38,16 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddMemoryCache();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IPricingService, PricingService>();
+
+// Dịch vụ hỗ trợ khách hàng bằng AI
 builder.Services.AddScoped<IAiChatService, AiChatService>();
+
+// Dịch vụ thanh toán
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+
+builder.Services.AddHttpClient<
+    IRouteDistanceService,
+    RouteDistanceService>();
 
 builder.Services.AddHttpClient<
     IRouteDistanceService,

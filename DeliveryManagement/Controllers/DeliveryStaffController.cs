@@ -1,9 +1,10 @@
-﻿using System;
+using System;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using DeliveryManagement.Data;
 using DeliveryManagement.Models;
+using DeliveryManagement.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -36,15 +37,18 @@ namespace DeliveryManagement.Controllers
         private readonly ApplicationDbContext _context;
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IWebHostEnvironment _environment;
+        private readonly IPaymentService _paymentService;
 
         public DeliveryStaffController(
             ApplicationDbContext context,
             UserManager<ApplicationUser> userManager,
-            IWebHostEnvironment environment)
+            IWebHostEnvironment environment,
+            IPaymentService paymentService)
         {
             _context = context;
             _userManager = userManager;
             _environment = environment;
+            _paymentService = paymentService;
         }
 
         // ==========================================
@@ -123,6 +127,14 @@ namespace DeliveryManagement.Controllers
             {
                 return NotFound();
             }
+
+            // Lịch sử check-in vị trí của đơn hàng (mới nhất trước).
+            ViewBag.CheckIns = await _context.CheckIns
+                .AsNoTracking()
+                .Include(ci => ci.MapStation)
+                .Where(ci => ci.OrderCode == id)
+                .OrderByDescending(ci => ci.CheckInTime)
+                .ToListAsync();
 
             return View(order);
         }
@@ -444,6 +456,9 @@ namespace DeliveryManagement.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            // Thu tiền COD sau khi kết quả giao thành công đã được lưu.
+            await _paymentService.CollectCodAsync(id);
+
             TempData["SuccessMessage"] =
                 $"Đã ghi nhận giao hàng thành công cho đơn {id}.";
 
@@ -600,6 +615,231 @@ namespace DeliveryManagement.Controllers
                 "Đơn đang chờ kho xử lý tiếp.";
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // ==========================================
+        // TỰ ĐỘNG CHECK-IN VỊ TRÍ TẠI BƯU CỤC
+        // Trình duyệt của shipper gửi tọa độ GPS định kỳ.
+        // Nếu shipper đang ở trong bán kính CheckInRadiusMeters của một
+        // bưu cục đang hoạt động thì ghi nhận một lượt check-in cho đơn.
+        // ==========================================
+        private const double CheckInRadiusMeters = 150;
+        private const double MaxGpsAccuracyMeters = 200;
+        private static readonly TimeSpan CheckInCooldown = TimeSpan.FromMinutes(5);
+
+        public class AutoCheckInRequest
+        {
+            public string? OrderCode { get; set; }
+            public double Latitude { get; set; }
+            public double Longitude { get; set; }
+            public double? Accuracy { get; set; }
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AutoCheckIn(
+            [FromBody] AutoCheckInRequest request)
+        {
+            var user = await _userManager.GetUserAsync(User);
+
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            if (request == null ||
+                string.IsNullOrWhiteSpace(request.OrderCode) ||
+                Math.Abs(request.Latitude) > 90 ||
+                Math.Abs(request.Longitude) > 180 ||
+                (request.Latitude == 0 && request.Longitude == 0))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "Dữ liệu vị trí không hợp lệ."
+                });
+            }
+
+            // Tín hiệu GPS quá yếu thì bỏ qua, tránh check-in nhầm bưu cục.
+            if (request.Accuracy.HasValue &&
+                request.Accuracy.Value > MaxGpsAccuracyMeters)
+            {
+                return Json(new
+                {
+                    success = true,
+                    checkedIn = false,
+                    message = "Tín hiệu GPS yếu, chưa thể xác định vị trí."
+                });
+            }
+
+            // Chỉ shipper được gán đơn, và đơn đang giao, mới được check-in.
+            var orderCode = request.OrderCode.Trim();
+
+            var orderIsActive = await _context.DeliveryOrders
+                .AnyAsync(o =>
+                    o.OrderCode == orderCode &&
+                    o.DeliveryStaffId == user.Id &&
+                    o.CurrentStatus == DeliveringStatus);
+
+            if (!orderIsActive)
+            {
+                return Conflict(new
+                {
+                    success = false,
+                    stop = true,
+                    message = "Đơn không còn ở trạng thái đang giao nên đã dừng check-in."
+                });
+            }
+
+            // Lưu vị trí mới nhất để khách, admin và kho xem trên bản đồ.
+            try
+            {
+                var location = await _context.ShipperLocations
+                    .FirstOrDefaultAsync(l => l.OrderCode == orderCode);
+
+                if (location == null)
+                {
+                    location = new ShipperLocation { OrderCode = orderCode };
+                    _context.ShipperLocations.Add(location);
+                }
+
+                location.DeliveryStaffId = user.Id;
+                location.Latitude = request.Latitude;
+                location.Longitude = request.Longitude;
+                location.Accuracy = request.Accuracy;
+                location.UpdatedAt = DateTime.Now;
+
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                _context.ChangeTracker.Clear();
+                Console.WriteLine(
+                    $"[DELIVERY STAFF] Lỗi lưu vị trí đơn {orderCode}: {ex.Message}");
+            }
+
+            var stations = await _context.MapStations
+                .AsNoTracking()
+                .Where(s => s.IsActive)
+                .ToListAsync();
+
+            var nearest = stations
+                .Select(s => new
+                {
+                    Station = s,
+                    Distance = DistanceMeters(
+                        request.Latitude,
+                        request.Longitude,
+                        (double)s.Latitude,
+                        (double)s.Longitude)
+                })
+                .OrderBy(x => x.Distance)
+                .FirstOrDefault();
+
+            if (nearest == null)
+            {
+                return Json(new
+                {
+                    success = true,
+                    checkedIn = false,
+                    message = "Chưa có bưu cục nào đang hoạt động."
+                });
+            }
+
+            if (nearest.Distance > CheckInRadiusMeters)
+            {
+                return Json(new
+                {
+                    success = true,
+                    checkedIn = false,
+                    nearestStation = nearest.Station.StationName,
+                    distanceMeters = Math.Round(nearest.Distance)
+                });
+            }
+
+            // Tránh ghi trùng khi shipper đứng lâu tại một bưu cục:
+            // chỉ chặn nếu lượt check-in gần nhất của đơn là ở CHÍNH trạm này
+            // và còn trong thời gian chờ. Nếu shipper đã check-in ở trạm khác
+            // rồi quay lại thì vẫn ghi lượt mới.
+            var lastCheckIn = await _context.CheckIns
+                .AsNoTracking()
+                .Where(ci =>
+                    ci.OrderCode == orderCode &&
+                    ci.DeliveryStaffId == user.Id)
+                .OrderByDescending(ci => ci.CheckInTime)
+                .FirstOrDefaultAsync();
+
+            if (lastCheckIn != null &&
+                lastCheckIn.StationId == nearest.Station.StationId &&
+                lastCheckIn.CheckInTime >= DateTime.Now - CheckInCooldown)
+            {
+                return Json(new
+                {
+                    success = true,
+                    checkedIn = false,
+                    alreadyCheckedIn = true,
+                    stationName = nearest.Station.StationName,
+                    lastTime = lastCheckIn.CheckInTime.ToString("HH:mm:ss"),
+                    waitMinutes = (int)CheckInCooldown.TotalMinutes
+                });
+            }
+
+            var checkIn = new CheckIn
+            {
+                OrderCode = orderCode,
+                StationId = nearest.Station.StationId,
+                DeliveryStaffId = user.Id,
+                Latitude = (decimal)Math.Round(request.Latitude, 7),
+                Longitude = (decimal)Math.Round(request.Longitude, 7),
+                CheckInTime = DateTime.Now
+            };
+
+            try
+            {
+                _context.CheckIns.Add(checkIn);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(
+                    $"[DELIVERY STAFF] Lỗi check-in đơn {orderCode}: {ex}");
+
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Không thể lưu check-in. Hệ thống sẽ thử lại."
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                checkedIn = true,
+                stationName = nearest.Station.StationName,
+                distanceMeters = Math.Round(nearest.Distance),
+                time = checkIn.CheckInTime.ToString("dd/MM/yyyy HH:mm:ss"),
+                latitude = request.Latitude,
+                longitude = request.Longitude
+            });
+        }
+
+        // Khoảng cách giữa hai tọa độ (mét), công thức Haversine.
+        private static double DistanceMeters(
+            double lat1, double lon1, double lat2, double lon2)
+        {
+            const double EarthRadius = 6371000;
+
+            static double Rad(double degrees) => degrees * Math.PI / 180;
+
+            var dLat = Rad(lat2 - lat1);
+            var dLon = Rad(lon2 - lon1);
+
+            var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
+                    Math.Cos(Rad(lat1)) * Math.Cos(Rad(lat2)) *
+                    Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
+
+            return 2 * EarthRadius *
+                   Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
         }
 
         // ==========================================

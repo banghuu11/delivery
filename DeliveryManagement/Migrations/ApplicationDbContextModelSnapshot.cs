@@ -607,6 +607,32 @@ namespace DeliveryManagement.Migrations
                     b.ToTable("PricingPolicies");
                 });
 
+            modelBuilder.Entity("DeliveryManagement.Models.ShipperLocation", b =>
+                {
+                    b.Property<string>("OrderCode")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<double?>("Accuracy")
+                        .HasColumnType("float");
+
+                    b.Property<string>("DeliveryStaffId")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<double>("Latitude")
+                        .HasColumnType("float");
+
+                    b.Property<double>("Longitude")
+                        .HasColumnType("float");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("OrderCode");
+
+                    b.ToTable("ShipperLocations");
+                });
+
             modelBuilder.Entity("DeliveryManagement.Models.Review", b =>
                 {
                     b.Property<int>("ReviewId")

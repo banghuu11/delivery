@@ -221,6 +221,8 @@ namespace DeliveryManagement.Controllers
             order.ReceivedBy = user.Id;
             order.ReceivedAt = DateTime.Now;
             order.ReceptionNote = model.ReceptionNote;
+            // Sau khi tiếp nhận ghi nhận xong, đơn sẵn sàng để kho điều phối.
+            order.CurrentStatus = "Đã nhận - Chưa giao";
 
             // QUAN TRỌNG:
             // Chuyển trạng thái sang Đã nhận - Chưa giao.
@@ -233,13 +235,15 @@ namespace DeliveryManagement.Controllers
             // ==========================================
 
             _context.OrderStatusHistories.Add(
-                new OrderStatusHistory
-                {
-                    OrderCode = order.OrderCode,
-                    Status = ReadyStatus,
-                    ChangedBy = user.Id,
-                    ChangedAt = DateTime.Now
-                });
+    new OrderStatusHistory
+    {
+        OrderCode = order.OrderCode,
+        Status = ReadyStatus,
+        ChangedBy = !string.IsNullOrWhiteSpace(user.FullName)
+            ? user.FullName.Trim()
+            : user.UserName ?? "Hệ thống",
+        ChangedAt = DateTime.Now
+    });
 
             // ==========================================
             // 5. LƯU DỮ LIỆU
