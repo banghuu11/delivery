@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "Bản đồ shipper đang giao";
+}
+
+<div class="container mt-4 mb-5">
+    <div class="mb-3">
+        <h2 class="mb-1">Bản đồ shipper đang giao</h2>
+        <p class="text-muted mb-0">Vị trí của tất cả shipper đang giao hàng, tự cập nhật mỗi vài giây.</p>
+    </div>
+
+    <div class="row g-3"
+         data-shipper-overview
+         data-active-url="@Url.Action("Active", "Tracking")"
+         data-map-url="@Url.Action("Map", "Tracking")">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body">
+                    <div class="small text-muted mb-2" data-sm-status>Đang tải vị trí...</div>
+                    <div data-sm-canvas class="sm-canvas rounded-3 border" style="height: 520px; z-index: 0;"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white fw-bold">Đơn đang giao</div>
+                <div class="list-group list-group-flush" data-sm-list style="max-height: 520px; overflow-y: auto;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .sm-marker-wrap { background: transparent; border: 0; }
+    .sm-pin {
+        width: 36px; height: 36px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 1rem; border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,.35);
+    }
+    .sm-pin-shipper { background: #0d6efd; }
+    .sm-shipper { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+    .sm-pulse {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: rgba(13,110,253,.3); animation: sm-pulse 2s ease-out infinite;
+    }
+    @@keyframes sm-pulse { 0% { transform: scale(.5); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+</style>
+<script src="~/js/shipper-map.js" asp-append-version="true"></script>

@@ -1,0 +1,57 @@
+@model string
+
+<div class="card shadow-sm border-0 mb-4"
+     data-shipper-map
+     data-order-code="@Model"
+     data-location-url="@Url.Action("Location", "Tracking")"
+     data-points-url="@Url.Action("Points", "Tracking")"
+     data-route-url="@Url.Action("RouteToDestination", "Tracking")">
+    <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <h5 class="fw-bold mb-0 text-primary">
+            <i class="bi bi-geo-alt-fill me-2"></i>Vị trí shipper trực tiếp
+        </h5>
+        <div class="d-flex flex-wrap gap-2">
+            <button type="button" class="btn btn-sm btn-outline-primary" data-sm-recenter>
+                <i class="bi bi-crosshair me-1"></i>Về vị trí shipper
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-danger" data-sm-dest disabled>
+                <i class="bi bi-geo-alt-fill me-1"></i>Về điểm đến
+            </button>
+        </div>
+    </div>
+    <div class="card-body pt-0">
+        <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+            <div class="small text-muted" data-sm-status>Đang tải vị trí...</div>
+            <div class="small" data-sm-age></div>
+        </div>
+        <div class="small fw-semibold text-primary mb-2" data-sm-route></div>
+        <div data-sm-canvas class="sm-canvas rounded-3 border"></div>
+        <div class="small text-muted mt-2">
+            <i class="bi bi-box-seam-fill text-success me-1"></i>Lấy hàng
+            <i class="bi bi-geo-alt-fill text-danger ms-3 me-1"></i>Giao hàng
+            <i class="bi bi-bicycle text-primary ms-3 me-1"></i>Shipper
+            <span class="ms-3" style="display:inline-block;width:22px;height:4px;border-radius:2px;background:#1a73e8;vertical-align:middle;"></span> Đường đi
+        </div>
+    </div>
+</div>
+
+<style>
+    .sm-canvas { height: 380px; width: 100%; z-index: 0; }
+    .sm-marker-wrap { background: transparent; border: 0; }
+    .sm-pin {
+        width: 36px; height: 36px; border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        color: #fff; font-size: 1rem; border: 2px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,.35);
+    }
+    .sm-pin-pickup { background: #198754; }
+    .sm-pin-dest { background: #dc3545; }
+    .sm-pin-shipper { background: #0d6efd; }
+    .sm-shipper { position: relative; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; }
+    .sm-pulse {
+        position: absolute; inset: 0; border-radius: 50%;
+        background: rgba(13,110,253,.3); animation: sm-pulse 2s ease-out infinite;
+    }
+    @@keyframes sm-pulse { 0% { transform: scale(.5); opacity: 1; } 100% { transform: scale(1.4); opacity: 0; } }
+</style>
+<script src="~/js/shipper-map.js" asp-append-version="true"></script>
