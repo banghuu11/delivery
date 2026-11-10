@@ -235,13 +235,15 @@ namespace DeliveryManagement.Controllers
             // ==========================================
 
             _context.OrderStatusHistories.Add(
-                new OrderStatusHistory
-                {
-                    OrderCode = order.OrderCode,
-                    Status = ReadyStatus,
-                    ChangedBy = user.Id,
-                    ChangedAt = DateTime.Now
-                });
+    new OrderStatusHistory
+    {
+        OrderCode = order.OrderCode,
+        Status = ReadyStatus,
+        ChangedBy = !string.IsNullOrWhiteSpace(user.FullName)
+            ? user.FullName.Trim()
+            : user.UserName ?? "Hệ thống",
+        ChangedAt = DateTime.Now
+    });
 
             // ==========================================
             // 5. LƯU DỮ LIỆU

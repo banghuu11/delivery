@@ -785,7 +785,7 @@ namespace DeliveryManagement.Controllers
             {
                 OrderCode = order.OrderCode,
                 Status = newStatus,
-                ChangedBy = user?.Id ?? "Admin",
+                ChangedBy = user?.FullName ?? "Admin",
                 ChangedAt = DateTime.Now
             };
 
