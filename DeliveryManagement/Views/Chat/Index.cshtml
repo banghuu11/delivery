@@ -174,7 +174,7 @@
                 <div class="card-footer bg-white p-3 border-top">
                     <form id="chatForm" class="d-flex gap-2 align-items-center">
                         <input type="text" id="chatInput" class="form-control rounded-pill px-4 py-2"
-                               placeholder="Hỏi về mã đơn ORD..., tính cước, loại hàng hóa..." autocomplete="off" />
+                               placeholder="Hỏi bất kỳ câu hỏi nào về giao hàng, cước phí, thời gian, tra cứu đơn..." autocomplete="off" />
                         <button type="submit" id="btnSend" class="btn btn-primary-custom rounded-pill px-4 py-2 d-flex align-items-center gap-1 shadow-sm">
                             <span>Gửi</span>
                             <i class="bi bi-send-fill ms-1"></i>
@@ -279,11 +279,11 @@
                 } else {
                     mainChatThread.innerHTML = '';
                     // Tin nhắn chào mừng ban đầu
-                    appendMessage(`Xin chào **${data.userFullName || 'bạn'}**! 👋 Em là **Trợ lý AI Tốc Độ**.\nEm có thể giúp bạn kiểm tra đơn hàng, tính cước phí dự kiến hoặc giải đáp danh mục hàng hóa. Bạn cần em hỗ trợ gì ngay bây giờ ạ?`, 'ai', 'Vừa xong');
+                    appendMessage(`Xin chào **${data.userFullName || 'bạn'}**! 👋 Em là **Trợ lý AI Tốc Độ**.\nEm có thể giải đáp trực tiếp mọi câu hỏi về cước phí, thời gian giao, tra cứu đơn hoặc đóng gói bưu phẩm. Bạn đang cần hỏi gì cứ nhắn trực tiếp cho em nhé!`, 'ai', 'Vừa xong');
                     renderQuickPrompts([
                         "📦 Đơn hàng của tôi",
                         "💰 Tính cước phí dự kiến",
-                        "🏷️ Các loại hàng hóa nhận gửi",
+                        "⏱️ Thời gian giao hàng",
                         "📍 Tìm bưu cục gần nhất"
                     ]);
                 }

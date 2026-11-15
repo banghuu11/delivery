@@ -71,7 +71,7 @@
 
     <!-- KHUNG NHẬP TIN NHẮN -->
     <div class="ai-chat-footer">
-        <input type="text" id="aiChatInput" class="ai-chat-input" placeholder="Hỏi AI về đơn hàng, cước phí..." autocomplete="off" />
+        <input type="text" id="aiChatInput" class="ai-chat-input" placeholder="Nhập câu hỏi của bạn (cước phí, thời gian giao, tra cứu đơn...)" autocomplete="off" />
         <button type="button" id="aiChatSendBtn" class="ai-chat-send-btn" title="Gửi tin nhắn">
             <i class="bi bi-send-fill"></i>
         </button>
@@ -225,11 +225,11 @@
                             appendMessage(m.content, m.isFromAi ? 'ai' : 'user', m.formattedTime);
                         });
                     } else {
-                        const greeting = `Xin chào **${data.userFullName || 'bạn'}**! 👋 Em là **Trợ lý AI Tốc Độ**.\nEm có thể hỗ trợ bạn tra cứu đơn hàng, tính cước phí dự kiến hoặc giải đáp các thắc mắc về hàng hóa. Bạn cần em hỗ trợ gì ạ?`;
+                        const greeting = `Xin chào **${data.userFullName || 'bạn'}**! 👋 Em là **Trợ lý AI Tốc Độ**.\nEm có thể giải đáp trực tiếp mọi thắc mắc về cước phí, thời gian giao hàng, tra cứu đơn hoặc đóng gói kiện hàng. Bạn đang cần hỏi điều gì cứ nhắn trực tiếp cho em nhé!`;
                         appendMessage(greeting, 'ai', 'Vừa xong');
                     }
                 } else {
-                    appendMessage("Chào bạn! Em là Trợ lý AI Tốc Độ. Hãy nhắn điều bạn cần hỗ trợ nhé!", 'ai', 'Vừa xong');
+                    appendMessage("Chào bạn! Em là Trợ lý AI Tốc Độ. Hãy nhắn câu hỏi hoặc điều bạn cần hỗ trợ, em giải đáp ngay nhé!", 'ai', 'Vừa xong');
                 }
 
                 renderQuickChips([
